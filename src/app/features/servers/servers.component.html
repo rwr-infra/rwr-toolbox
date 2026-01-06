@@ -196,7 +196,7 @@
         </div>
 
         <!-- Pagination -->
-        @if (pagination().totalPages > 1) {
+        @if (totalPages() > 1) {
             <div class="flex justify-center mt-6">
                 <div class="join">
                     @for (page of getPageNumbers(); track page) {
@@ -219,7 +219,7 @@
         <div class="mt-4 text-center text-gray-500">
             Showing {{ getDisplayRange().start }}
             to {{ getDisplayRange().end }}
-            of {{ pagination().totalItems }} servers
+            of {{ totalItems() }} servers
         </div>
     }
 

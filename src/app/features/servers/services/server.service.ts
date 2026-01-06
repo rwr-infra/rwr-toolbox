@@ -1,16 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { tap, catchError, shareReplay, map } from 'rxjs/operators';
+import { tap, catchError, shareReplay, map, concatMap } from 'rxjs/operators';
+import { XMLParser } from 'fast-xml-parser';
 import { HttpClientService } from '../../../core/services/http-client.service';
 import { SettingsService } from '../../../core/services/settings.service';
 import { CacheService } from '../../../core/services/cache.service';
 import {
-    RawServerData,
     Server,
     ServerListResponse,
     ServerFilter,
     ServerSort
 } from '../../../shared/models/server.models';
+import { HttpParams } from '@angular/common/http';
 
 /**
  * Service for fetching and managing server data
@@ -24,7 +25,9 @@ export class ServerService {
     private cacheService = inject(CacheService);
 
     private readonly CACHE_KEY = 'servers_list';
-    private readonly BASE_URL = 'http://rwr.runningwithrifles.com/rwr_server_list/view_servers.php';
+    private readonly BASE_URL = 'http://rwr.runningwithrifles.com/rwr_server_list/get_server_list.php';
+    private readonly PAGE_SIZE = 100;
+    private readonly xmlParser = new XMLParser();
 
     // State management with BehaviorSubjects
     private serversSubject = new BehaviorSubject<Server[]>([]);
@@ -37,7 +40,7 @@ export class ServerService {
     readonly error$ = this.errorSubject.asObservable();
 
     /**
-     * Fetch all servers from API
+     * Fetch all servers from API (loops until all data is retrieved)
      * @param forceRefresh Force refresh from API, ignore cache
      * @returns Observable of server list response
      */
@@ -45,16 +48,50 @@ export class ServerService {
         this.loadingSubject.next(true);
         this.errorSubject.next(null);
 
-        return this.httpClient.get<string>(this.BASE_URL, {
-            timeout: this.settingsService.settings().pingTimeout,
-            responseType: 'text'
-        }).pipe(
-            map(html => this.parseServerList(html)),
+        const allServers: Server[] = [];
+        let start = 0;
+        const timestamp = Date.now();
+
+        // Recursive function to fetch all pages
+        const fetchPage = (currentPageStart: number): Observable<ServerListResponse> => {
+            const params = new HttpParams()
+                .set('start', currentPageStart.toString())
+                .set('size', this.PAGE_SIZE.toString())
+                .set('names', '1')
+                .set('_t', timestamp.toString()); // Cache buster
+
+            return this.httpClient.get<string>(this.BASE_URL, {
+                timeout: this.settingsService.settings().pingTimeout,
+                params,
+                responseType: 'text'
+            }).pipe(
+                map(html => this.parseServerList(html)),
+                tap(response => {
+                    allServers.push(...response.servers);
+                }),
+                // Continue fetching if we got a full page
+                concatMap((response: ServerListResponse) => {
+                    if (response.servers.length === this.PAGE_SIZE) {
+                        // Fetch next page
+                        return fetchPage(currentPageStart + this.PAGE_SIZE);
+                    }
+                    // All pages fetched, return complete response
+                    return of({
+                        servers: allServers,
+                        timestamp: Date.now(),
+                        totalCount: allServers.length,
+                        fromCache: false
+                    } as ServerListResponse);
+                })
+            );
+        };
+
+        return fetchPage(start).pipe(
             tap(response => {
                 this.serversSubject.next(response.servers);
                 this.loadingSubject.next(false);
 
-                // Cache the response
+                // Cache the complete response
                 this.cacheService.set(this.CACHE_KEY, {
                     servers: response.servers,
                     timestamp: Date.now()
@@ -84,43 +121,55 @@ export class ServerService {
     }
 
     /**
-     * Parse HTML response into Server objects
-     * @param html HTML string from API
+     * Parse HTML/XML response into Server objects using fast-xml-parser
+     * @param html HTML/XML string from API
      * @returns Parsed server list response
      */
     private parseServerList(html: string): ServerListResponse {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const rows = doc.querySelectorAll('table tr');
-
+        const parsed = this.xmlParser.parse(html);
         const servers: Server[] = [];
         const timestamp = Date.now();
 
-        // Skip header row (index 0)
-        for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
-            const cells = row.querySelectorAll('td');
+        // Navigate to server elements
+        // The API returns: <result><server_list><server>...</server></server_list></result>
+        // Or: <result><server>...</server></result>
+        let serverArray: any[] = [];
 
-            if (cells.length < 14) continue;
+        if (parsed.result?.server_list?.server) {
+            const serverData = parsed.result.server_list.server;
+            serverArray = Array.isArray(serverData) ? serverData : [serverData];
+        } else if (parsed.result?.server) {
+            const serverData = parsed.result.server;
+            serverArray = Array.isArray(serverData) ? serverData : [serverData];
+        } else if (parsed.server_list?.server) {
+            const serverData = parsed.server_list.server;
+            serverArray = Array.isArray(serverData) ? serverData : [serverData];
+        } else if (parsed.server) {
+            const serverData = parsed.server;
+            serverArray = Array.isArray(serverData) ? serverData : [serverData];
+        }
 
-            const rawData: RawServerData = {
-                row_number: this.extractNumber(cells[0].textContent),
-                name: this.extractText(cells[1].textContent),
-                address: this.extractText(cells[2].textContent),
-                port: this.extractText(cells[3].textContent),
-                country: this.extractText(cells[4].textContent),
-                map: this.extractText(cells[5].textContent),
-                player_count: this.extractText(cells[6].textContent),
-                bot_count: this.extractText(cells[7].textContent),
-                version: this.extractText(cells[8].textContent),
-                last_update: this.extractText(cells[9].textContent),
-                steam: cells[10].innerHTML,
-                player_names: this.extractText(cells[11].textContent),
-                comment: this.extractText(cells[12].textContent),
-                reachable: this.extractText(cells[13].textContent)
+        for (const server of serverArray) {
+            const parsedServer: Server = {
+                id: `${server.address || ''}:${server.port || 0}`,
+                name: server.name?.toString() || '',
+                address: server.address?.toString() || '',
+                port: Number(server.port) || 0,
+                country: server.country?.toString() || '',
+                map: server.map_name?.toString() || '',
+                currentPlayers: Number(server.current_players) || 0,
+                maxPlayers: Number(server.max_players) || 0,
+                botCount: Number(server.bots) || 0,
+                version: server.version?.toString() || '',
+                lastUpdate: this.formatTimestamp(Number(server.timestamp) || 0),
+                lastUpdateSeconds: Number(server.timestamp) || 0,
+                steamLink: server.url?.toString() || '',
+                playerNames: this.parsePlayerList(server.player),
+                comment: server.comment?.toString() || '',
+                isReachable: true // Default to reachable if server is in the list
             };
 
-            servers.push(this.parseServer(rawData));
+            servers.push(parsedServer);
         }
 
         return {
@@ -128,39 +177,6 @@ export class ServerService {
             timestamp,
             totalCount: servers.length,
             fromCache: false
-        };
-    }
-
-    /**
-     * Parse raw server data into typed Server object
-     * @param raw Raw server data
-     * @returns Parsed server object
-     */
-    private parseServer(raw: RawServerData): Server {
-        const [currentPlayers, maxPlayers] = this.parsePlayerCount(raw.player_count);
-        const lastUpdateSeconds = this.parseTimeToSeconds(raw.last_update);
-
-        // Extract steam link
-        const steamLinkMatch = raw.steam.match(/href="([^"]+)"/);
-        const steamLink = steamLinkMatch ? steamLinkMatch[1] : '';
-
-        return {
-            id: `${raw.address}:${raw.port}`,
-            name: raw.name,
-            address: raw.address,
-            port: parseInt(raw.port) || 0,
-            country: raw.country,
-            map: raw.map,
-            currentPlayers,
-            maxPlayers,
-            botCount: parseInt(raw.bot_count) || 0,
-            version: raw.version,
-            lastUpdate: raw.last_update,
-            lastUpdateSeconds,
-            steamLink,
-            playerNames: raw.player_names.split(',').map(n => n.trim()).filter(n => n),
-            comment: raw.comment,
-            isReachable: raw.reachable === '1'
         };
     }
 
@@ -260,33 +276,39 @@ export class ServerService {
 
     // Helper methods
 
-    private extractText(text: string | null): string {
-        return text?.trim() ?? '';
+    /**
+     * Format timestamp to human-readable string (e.g., "2m", "54s")
+     */
+    private formatTimestamp(timestamp: number): string {
+        if (timestamp < 60) return `${timestamp}s`;
+        if (timestamp < 3600) return `${Math.floor(timestamp / 60)}m`;
+        if (timestamp < 86400) return `${Math.floor(timestamp / 3600)}h`;
+        return `${Math.floor(timestamp / 86400)}d`;
     }
 
-    private extractNumber(text: string | null): number {
-        return parseInt(text?.trim() ?? '0') || 0;
-    }
+    /**
+     * Parse player list from server data
+     * Handles: string with comma-separated names, or XML parsed structure
+     */
+    private parsePlayerList(playerData: any): string[] {
+        if (!playerData) return [];
 
-    private parsePlayerCount(text: string): [number, number] {
-        const [current, max] = text.split('/').map(n => parseInt(n) || 0);
-        return [current, max];
-    }
+        // If it's already a string, split by comma
+        if (typeof playerData === 'string') {
+            return playerData.split(',').map(n => n.trim()).filter(n => n);
+        }
 
-    private parseTimeToSeconds(text: string): number {
-        const match = text.match(/(\d+)([smhd])/);
-        if (!match) return 0;
+        // If it's an array from XML parser
+        if (Array.isArray(playerData)) {
+            return playerData.map(p => p?.toString?.() || p?.toString() || '').filter(n => n);
+        }
 
-        const value = parseInt(match[1]);
-        const unit = match[2];
+        // If it's an object with name property or _text
+        if (typeof playerData === 'object') {
+            const name = playerData.name?.toString() || playerData._text?.toString() || '';
+            return name ? [name] : [];
+        }
 
-        const conversions: Record<string, number> = {
-            s: 1,
-            m: 60,
-            h: 3600,
-            d: 86400
-        };
-
-        return value * (conversions[unit] || 0);
+        return [];
     }
 }

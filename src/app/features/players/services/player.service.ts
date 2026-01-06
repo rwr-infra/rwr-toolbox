@@ -1,11 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { tap, catchError, shareReplay, map } from 'rxjs/operators';
+import { XMLParser } from 'fast-xml-parser';
 import { HttpClientService } from '../../../core/services/http-client.service';
 import { SettingsService } from '../../../core/services/settings.service';
 import { CacheService } from '../../../core/services/cache.service';
 import {
-    RawPlayerData,
     Player,
     PlayerListResponse,
     PlayerFilter,
@@ -26,6 +26,14 @@ export class PlayerService {
 
     private readonly CACHE_KEY_PREFIX = 'players_list_';
     private readonly BASE_URL = 'http://rwr.runningwithrifles.com/rwr_stats/view_players.php';
+    private readonly xmlParser = new XMLParser({
+        ignoreAttributes: false,
+        attributeNamePrefix: '',
+        textNodeName: '_text',
+        htmlEntities: true,
+        ignoreDeclaration: true,
+        ignorePiTags: true
+    });
 
     // State management with BehaviorSubjects
     private playersSubject = new BehaviorSubject<Player[]>([]);
@@ -115,45 +123,59 @@ export class PlayerService {
     }
 
     /**
-     * Parse HTML response into Player objects
+     * Parse HTML response into Player objects using fast-xml-parser
      * @param html HTML string from API
      * @returns Parsed player list response
      */
     private parsePlayerList(html: string): PlayerListResponse {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        // Check for pagination links
-        const hasNextPage = this.checkPaginationLink(doc, 'Next');
-        const hasPreviousPage = this.checkPaginationLink(doc, 'Previous');
-
-        const rows = doc.querySelectorAll('table tr');
+        const parsed = this.xmlParser.parse(html);
         const players: Player[] = [];
 
-        // Skip header row
-        for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
-            const cells = row.querySelectorAll('td');
+        // Navigate to table rows
+        let tableRows: any[] = [];
+        let links: any[] = [];
+
+        // Try different possible paths to table rows and links
+        if (parsed.html?.body?.table?.tr) {
+            tableRows = Array.isArray(parsed.html.body.table.tr) ? parsed.html.body.table.tr : [parsed.html.body.table.tr];
+            links = Array.isArray(parsed.html.body.a) ? parsed.html.body.a : parsed.html.body.a ? [parsed.html.body.a] : [];
+        } else if (parsed.body?.table?.tr) {
+            tableRows = Array.isArray(parsed.body.table.tr) ? parsed.body.table.tr : [parsed.body.table.tr];
+            links = Array.isArray(parsed.body.a) ? parsed.body.a : parsed.body.a ? [parsed.body.a] : [];
+        } else if (parsed.table?.tr) {
+            tableRows = Array.isArray(parsed.table.tr) ? parsed.table.tr : [parsed.table.tr];
+            links = Array.isArray(parsed.a) ? parsed.a : parsed.a ? [parsed.a] : [];
+        }
+
+        // Check for pagination links
+        const hasNextPage = this.checkPaginationLink(links, 'Next');
+        const hasPreviousPage = this.checkPaginationLink(links, 'Previous');
+
+        // Skip header row (index 0)
+        for (let i = 1; i < tableRows.length; i++) {
+            const row = tableRows[i];
+            const cells = Array.isArray(row.td) ? row.td : [row.td];
 
             if (cells.length < 13) continue;
 
-            const rawData: RawPlayerData = {
-                row_number: this.extractText(cells[0].textContent),
-                username: this.extractText(cells[1].textContent),
-                kills: this.extractText(cells[2].textContent),
-                deaths: this.extractText(cells[3].textContent),
-                score: this.extractText(cells[4].textContent),
-                kd: this.extractText(cells[5].textContent),
-                time_played: this.extractText(cells[6].textContent),
-                longest_kill_streak: this.extractText(cells[7].textContent),
-                targets_destroyed: this.extractText(cells[8].textContent),
-                vehicles_destroyed: this.extractText(cells[9].textContent),
-                soldiers_healed: this.extractText(cells[10].textContent),
-                teamkills: this.extractText(cells[11].textContent),
-                distance_moved: this.extractText(cells[12].textContent)
+            const player: Player = {
+                id: this.extractTextValue(cells[1]),
+                username: this.extractTextValue(cells[1]),
+                kills: parseInt(this.extractTextValue(cells[2])) || 0,
+                deaths: parseInt(this.extractTextValue(cells[3])) || 0,
+                score: parseInt(this.extractTextValue(cells[4])) || 0,
+                kd: parseFloat(this.extractTextValue(cells[5])) || 0,
+                timePlayed: this.parseTimeToSeconds(this.extractTextValue(cells[6])),
+                timePlayedFormatted: this.extractTextValue(cells[6]),
+                longestKillStreak: parseInt(this.extractTextValue(cells[7])) || 0,
+                targetsDestroyed: parseInt(this.extractTextValue(cells[8])) || 0,
+                vehiclesDestroyed: parseInt(this.extractTextValue(cells[9])) || 0,
+                soldiersHealed: parseInt(this.extractTextValue(cells[10])) || 0,
+                teamkills: parseInt(this.extractTextValue(cells[11])) || 0,
+                distanceMoved: this.parseDistanceToMeters(this.extractTextValue(cells[12]))
             };
 
-            players.push(this.parsePlayer(rawData));
+            players.push(player);
         }
 
         return {
@@ -167,43 +189,17 @@ export class PlayerService {
     }
 
     /**
-     * Check if pagination link exists
-     * @param doc Parsed HTML document
+     * Check if pagination link exists in links array
+     * @param links Array of link elements from XML parser
      * @param text Link text to find
      * @returns True if link exists
      */
-    private checkPaginationLink(doc: Document, text: string): boolean {
-        const links = doc.querySelectorAll('a');
-        for (let i = 0; i < links.length; i++) {
-            if (links[i].textContent?.trim() === text) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Parse raw player data into typed Player object
-     * @param raw Raw player data
-     * @returns Parsed player object
-     */
-    private parsePlayer(raw: RawPlayerData): Player {
-        return {
-            id: raw.username,
-            username: raw.username,
-            kills: parseInt(raw.kills) || 0,
-            deaths: parseInt(raw.deaths) || 0,
-            score: parseInt(raw.score) || 0,
-            kd: parseFloat(raw.kd) || 0,
-            timePlayed: this.parseTimeToSeconds(raw.time_played),
-            timePlayedFormatted: raw.time_played,
-            longestKillStreak: parseInt(raw.longest_kill_streak) || 0,
-            targetsDestroyed: parseInt(raw.targets_destroyed) || 0,
-            vehiclesDestroyed: parseInt(raw.vehicles_destroyed) || 0,
-            soldiersHealed: parseInt(raw.soldiers_healed) || 0,
-            teamkills: parseInt(raw.teamkills) || 0,
-            distanceMoved: this.parseDistanceToMeters(raw.distance_moved)
-        };
+    private checkPaginationLink(links: any[], text: string): boolean {
+        if (!links) return false;
+        return links.some((link: any) => {
+            const linkText = link._text?.toString()?.trim() || link.toString()?.trim();
+            return linkText === text;
+        });
     }
 
     /**
@@ -303,8 +299,19 @@ export class PlayerService {
 
     // Helper methods
 
-    private extractText(text: string | null): string {
-        return text?.trim() ?? '';
+    /**
+     * Extract text value from XML parser cell
+     * Handles: string, object with _text, or nested structure
+     */
+    private extractTextValue(cell: any): string {
+        if (typeof cell === 'string') return cell.trim();
+        if (cell?._text) return String(cell._text).trim();
+        if (typeof cell === 'object') {
+            // Try to find any text content
+            const values = Object.values(cell).filter(v => typeof v === 'string');
+            if (values.length > 0) return values[0].trim();
+        }
+        return '';
     }
 
     private parseTimeToSeconds(text: string): number {

@@ -69,6 +69,7 @@ export class HttpClientService {
         }
 
         const finalUrl = httpParams.keys().length ? `${url}?${httpParams.toString()}` : url;
+        console.log('GET finalUrl:', finalUrl);
 
         // Always use Tauri HTTP to avoid browser CORS
         const request$: Observable<T> = from(this.getViaTauri<T>(finalUrl, timeoutMs, responseType));

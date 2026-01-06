@@ -42,11 +42,9 @@ export class ServersComponent implements OnInit {
     // Local component state with signals
     filter = signal<ServerFilter>({});
     sort = signal<ServerSort>({ field: 'playerCount', direction: 'desc' });
-    pagination = signal<PaginationState>({
+    pagination = signal<Pick<PaginationState, 'currentPage' | 'pageSize'>>({
         currentPage: 1,
-        pageSize: 100,
-        totalItems: 0,
-        totalPages: 0
+        pageSize: 100
     });
 
     // Computed state
@@ -61,22 +59,11 @@ export class ServersComponent implements OnInit {
         return filtered;
     });
 
-    /** Keep pagination totals in sync without mutating inside a computed */
-    paginationSync = computed(() => {
-        const totalItems = this.filteredServers().length;
-        const pageSize = this.pagination().pageSize;
-        const totalPages = Math.ceil(totalItems / pageSize) || 1;
-
-        this.pagination.update(p => ({
-            ...p,
-            totalItems,
-            totalPages
-        }));
-        return null;
-    });
+    // Computed pagination totals (derived from filtered servers)
+    totalItems = computed(() => this.filteredServers().length);
+    totalPages = computed(() => Math.ceil(this.totalItems() / this.pagination().pageSize) || 1);
 
     paginatedServers = computed(() => {
-        this.paginationSync(); // ensure pagination totals are refreshed
         const filtered = this.filteredServers();
         const { currentPage, pageSize } = this.pagination();
 
@@ -219,7 +206,8 @@ export class ServersComponent implements OnInit {
      * Get page numbers for pagination
      */
     getPageNumbers(): number[] {
-        const { totalPages, currentPage } = this.pagination();
+        const totalPages = this.totalPages();
+        const currentPage = this.pagination().currentPage;
         const pages: number[] = [];
 
         if (totalPages <= 7) {
@@ -258,7 +246,8 @@ export class ServersComponent implements OnInit {
      * Get display range for pagination stats
      */
     getDisplayRange(): { start: number; end: number } {
-        const { currentPage, pageSize, totalItems } = this.pagination();
+        const { currentPage, pageSize } = this.pagination();
+        const totalItems = this.totalItems();
         const start = (currentPage - 1) * pageSize + 1;
         const end = this.min(currentPage * pageSize, totalItems);
         return { start, end };
