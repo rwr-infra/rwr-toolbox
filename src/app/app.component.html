@@ -1,51 +1,50 @@
-<main class="w-dvw h-dvh">
-    <div class="drawer">
-        <input id="menu-drawer" type="checkbox" class="drawer-toggle" />
+<main class="drawer lg:drawer-open">
+    <input id="menu-drawer" type="checkbox" class="drawer-toggle" />
 
-        <div class="drawer-content">
-            <!-- Navbar -->
-            <div class="navbar bg-base-100 shadow-sm">
-                <div class="flex-none">
-                    <label class="btn btn-square btn-ghost" for="menu-drawer">
-                        <i-lucide name="menu" class="h-5 w-5"></i-lucide>
-                    </label>
-                </div>
-                <div class="flex-1">
-                    <a class="btn btn-ghost text-xl">RWR Toolbox</a>
-                </div>
-                <div class="flex-none gap-2">
-                    <button class="btn btn-square btn-ghost" title="Theme">
-                        <i-lucide name="palette" class="h-5 w-5"></i-lucide>
-                    </button>
-                    <button class="btn btn-square btn-ghost" title="Notifications">
-                        <i-lucide name="bell" class="h-5 w-5"></i-lucide>
-                    </button>
-                </div>
+    <div class="drawer-content">
+        <!-- Navbar -->
+        <nav class="navbar bg-base-100 shadow-sm">
+            <div class="flex-none">
+                <label class="btn btn-square btn-ghost lg:hidden" for="menu-drawer">
+                    <i-lucide name="menu" class="h-5 w-5"></i-lucide>
+                </label>
             </div>
+            <div class="flex-1"></div>
+            <div class="flex-none gap-2">
+                <button class="btn btn-square btn-ghost" title="Theme">
+                    <i-lucide name="palette" class="h-5 w-5"></i-lucide>
+                </button>
+                <button class="btn btn-square btn-ghost" title="Notifications">
+                    <i-lucide name="bell" class="h-5 w-5"></i-lucide>
+                </button>
+            </div>
+        </nav>
 
-            <!-- Page Content -->
-            <div class="p-4">
-                <router-outlet></router-outlet>
-            </div>
+        <!-- Page Content -->
+        <div class="p-4">
+            <router-outlet></router-outlet>
         </div>
+    </div>
 
-        <!-- Sidebar Menu -->
-        <div class="drawer-side">
-            <label for="menu-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-            <ul class="menu bg-base-200 text-base-content min-h-full w-80 p-4">
-                <!-- App Info -->
-                <li class="menu-title">
-                    <span class="text-lg font-bold">RWR Toolbox</span>
-                </li>
+    <!-- Sidebar -->
+    <div class="drawer-side">
+        <label for="menu-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+        <div class="flex min-h-full flex-col bg-base-200 is-drawer-close:w-16 is-drawer-open:w-80">
+            <!-- App Title -->
+            <div class="flex h-16 items-center border-b border-base-300 px-4">
+                <i-lucide name="box" class="h-6 w-6 shrink-0"></i-lucide>
+                <span class="ml-2 text-lg font-bold is-drawer-close:hidden">RWR Toolbox</span>
+            </div>
 
-                <!-- Main Menu Items -->
+            <!-- Menu Items -->
+            <ul class="menu grow p-4">
                 @for (item of menuItems; track item.label) {
                     @if (item.divider) {
-                        <li class="my-2 border-t border-base-300"></li>
+                        <li class="my-2 border-t border-base-300 is-drawer-close:hidden"></li>
                     } @else if (item.children && item.link) {
-                        <!-- Item with Children (Submenu) -->
-                        <li>
-                            <details>
+                        <!-- Item with Children (Submenu) - Hidden when collapsed -->
+                        <li class="is-drawer-close:hidden">
+                            <details [open]="isActive(item.link!)">
                                 <summary [class.active]="isActive(item.link!)">
                                     <i-lucide [name]="item.icon" class="h-5 w-5"></i-lucide>
                                     <span>{{ item.label }}</span>
@@ -73,22 +72,24 @@
                                 [routerLink]="item.link"
                                 (click)="closeDrawer()"
                                 [class.active]="isActive(item.link)"
+                                class="is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                                [attr.data-tip]="item.label"
                             >
                                 <i-lucide [name]="item.icon" class="h-5 w-5"></i-lucide>
-                                <span>{{ item.label }}</span>
+                                <span class="is-drawer-close:hidden">{{ item.label }}</span>
                                 @if (item.badge) {
-                                    <span class="badge badge-sm">{{ item.badge }}</span>
+                                    <span class="badge badge-sm is-drawer-close:hidden">{{ item.badge }}</span>
                                 }
                             </a>
                         </li>
                     }
                 }
-
-                <!-- Footer -->
-                <li class="mt-auto menu-title">
-                    <span class="text-xs">© {{ currentYear }} RWR Toolbox</span>
-                </li>
             </ul>
+
+            <!-- Footer -->
+            <div class="border-t border-base-300 p-4 text-xs is-drawer-close:hidden">
+                © {{ currentYear }} RWR Toolbox
+            </div>
         </div>
     </div>
 </main>
