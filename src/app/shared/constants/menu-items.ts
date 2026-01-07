@@ -2,81 +2,101 @@ import { MenuItem } from '../interfaces/menu-item.interface';
 
 /**
  * Main navigation menu structure for RWR Toolbox
+ * Labels and descriptions use i18n keys that will be translated by the i18n pipe
  */
 export const MAIN_MENU_ITEMS: MenuItem[] = [
     {
-        label: 'Dashboard',
+        label: 'menu.dashboard',
         icon: 'layout-dashboard',
-        link: '/dashboard'
+        link: '/dashboard',
+        shortcut: 'Ctrl+1',
+        description: 'menu.dashboardDescription'
     },
     {
-        label: 'Servers',
+        label: 'menu.servers',
         icon: 'server',
-        link: '/servers'
+        link: '/servers',
+        shortcut: 'Ctrl+2',
+        description: 'menu.serversDescription'
     },
     {
-        label: 'Players',
+        label: 'menu.players',
         icon: 'users',
-        link: '/players'
+        link: '/players',
+        shortcut: 'Ctrl+3',
+        description: 'menu.playersDescription'
     },
     {
-        label: 'Data',
+        label: 'menu.data',
         icon: 'database',
         link: '/data',
+        description: 'menu.dataDescription',
         children: [
             {
-                label: 'Local Data',
+                label: 'data.localData',
                 icon: 'hard-drive',
-                link: '/data/local'
+                link: '/data/local',
+                description: 'data.browseLocalData'
             },
             {
-                label: 'Extract',
+                label: 'data.extract',
                 icon: 'download',
-                link: '/data/extract'
+                link: '/data/extract',
+                description: 'data.extractResources'
             },
             {
-                label: 'Workshop',
+                label: 'data.workshop',
                 icon: 'folder-open',
-                link: '/data/workshop'
+                link: '/data/workshop',
+                description: 'data.viewWorkshopContent'
             }
         ]
     },
     {
-        label: 'Mods',
+        label: 'menu.mods',
         icon: 'package',
         link: '/mods',
+        description: 'menu.modsDescription',
         children: [
             {
-                label: 'Install',
+                label: 'mods.install',
                 icon: 'cloud-download',
-                link: '/mods/install'
+                link: '/mods/install',
+                description: 'mods.installToGame'
             },
             {
-                label: 'Bundle',
+                label: 'mods.bundle',
                 icon: 'box',
-                link: '/mods/bundle'
+                link: '/mods/bundle',
+                description: 'mods.packageForDistribution'
             }
         ]
     },
     {
-        label: 'Hotkeys',
+        label: 'menu.hotkeys',
         icon: 'keyboard',
-        link: '/hotkeys'
+        link: '/hotkeys',
+        shortcut: 'Ctrl+4',
+        description: 'menu.configureHotkeys'
     },
     {
         divider: true
     },
     {
-        label: 'Settings',
+        label: 'menu.settings',
         icon: 'settings',
-        link: '/settings'
+        link: '/settings',
+        shortcut: 'Ctrl+5',
+        description: 'menu.settingsDescription'
     },
     {
         divider: true
     },
     {
-        label: 'About',
+        label: 'menu.about',
         icon: 'info',
-        link: '/about'
+        link: '/about',
+        shortcut: 'Ctrl+6',
+        description: 'menu.aboutDescription'
     }
 ];

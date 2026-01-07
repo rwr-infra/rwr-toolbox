@@ -21,4 +21,10 @@ export interface MenuItem {
 
     /** Optional badge text or number to display */
     badge?: string | number;
+
+    /** Keyboard shortcut hint (e.g., "Ctrl+1") */
+    shortcut?: string;
+
+    /** Tooltip description for accessibility */
+    description?: string;
 }

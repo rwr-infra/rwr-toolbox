@@ -20,7 +20,10 @@
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
-            "assets": ["src/assets"],
+            "assets": [
+              { "glob": "**/*", "input": "src/assets" },
+              { "glob": "**/*.json", "input": "src/i18n", "output": "/i18n" }
+            ],
             "styles": ["src/styles.css"]
           },
           "configurations": {
