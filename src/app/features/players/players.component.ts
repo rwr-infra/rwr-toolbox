@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, computed, signal } from '@angular/core';
+import { Component, inject, OnInit, computed, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -12,6 +12,8 @@ import {
 import { PlayerService } from './services/player.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 /**
  * Players list component with filtering, sorting, and database switching
@@ -23,7 +25,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
     templateUrl: './players.component.html',
     styleUrl: './players.component.css'
 })
-export class PlayersComponent implements OnInit {
+export class PlayersComponent implements OnInit, OnDestroy {
     private playerService = inject(PlayerService);
     private settingsService = inject(SettingsService);
     private translocoService = inject(TranslocoService);
@@ -49,7 +51,12 @@ export class PlayersComponent implements OnInit {
     // Local component state with signals
     selectedDatabase = signal<PlayerDatabase>('invasion');
     filter = signal<PlayerFilter>({});
-    sort = signal<PlayerSort>({ field: 'kills', direction: 'desc' });
+    sort = signal<PlayerSort>({ field: 'score', direction: 'desc' });
+    searchQuery = signal<string>('');
+
+    // Search debouncing
+    private searchSubject = new Subject<string>();
+    private searchSubscription?: Subscription;
 
     // Computed state
     filteredPlayers = computed(() => {
@@ -57,21 +64,95 @@ export class PlayersComponent implements OnInit {
         const currentFilter = this.filter();
         const currentSort = this.sort();
 
-        let filtered = this.playerService.filterPlayers(allPlayers, currentFilter);
-        filtered = this.playerService.sortPlayers(filtered, currentSort);
+        console.log('filteredPlayers - allPlayers:', allPlayers.length, allPlayers);
+        console.log('filteredPlayers - filter:', currentFilter);
+        console.log('filteredPlayers - sort:', currentSort);
 
-        return filtered;
+        // Inline filtering
+        let filtered = allPlayers;
+        if (currentFilter.search) {
+            const search = currentFilter.search.toLowerCase();
+            filtered = filtered.filter(p => p.username.toLowerCase().includes(search));
+        }
+        if (currentFilter.minKills !== undefined) {
+            filtered = filtered.filter(p => p.kills >= currentFilter.minKills!);
+        }
+        if (currentFilter.maxKills !== undefined) {
+            filtered = filtered.filter(p => p.kills <= currentFilter.maxKills!);
+        }
+        if (currentFilter.minKd !== undefined) {
+            filtered = filtered.filter(p => p.kd >= currentFilter.minKd!);
+        }
+        if (currentFilter.minTimePlayed !== undefined) {
+            filtered = filtered.filter(p => p.timePlayed >= currentFilter.minTimePlayed!);
+        }
+        if (currentFilter.isFavorite) {
+            filtered = filtered.filter(p => this.settingsService.isFavorite(p.id, 'player'));
+        }
+
+        console.log('filteredPlayers - after filter:', filtered.length);
+
+        // Inline sorting
+        const sorted = [...filtered].sort((a, b) => {
+            let comparison = 0;
+            switch (currentSort.field) {
+                case 'username':
+                    comparison = a.username.localeCompare(b.username);
+                    break;
+                case 'kills':
+                    comparison = b.kills - a.kills;
+                    break;
+                case 'deaths':
+                    comparison = b.deaths - a.deaths;
+                    break;
+                case 'kd':
+                    comparison = b.kd - a.kd;
+                    break;
+                case 'timePlayed':
+                    comparison = b.timePlayed - a.timePlayed;
+                    break;
+                case 'score':
+                    comparison = b.score - a.score;
+                    break;
+            }
+            return currentSort.direction === 'desc' ? -comparison : comparison;
+        });
+
+        console.log('filteredPlayers - after sort:', sorted);
+
+        console.log('filteredPlayers - first:', sorted[0]?.username);
+
+        return sorted;
     });
 
     ngOnInit() {
+        // Set up search debouncing
+        this.searchSubscription = this.searchSubject.pipe(
+            debounceTime(500),
+            distinctUntilChanged()
+        ).subscribe(query => {
+            this.searchQuery.set(query);
+            this.loadData();
+        });
+
         this.loadData();
+    }
+
+    ngOnDestroy() {
+        this.searchSubscription?.unsubscribe();
     }
 
     /**
      * Load players from API
      */
-    loadData() {
-        this.playerService.fetchPlayers(this.selectedDatabase()).subscribe({
+    loadData(page: number = 1) {
+        this.playerService.fetchPlayers(
+            this.selectedDatabase(),
+            page,
+            20,
+            this.sort().field,
+            this.searchQuery()
+        ).subscribe({
             error: err => console.error('Failed to load players:', err)
         });
     }
@@ -82,7 +163,7 @@ export class PlayersComponent implements OnInit {
     onDatabaseChange(event: Event) {
         const value = (event.target as HTMLSelectElement).value;
         this.selectedDatabase.set(value as PlayerDatabase);
-        this.loadData();
+        this.loadData(1);
     }
 
     /**
@@ -90,7 +171,7 @@ export class PlayersComponent implements OnInit {
      */
     onSearchChange(event: Event) {
         const value = (event.target as HTMLInputElement).value;
-        this.filter.update(f => ({ ...f, search: value || undefined }));
+        this.searchSubject.next(value || '');
     }
 
     /**
@@ -111,6 +192,7 @@ export class PlayersComponent implements OnInit {
             }
             return { field, direction: 'desc' };
         });
+        this.loadData(1); // Reload from server with new sort
     }
 
     /**
@@ -132,7 +214,7 @@ export class PlayersComponent implements OnInit {
      */
     onRefresh() {
         this.playerService.clearCache(this.selectedDatabase());
-        this.loadData();
+        this.loadData(this.currentPage());
     }
 
     /**
@@ -141,10 +223,7 @@ export class PlayersComponent implements OnInit {
     onPreviousPage() {
         const current = this.currentPage();
         if (current > 1) {
-            // Reload with previous page
-            this.playerService.fetchPlayers(this.selectedDatabase(), current - 1).subscribe({
-                error: err => console.error('Failed to load players:', err)
-            });
+            this.loadData(current - 1);
         }
     }
 
@@ -154,10 +233,7 @@ export class PlayersComponent implements OnInit {
     onNextPage() {
         const current = this.currentPage();
         if (this.hasNextPage()) {
-            // Reload with next page
-            this.playerService.fetchPlayers(this.selectedDatabase(), current + 1).subscribe({
-                error: err => console.error('Failed to load players:', err)
-            });
+            this.loadData(current + 1);
         }
     }
 

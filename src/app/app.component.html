@@ -9,7 +9,7 @@
 
         <!-- Menu Items -->
         <ul class="menu grow p-2 gap-0.5 overflow-y-auto">
-            @for (item of menuItems; track item.label) {
+            @for (item of menuItems; track item.link ?? item.label ?? $index) {
                 @if (item.divider) {
                     <li class="my-1 border-t border-base-300"></li>
                 } @else if (item.children && item.link) {

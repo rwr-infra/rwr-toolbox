@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { tap, catchError, shareReplay, map } from 'rxjs/operators';
+import { tap, catchError, shareReplay, map, finalize } from 'rxjs/operators';
 import { XMLParser } from 'fast-xml-parser';
 import { HttpClientService } from '../../../core/services/http-client.service';
 import { SettingsService } from '../../../core/services/settings.service';
@@ -12,6 +12,7 @@ import {
     PlayerSort,
     PlayerDatabase
 } from '../../../shared/models/player.models';
+import { HttpParams } from '@angular/common/http';
 
 /**
  * Service for fetching and managing player data
@@ -28,11 +29,11 @@ export class PlayerService {
     private readonly BASE_URL = 'http://rwr.runningwithrifles.com/rwr_stats/view_players.php';
     private readonly xmlParser = new XMLParser({
         ignoreAttributes: false,
-        attributeNamePrefix: '',
-        textNodeName: '_text',
-        htmlEntities: true,
-        ignoreDeclaration: true,
-        ignorePiTags: true
+        attributeNamePrefix: '@_',
+        textNodeName: '#text',
+        parseAttributeValue: true,
+        trimValues: true,
+        allowBooleanAttributes: true
     });
 
     // State management with BehaviorSubjects
@@ -57,40 +58,40 @@ export class PlayerService {
      * @param page Page number
      * @param pageSize Number of results per page
      * @param sortBy Sort field
+     * @param search Search term
      * @param forceRefresh Force refresh from API
      * @returns Observable of player list response
      */
     fetchPlayers(
         database: PlayerDatabase = 'invasion',
         page: number = 1,
-        pageSize: number = 100,
+        pageSize: number = 20,
         sortBy: string = 'rank_progression',
+        search: string = '',
         forceRefresh = false
     ): Observable<PlayerListResponse> {
         this.loadingSubject.next(true);
         this.errorSubject.next(null);
 
-        const params = new URLSearchParams({
-            db: database,
-            sort: sortBy,
-            search: ''
-        });
+        const params = new HttpParams()
+            .set('db', database)
+            .set('sort', sortBy)
+            .set('search', search)
+            .set('start', ((page - 1) * pageSize).toString())
+            .set('size', pageSize.toString());
 
-        const url = `${this.BASE_URL}?${params.toString()}`;
-
-        return this.httpClient.get<string>(url, {
+        return this.httpClient.get<string>(this.BASE_URL, {
             timeout: this.settingsService.settings().pingTimeout,
+            params,
             withCacheBuster: true,
             responseType: 'text'
         }).pipe(
-            map(html => this.parsePlayerList(html)),
+            map(html => this.parsePlayerList(html, database)),
             tap(response => {
                 this.playersSubject.next(response.players);
                 this.currentPageSubject.next(page);
                 this.hasNextPageSubject.next(response.hasNextPage);
                 this.hasPreviousPageSubject.next(response.hasPreviousPage);
-                this.loadingSubject.next(false);
-
                 // Cache the response
                 this.cacheService.set(`${this.CACHE_KEY_PREFIX}${database}`, {
                     players: response.players,
@@ -98,7 +99,6 @@ export class PlayerService {
                 });
             }),
             catchError(error => {
-                this.loadingSubject.next(false);
                 this.errorSubject.next(error.message);
 
                 // Try to load from cache
@@ -118,6 +118,7 @@ export class PlayerService {
 
                 return throwError(() => error);
             }),
+            finalize(() => this.loadingSubject.next(false)),
             shareReplay(1)
         );
     }
@@ -127,79 +128,101 @@ export class PlayerService {
      * @param html HTML string from API
      * @returns Parsed player list response
      */
-    private parsePlayerList(html: string): PlayerListResponse {
+    private parsePlayerList(html: string, database: PlayerDatabase): PlayerListResponse {
         const parsed = this.xmlParser.parse(html);
+        console.log('parsed', parsed);
         const players: Player[] = [];
 
-        // Navigate to table rows
-        let tableRows: any[] = [];
-        let links: any[] = [];
-
-        // Try different possible paths to table rows and links
-        if (parsed.html?.body?.table?.tr) {
-            tableRows = Array.isArray(parsed.html.body.table.tr) ? parsed.html.body.table.tr : [parsed.html.body.table.tr];
-            links = Array.isArray(parsed.html.body.a) ? parsed.html.body.a : parsed.html.body.a ? [parsed.html.body.a] : [];
-        } else if (parsed.body?.table?.tr) {
-            tableRows = Array.isArray(parsed.body.table.tr) ? parsed.body.table.tr : [parsed.body.table.tr];
-            links = Array.isArray(parsed.body.a) ? parsed.body.a : parsed.body.a ? [parsed.body.a] : [];
-        } else if (parsed.table?.tr) {
-            tableRows = Array.isArray(parsed.table.tr) ? parsed.table.tr : [parsed.table.tr];
-            links = Array.isArray(parsed.a) ? parsed.a : parsed.a ? [parsed.a] : [];
+        // Navigate to table using multiple path attempts
+        let table = parsed.html?.body?.table;
+        if (!table) {
+            table = parsed.table;
+        }
+        if (!table) {
+            table = parsed.html?.table;
+        }
+        if (!table) {
+            table = parsed.body?.table;
+        }
+        if (!table) {
+            // Fallback: recursively search for table
+            table = this.findTable(parsed);
         }
 
-        // Check for pagination links
-        const hasNextPage = this.checkPaginationLink(links, 'Next');
-        const hasPreviousPage = this.checkPaginationLink(links, 'Previous');
+        if (!table) {
+            console.warn('[PlayerService] No table found in player list response');
+            return {
+                players: [],
+                currentPage: 1,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                timestamp: Date.now(),
+                fromCache: false
+            };
+        }
 
-        // Skip header row (index 0)
-        for (let i = 1; i < tableRows.length; i++) {
-            const row = tableRows[i];
-            const cells = Array.isArray(row.td) ? row.td : [row.td];
+        const rows = table.tr;
+        if (!rows) {
+            console.warn('[PlayerService] No rows found in table');
+            return {
+                players: [],
+                currentPage: 1,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                timestamp: Date.now(),
+                fromCache: false
+            };
+        }
 
-            if (cells.length < 13) continue;
+        const rowArray = Array.isArray(rows) ? rows : [rows];
+
+        // Filter out header rows (rows with <th> elements)
+        const dataRows = rowArray.filter((row: any) => !row.th);
+
+        // Parse each data row
+        for (const row of dataRows) {
+            const cells = row.td || [];
+            // fast-xml-parser returns an array for repeated tags, but a single object for one tag
+            const cellArray = Array.isArray(cells) ? cells : cells ? [cells] : [];
+
+            if (cellArray.length < 13) continue;
+
+            const username = this.extractCellText(cellArray[1]);
+            if (!username) continue;
 
             const player: Player = {
-                id: this.extractTextValue(cells[1]),
-                username: this.extractTextValue(cells[1]),
-                kills: parseInt(this.extractTextValue(cells[2])) || 0,
-                deaths: parseInt(this.extractTextValue(cells[3])) || 0,
-                score: parseInt(this.extractTextValue(cells[4])) || 0,
-                kd: parseFloat(this.extractTextValue(cells[5])) || 0,
-                timePlayed: this.parseTimeToSeconds(this.extractTextValue(cells[6])),
-                timePlayedFormatted: this.extractTextValue(cells[6]),
-                longestKillStreak: parseInt(this.extractTextValue(cells[7])) || 0,
-                targetsDestroyed: parseInt(this.extractTextValue(cells[8])) || 0,
-                vehiclesDestroyed: parseInt(this.extractTextValue(cells[9])) || 0,
-                soldiersHealed: parseInt(this.extractTextValue(cells[10])) || 0,
-                teamkills: parseInt(this.extractTextValue(cells[11])) || 0,
-                distanceMoved: this.parseDistanceToMeters(this.extractTextValue(cells[12]))
+                id: `${database}:${username}`,
+                username,
+                kills: parseInt(this.extractCellText(cellArray[2])) || 0,
+                deaths: parseInt(this.extractCellText(cellArray[3])) || 0,
+                score: parseInt(this.extractCellText(cellArray[4])) || 0,
+                kd: parseFloat(this.extractCellText(cellArray[5])) || 0,
+                timePlayed: this.parseTimeToSeconds(this.extractCellText(cellArray[6])),
+                timePlayedFormatted: this.extractCellText(cellArray[6]),
+                longestKillStreak: parseInt(this.extractCellText(cellArray[7])) || 0,
+                targetsDestroyed: parseInt(this.extractCellText(cellArray[8])) || 0,
+                vehiclesDestroyed: parseInt(this.extractCellText(cellArray[9])) || 0,
+                soldiersHealed: parseInt(this.extractCellText(cellArray[10])) || 0,
+                teamkills: parseInt(this.extractCellText(cellArray[11])) || 0,
+                distanceMoved: this.parseDistanceToMeters(this.extractCellText(cellArray[12]))
             };
 
             players.push(player);
         }
 
+        console.log('parsed players', players);
+
+        // Check for pagination links using recursive search
+        const { hasNext, hasPrevious } = this.findPaginationLinks(parsed);
+
         return {
             players,
             currentPage: 1,
-            hasNextPage,
-            hasPreviousPage,
+            hasNextPage: hasNext,
+            hasPreviousPage: hasPrevious,
             timestamp: Date.now(),
             fromCache: false
         };
-    }
-
-    /**
-     * Check if pagination link exists in links array
-     * @param links Array of link elements from XML parser
-     * @param text Link text to find
-     * @returns True if link exists
-     */
-    private checkPaginationLink(links: any[], text: string): boolean {
-        if (!links) return false;
-        return links.some((link: any) => {
-            const linkText = link._text?.toString()?.trim() || link.toString()?.trim();
-            return linkText === text;
-        });
     }
 
     /**
@@ -300,18 +323,99 @@ export class PlayerService {
     // Helper methods
 
     /**
-     * Extract text value from XML parser cell
-     * Handles: string, object with _text, or nested structure
+     * Recursively find table in parsed object
      */
-    private extractTextValue(cell: any): string {
+    private findTable(obj: any): any {
+        if (!obj || typeof obj !== 'object') return null;
+        if (Array.isArray(obj)) {
+            for (const item of obj) {
+                const result = this.findTable(item);
+                if (result && result.tr) return result;
+            }
+            return null;
+        }
+        if (obj.tr && Array.isArray(obj.tr)) return obj;
+        for (const key in obj) {
+            if (key === '#text' || key === '#comment') continue;
+            const result = this.findTable(obj[key]);
+            if (result && result.tr) return result;
+        }
+        return null;
+    }
+
+    /**
+     * Recursively find pagination links
+     */
+    private findPaginationLinks(parsed: any): { hasNext: boolean; hasPrevious: boolean } {
+        let hasNext = false;
+        let hasPrevious = false;
+
+        const findLinks = (obj: any): void => {
+            if (!obj || typeof obj !== 'object') return;
+            if (Array.isArray(obj)) {
+                for (const item of obj) {
+                    findLinks(item);
+                }
+                return;
+            }
+
+            // Check if this object is a link element with text content
+            if (obj.a && typeof obj.a === 'object') {
+                const links = Array.isArray(obj.a) ? obj.a : [obj.a];
+                for (const link of links) {
+                    const text = link['#text'] || link;
+                    if (typeof text === 'string') {
+                        const upperText = text.toUpperCase().trim();
+                        if (upperText === 'NEXT') {
+                            hasNext = true;
+                        } else if (upperText === 'PREVIOUS') {
+                            hasPrevious = true;
+                        }
+                    }
+                }
+            }
+
+            for (const key in obj) {
+                if (key === '#text' || key === '#comment') continue;
+                findLinks(obj[key]);
+            }
+        };
+
+        findLinks(parsed);
+        return { hasNext, hasPrevious };
+    }
+
+    /**
+     * Extract text value from cell (handles #text, a links, img tags)
+     */
+    private extractCellText(cell: any): string {
+        // Handle primitive values directly (number, string, boolean)
         if (typeof cell === 'string') return cell.trim();
-        if (cell?._text) return String(cell._text).trim();
-        if (typeof cell === 'object') {
-            // Try to find any text content
-            const values = Object.values(cell).filter(v => typeof v === 'string');
-            if (values.length > 0) return values[0].trim();
+        if (typeof cell === 'number') return String(cell);
+        if (cell && typeof cell === 'object') {
+            if (cell['#text']) return cell['#text'].trim();
+            if (cell.a) {
+                // Handle <a href="...">text</a> structure
+                const linkText = cell.a['#text'] || cell.a;
+                return typeof linkText === 'string' ? linkText.trim() : '';
+            }
+            if (cell.img) {
+                // Handle cell with <img> tag
+                return '';
+            }
         }
         return '';
+    }
+
+    /**
+     * Extract img src from cell
+     */
+    private extractImgSrc(cell: any): string | null {
+        if (!cell) return null;
+        if (typeof cell !== 'object') return null;
+        const img = cell.img;
+        if (!img) return null;
+        return img['@_src'] || img.src || null;
     }
 
     private parseTimeToSeconds(text: string): number {

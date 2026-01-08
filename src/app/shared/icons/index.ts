@@ -21,7 +21,15 @@ import {
     Star,
     StarOff,
     ExternalLink,
-    AlertTriangle
+    AlertTriangle,
+    PanelRight,
+    X,
+    CircleDot,
+    ChevronLeft,
+    ChevronRight,
+    Inbox,
+    CheckCircle,
+    XCircle
 } from 'lucide-angular';
 
 /**
@@ -51,5 +59,13 @@ export const APP_ICONS = {
     Star,
     StarOff,
     ExternalLink,
-    AlertTriangle
+    AlertTriangle,
+    PanelRight,
+    X,
+    CircleDot,
+    ChevronLeft,
+    ChevronRight,
+    Inbox,
+    CheckCircle,
+    XCircle
 };
