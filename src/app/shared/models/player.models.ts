@@ -25,6 +25,8 @@ export interface RawPlayerData {
 export interface Player {
     /** Unique identifier (username) */
     id: string;
+    /** Row number in current page */
+    rowNumber: number;
     /** Player username */
     username: string;
     /** Total kills */
@@ -55,6 +57,12 @@ export interface Player {
     rankName?: string;
     /** Rank icon URL (if available) */
     rankIcon?: string;
+    /** Shots fired */
+    shotsFired?: number;
+    /** Throwables thrown */
+    throwablesThrown?: number;
+    /** Rank progression XP */
+    rankProgression?: number;
 }
 
 /**
@@ -110,3 +118,47 @@ export interface PlayerSort {
     field: PlayerSortField;
     direction: 'asc' | 'desc';
 }
+
+/**
+ * Available player column keys
+ */
+export type PlayerColumnKey =
+    | 'rowNumber'
+    | 'username'
+    | 'action'
+    | 'kills'
+    | 'deaths'
+    | 'kd'
+    | 'score'
+    | 'timePlayed'
+    | 'longestKillStreak'
+    | 'targetsDestroyed'
+    | 'vehiclesDestroyed'
+    | 'soldiersHealed'
+    | 'teamkills'
+    | 'distanceMoved'
+    | 'shotsFired'
+    | 'throwablesThrown'
+    | 'rankProgression'
+    | 'rankName';
+
+/**
+ * Player column configuration
+ */
+export interface PlayerColumn {
+    /** Column key */
+    key: PlayerColumnKey;
+    /** Default label (fallback) */
+    label: string;
+    /** i18n key for translation */
+    i18nKey: string;
+    /** Text alignment */
+    alignment: 'left' | 'center' | 'right';
+    /** Always visible (cannot be toggled) */
+    alwaysVisible?: boolean;
+}
+
+/**
+ * Player column visibility state
+ */
+export type PlayerColumnVisibility = Record<PlayerColumnKey, boolean>;

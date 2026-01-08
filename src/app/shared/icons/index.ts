@@ -29,7 +29,8 @@ import {
     ChevronRight,
     Inbox,
     CheckCircle,
-    XCircle
+    XCircle,
+    Settings2
 } from 'lucide-angular';
 
 /**
@@ -67,5 +68,6 @@ export const APP_ICONS = {
     ChevronRight,
     Inbox,
     CheckCircle,
-    XCircle
+    XCircle,
+    Settings2
 };

@@ -90,7 +90,28 @@
     "no_servers": "未找到服务器",
     "no_servers_desc": "请尝试调整过滤器或刷新列表",
     "favorite": "收藏",
-    "bots": "+{{ count }} 机器人"
+    "bots": "+{{ count }} 机器人",
+    "column_toggle": "切换列显示",
+    "column": {
+      "name": "名称",
+      "address": "IP 地址",
+      "port": "端口",
+      "bots": "机器人",
+      "country": "国家",
+      "mode": "模式",
+      "map": "地图",
+      "playerCount": "玩家数",
+      "playerList": "玩家列表",
+      "comment": "备注",
+      "dedicated": "专用服务器",
+      "mod": "Mod",
+      "url": "URL",
+      "version": "版本",
+      "lastUpdate": "最后更新",
+      "ping": "Ping",
+      "status": "状态",
+      "action": "操作"
+    }
   },
   "players": {
     "title": "玩家",
@@ -114,6 +135,32 @@
     "favorite": "收藏",
     "db_invasion": "侵略模式",
     "db_pacific": "太平洋模式",
-    "db_prereset": "重置前侵略模式"
+    "db_prereset": "重置前侵略模式",
+    "page_size": "每页",
+    "page_size_20": "20",
+    "page_size_50": "50",
+    "page_size_100": "100",
+    "page_page": "第 {{ current }} / {{ total }} 页",
+    "column_toggle": "切换列显示",
+    "column": {
+      "rowNumber": "#",
+      "username": "用户名",
+      "action": "操作",
+      "kills": "击杀",
+      "deaths": "死亡",
+      "kd": "K/D",
+      "score": "分数",
+      "timePlayed": "时长",
+      "longestKillStreak": "连杀",
+      "targetsDestroyed": "摧毁目标",
+      "vehiclesDestroyed": "摧毁载具",
+      "soldiersHealed": "治疗",
+      "teamkills": "TK",
+      "distanceMoved": "移动距离",
+      "shotsFired": "射击次数",
+      "throwablesThrown": "投掷次数",
+      "rankProgression": "经验",
+      "rankName": "军衔"
+    }
   }
 }

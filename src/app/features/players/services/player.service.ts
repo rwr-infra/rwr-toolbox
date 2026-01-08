@@ -104,7 +104,6 @@ export class PlayerService {
                 // Try to load from cache
                 const cached = this.cacheService.get<{ players: Player[]; timestamp: number }>(`${this.CACHE_KEY_PREFIX}${database}`);
                 if (cached) {
-                    console.log('Using cached player data');
                     this.playersSubject.next(cached.players);
                     return of({
                         players: cached.players,
@@ -126,11 +125,11 @@ export class PlayerService {
     /**
      * Parse HTML response into Player objects using fast-xml-parser
      * @param html HTML string from API
+     * @param database Player database to use for player IDs
      * @returns Parsed player list response
      */
     private parsePlayerList(html: string, database: PlayerDatabase): PlayerListResponse {
         const parsed = this.xmlParser.parse(html);
-        console.log('parsed', parsed);
         const players: Player[] = [];
 
         // Navigate to table using multiple path attempts
@@ -180,7 +179,8 @@ export class PlayerService {
         const dataRows = rowArray.filter((row: any) => !row.th);
 
         // Parse each data row
-        for (const row of dataRows) {
+        for (let i = 0; i < dataRows.length; i++) {
+            const row = dataRows[i];
             const cells = row.td || [];
             // fast-xml-parser returns an array for repeated tags, but a single object for one tag
             const cellArray = Array.isArray(cells) ? cells : cells ? [cells] : [];
@@ -192,6 +192,7 @@ export class PlayerService {
 
             const player: Player = {
                 id: `${database}:${username}`,
+                rowNumber: i + 1,
                 username,
                 kills: parseInt(this.extractCellText(cellArray[2])) || 0,
                 deaths: parseInt(this.extractCellText(cellArray[3])) || 0,
@@ -209,8 +210,6 @@ export class PlayerService {
 
             players.push(player);
         }
-
-        console.log('parsed players', players);
 
         // Check for pagination links using recursive search
         const { hasNext, hasPrevious } = this.findPaginationLinks(parsed);

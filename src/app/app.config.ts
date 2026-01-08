@@ -1,4 +1,4 @@
-import { ApplicationConfig, isDevMode } from '@angular/core';
+import { ApplicationConfig, isDevMode, provideAppInitializer, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
@@ -7,9 +7,13 @@ import { routes } from './app.routes';
 import { APP_ICONS } from './shared/icons';
 import { TranslocoHttpLoader } from './transloco-loader';
 import { provideTransloco } from '@jsverse/transloco';
+import { SettingsService } from './core/services/settings.service';
 
 export const appConfig: ApplicationConfig = {
     providers: [
+        provideAppInitializer(async () => {
+            await inject(SettingsService).initialize();
+        }),
         provideRouter(routes),
         provideHttpClient(withInterceptorsFromDi()),
         {

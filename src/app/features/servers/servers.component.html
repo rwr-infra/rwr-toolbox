@@ -3,6 +3,26 @@
     <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl sm:text-2xl font-bold">{{ t('servers.title') }}</h1>
         <div class="join">
+            <!-- Column Toggle Button -->
+            <div class="dropdown dropdown-end">
+                <button tabindex="0" class="btn btn-sm sm:btn-md join-item" [title]="t('servers.column_toggle')">
+                    <i-lucide name="settings-2" class="h-4 w-4"></i-lucide>
+                </button>
+                <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-56 p-2 shadow-sm border border-base-300">
+                    @for (column of columns; track column.key) {
+                        @if (!column.alwaysVisible) {
+                            <li>
+                                <label class="label cursor-pointer justify-start gap-2">
+                                    <input type="checkbox" class="checkbox checkbox-xs"
+                                        [checked]="isColumnVisible(column.key)"
+                                        (change)="toggleColumn(column.key)">
+                                    <span class="label-text text-xs">{{ t(column.i18nKey) }}</span>
+                                </label>
+                            </li>
+                        }
+                    }
+                </ul>
+            </div>
             <button
                 class="btn btn-sm sm:btn-md join-item"
                 (click)="onRefresh()"
@@ -103,39 +123,47 @@
     <!-- Servers Table (Optimized for 800px) -->
     @if (!loading() && paginatedServers().length > 0) {
         <div class="overflow-x-auto border border-base-300 rounded-lg">
-            <table class="table table-zebra table-xs sm:table-sm">
+            <table class="table table-zebra table-xs sm:table-sm min-w-max">
                 <thead>
                     <tr>
-                        <th class="w-10"></th>
-                        <th (click)="onSortChange('name')" class="cursor-pointer hover:bg-base-300">
-                            {{ t('servers.name') }}
+                        <!-- Left sticky: Favorite -->
+                        <th class="w-10 min-w-10 max-w-10 sticky left-0 z-30 bg-base-200"></th>
+                        <!-- Left sticky: Name -->
+                        <th (click)="onColumnSort('name')" class="cursor-pointer hover:bg-base-300 sticky left-10 z-30 bg-base-200 border-r border-base-300">
+                            {{ t('servers.column.name') }}
                             @if (sort().field === 'name') {
                                 <span class="ml-1 opacity-50">{{ sort().direction === 'asc' ? '↑' : '↓' }}</span>
                             }
                         </th>
-                        <th class="hidden md:table-cell">{{ t('servers.address') }}</th>
-                        <th (click)="onSortChange('country')" class="cursor-pointer hover:bg-base-300 hidden sm:table-cell">
-                            {{ t('servers.country') }}
-                            @if (sort().field === 'country') {
-                                <span class="ml-1 opacity-50">{{ sort().direction === 'asc' ? '↑' : '↓' }}</span>
+                        <!-- Middle columns (scrollable) -->
+                        @for (column of columns; track column.key) {
+                            @if (column.key !== 'name' && column.key !== 'action' && isColumnVisible(column.key)) {
+                                @if (isColumnSortable(column.key)) {
+                                    <th (click)="onColumnSort(column.key)"
+                                        class="cursor-pointer hover:bg-base-300 {{ getColumnAlignment(column.alignment) }}">
+                                        {{ t(column.i18nKey) }}
+                                        @if (sort().field === column.key) {
+                                            <span class="ml-1 opacity-50">{{ sort().direction === 'asc' ? '↑' : '↓' }}</span>
+                                        }
+                                    </th>
+                                } @else {
+                                    <th class="{{ getColumnAlignment(column.alignment) }}">
+                                        {{ t(column.i18nKey) }}
+                                    </th>
+                                }
                             }
-                        </th>
-                        <th class="hidden lg:table-cell">{{ t('servers.map') }}</th>
-                        <th (click)="onSortChange('playerCount')" class="cursor-pointer hover:bg-base-300">
-                            {{ t('servers.players') }}
-                            @if (sort().field === 'playerCount') {
-                                <span class="ml-1 opacity-50">{{ sort().direction === 'asc' ? '↑' : '↓' }}</span>
-                            }
-                        </th>
-                        <th class="w-16">{{ t('servers.ping') }}</th>
-                        <th class="hidden sm:table-cell">{{ t('servers.status') }}</th>
-                        <th class="w-16"></th>
+                        }
+                        <!-- Right sticky: Action -->
+                        <th class="w-20 min-w-20 sticky right-0 z-30 bg-base-200 border-l border-base-300"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @for (server of paginatedServers(); track server.id) {
+                    @for (server of paginatedServers(); track server.id; let i = $index) {
                         <tr>
-                            <td>
+                            <!-- Left sticky: Favorite -->
+                            <td class="sticky left-0 z-20 border-r border-base-300"
+                                [class.bg-base-100]="i % 2 === 0"
+                                [class.bg-base-200]="i % 2 === 1">
                                 <button
                                     class="btn btn-ghost btn-xs btn-square"
                                     (click)="onToggleFavorite(server)"
@@ -148,46 +176,106 @@
                                     </i-lucide>
                                 </button>
                             </td>
-                            <td class="font-medium max-w-[120px] sm:max-w-[200px] truncate">
+                            <!-- Left sticky: Name -->
+                            <td class="font-medium max-w-[120px] sm:max-w-[200px] truncate sticky left-10 z-20 border-r border-base-300"
+                                [class.bg-base-100]="i % 2 === 0"
+                                [class.bg-base-200]="i % 2 === 1">
                                 {{ server.name }}
                             </td>
-                            <td class="font-mono text-[10px] opacity-60 hidden md:table-cell">
-                                {{ server.address }}:{{ server.port }}
-                            </td>
-                            <td class="hidden sm:table-cell text-xs opacity-70">{{ server.country }}</td>
-                            <td class="hidden lg:table-cell text-xs opacity-70 truncate max-w-[100px]">{{ server.map }}</td>
-                            <td>
-                                <div class="flex flex-col items-center sm:flex-row sm:gap-1">
-                                    <span class="badge badge-primary badge-xs sm:badge-sm font-mono">
-                                        {{ server.currentPlayers }}/{{ server.maxPlayers }}
-                                    </span>
-                                    @if (server.botCount > 0) {
-                                        <span class="text-[9px] opacity-40 whitespace-nowrap">
-                                            {{ t('servers.bots', { count: server.botCount }) }}
-                                        </span>
-                                    }
-                                </div>
-                            </td>
-                            <td>
-                                @if (server.ping !== undefined) {
-                                    <span class="text-[10px] font-mono"
-                                         [class.text-success]="server.ping < 100"
-                                         [class.text-warning]="server.ping >= 100 && server.ping < 200"
-                                         [class.text-error]="server.ping >= 200">
-                                        {{ server.ping }}ms
-                                    </span>
-                                } @else {
-                                    <span class="opacity-20">-</span>
+                            <!-- Middle cells (scrollable) -->
+                            @for (column of columns; track column.key) {
+                                @if (column.key !== 'name' && column.key !== 'action' && isColumnVisible(column.key)) {
+                                    <td class="{{ getColumnAlignment(column.alignment) }}">
+                                        @switch (column.key) {
+                                            @case ('address') {
+                                                <span class="font-mono text-[10px] opacity-60">{{ server.address }}</span>
+                                            }
+                                            @case ('port') {
+                                                <span class="font-mono text-[10px] opacity-60">{{ server.port }}</span>
+                                            }
+                                            @case ('botCount') {
+                                                <span class="font-mono text-[10px] opacity-60">{{ server.botCount }}</span>
+                                            }
+                                            @case ('country') {
+                                                <span class="text-xs opacity-70">{{ server.country }}</span>
+                                            }
+                                            @case ('mode') {
+                                                <span class="opacity-40">-</span>
+                                            }
+                                            @case ('map') {
+                                                <span class="text-xs opacity-70 truncate max-w-[160px] inline-block">{{ server.map }}</span>
+                                            }
+                                            @case ('playerCount') {
+                                                <div class="flex flex-col items-center sm:flex-row sm:gap-1">
+                                                    <span class="badge badge-primary badge-xs sm:badge-sm font-mono">
+                                                        {{ server.currentPlayers }}/{{ server.maxPlayers }}
+                                                    </span>
+                                                    @if (server.botCount > 0) {
+                                                        <span class="text-[9px] opacity-40 whitespace-nowrap">
+                                                            {{ t('servers.bots', { count: server.botCount }) }}
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                            @case ('playerNames') {
+                                                <span class="text-[10px] opacity-60 whitespace-normal break-words">
+                                                    {{ server.playerNames?.length ? server.playerNames.join(', ') : '-' }}
+                                                </span>
+                                            }
+                                            @case ('comment') {
+                                                <span class="text-[10px] opacity-60 whitespace-normal break-words">
+                                                    {{ server.comment || '-' }}
+                                                </span>
+                                            }
+                                            @case ('dedicated') {
+                                                <span class="opacity-40">-</span>
+                                            }
+                                            @case ('mod') {
+                                                <span class="opacity-40">-</span>
+                                            }
+                                            @case ('steamLink') {
+                                                <a
+                                                    [href]="server.steamLink"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    class="link link-primary text-[10px] truncate max-w-[220px] inline-block"
+                                                    [title]="server.steamLink">
+                                                    {{ t('servers.join') }}
+                                                </a>
+                                            }
+                                            @case ('version') {
+                                                <span class="font-mono text-[10px] opacity-60">{{ server.version || '-' }}</span>
+                                            }
+                                            @case ('lastUpdate') {
+                                                <span class="text-[10px] opacity-60">{{ server.lastUpdate || '-' }}</span>
+                                            }
+                                            @case ('ping') {
+                                                @if (server.ping !== undefined) {
+                                                    <span class="text-[10px] font-mono"
+                                                         [class.text-success]="server.ping < 100"
+                                                         [class.text-warning]="server.ping >= 100 && server.ping < 200"
+                                                         [class.text-error]="server.ping >= 200">
+                                                        {{ server.ping }}ms
+                                                    </span>
+                                                } @else {
+                                                    <span class="opacity-20">-</span>
+                                                }
+                                            }
+                                            @case ('status') {
+                                                @if (server.isReachable) {
+                                                    <span class="badge badge-success badge-xs">{{ t('servers.online') }}</span>
+                                                } @else {
+                                                    <span class="badge badge-error badge-xs">{{ t('servers.offline') }}</span>
+                                                }
+                                            }
+                                        }
+                                    </td>
                                 }
-                            </td>
-                            <td class="hidden sm:table-cell">
-                                @if (server.isReachable) {
-                                    <span class="badge badge-success badge-xs">{{ t('servers.online') }}</span>
-                                } @else {
-                                    <span class="badge badge-error badge-xs">{{ t('servers.offline') }}</span>
-                                }
-                            </td>
-                            <td>
+                            }
+                            <!-- Right sticky: Action -->
+                            <td class="sticky right-0 z-20 border-l border-base-300"
+                                [class.bg-base-100]="i % 2 === 0"
+                                [class.bg-base-200]="i % 2 === 1">
                                 <a
                                     [href]="server.steamLink"
                                     target="_blank"

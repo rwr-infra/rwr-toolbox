@@ -90,7 +90,28 @@
     "no_servers": "No servers found",
     "no_servers_desc": "Try adjusting your filters or refresh the list",
     "favorite": "Favorite",
-    "bots": "+{{ count }} bots"
+    "bots": "+{{ count }} bots",
+    "column_toggle": "Toggle Columns",
+    "column": {
+      "name": "Name",
+      "address": "IP Address",
+      "port": "Port",
+      "bots": "Bots",
+      "country": "Country",
+      "mode": "Mode",
+      "map": "Map",
+      "playerCount": "Players",
+      "playerList": "Player List",
+      "comment": "Comment",
+      "dedicated": "Dedicated",
+      "mod": "Mod",
+      "url": "URL",
+      "version": "Version",
+      "lastUpdate": "Last Update",
+      "ping": "Ping",
+      "status": "Status",
+      "action": "Action"
+    }
   },
   "players": {
     "title": "Players",
@@ -114,6 +135,32 @@
     "favorite": "Favorite",
     "db_invasion": "Invasion",
     "db_pacific": "Pacific",
-    "db_prereset": "Pre-reset Invasion"
+    "db_prereset": "Pre-reset Invasion",
+    "page_size": "Per Page",
+    "page_size_20": "20",
+    "page_size_50": "50",
+    "page_size_100": "100",
+    "page_page": "Page {{ current }} of {{ total }}",
+    "column_toggle": "Toggle Columns",
+    "column": {
+      "rowNumber": "#",
+      "username": "Username",
+      "action": "Action",
+      "kills": "Kills",
+      "deaths": "Deaths",
+      "kd": "K/D",
+      "score": "Score",
+      "timePlayed": "Time",
+      "longestKillStreak": "Streak",
+      "targetsDestroyed": "Targets",
+      "vehiclesDestroyed": "Vehicles",
+      "soldiersHealed": "Heals",
+      "teamkills": "TK's",
+      "distanceMoved": "Distance",
+      "shotsFired": "Shots",
+      "throwablesThrown": "Throws",
+      "rankProgression": "XP",
+      "rankName": "Rank"
+    }
   }
 }

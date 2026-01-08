@@ -1,3 +1,6 @@
+import type { PlayerColumnVisibility } from './player.models';
+import type { ServerColumnVisibility } from './server.models';
+
 /**
  * Favorite item for servers or players
  */
@@ -42,6 +45,10 @@ export interface AppSettings {
     cacheEnabled: boolean;
     /** List of favorited items */
     favorites: FavoriteItem[];
+    /** Player column visibility settings */
+    playerColumnVisibility: PlayerColumnVisibility;
+    /** Server column visibility settings */
+    serverColumnVisibility: ServerColumnVisibility;
 }
 
 /**

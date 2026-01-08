@@ -1,19 +1,19 @@
-import { Component, inject, OnInit, computed, signal, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import {
     Player,
     PlayerFilter,
-    PlayerSort,
     PlayerSortField,
-    PlayerDatabase
+    PlayerDatabase,
+    PlayerColumn,
+    PlayerColumnKey
 } from '../../shared/models/player.models';
 import { PlayerService } from './services/player.service';
 import { SettingsService } from '../../core/services/settings.service';
+import { PLAYER_COLUMNS } from './player-columns';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 /**
  * Players list component with filtering, sorting, and database switching
@@ -25,7 +25,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
     templateUrl: './players.component.html',
     styleUrl: './players.component.css'
 })
-export class PlayersComponent implements OnInit, OnDestroy {
+export class PlayersComponent implements OnInit {
     private playerService = inject(PlayerService);
     private settingsService = inject(SettingsService);
     private translocoService = inject(TranslocoService);
@@ -48,25 +48,23 @@ export class PlayersComponent implements OnInit, OnDestroy {
     // Available databases
     databases: PlayerDatabase[] = ['invasion', 'pacific', 'prereset_invasion'];
 
+    // Page size options
+    pageSizeOptions = [20, 50, 100];
+
+    // Column configuration
+    columns = PLAYER_COLUMNS;
+
     // Local component state with signals
     selectedDatabase = signal<PlayerDatabase>('invasion');
     filter = signal<PlayerFilter>({});
-    sort = signal<PlayerSort>({ field: 'score', direction: 'desc' });
-    searchQuery = signal<string>('');
-
-    // Search debouncing
-    private searchSubject = new Subject<string>();
-    private searchSubscription?: Subscription;
+    sortField = signal<PlayerSortField>('score');
+    pageSize = signal<number>(20);
 
     // Computed state
     filteredPlayers = computed(() => {
         const allPlayers = this.players();
         const currentFilter = this.filter();
-        const currentSort = this.sort();
-
-        console.log('filteredPlayers - allPlayers:', allPlayers.length, allPlayers);
-        console.log('filteredPlayers - filter:', currentFilter);
-        console.log('filteredPlayers - sort:', currentSort);
+        const currentSortField = this.sortField();
 
         // Inline filtering
         let filtered = allPlayers;
@@ -90,56 +88,31 @@ export class PlayersComponent implements OnInit, OnDestroy {
             filtered = filtered.filter(p => this.settingsService.isFavorite(p.id, 'player'));
         }
 
-        console.log('filteredPlayers - after filter:', filtered.length);
-
-        // Inline sorting
+        // Inline sorting (descending only)
         const sorted = [...filtered].sort((a, b) => {
-            let comparison = 0;
-            switch (currentSort.field) {
+            switch (currentSortField) {
                 case 'username':
-                    comparison = a.username.localeCompare(b.username);
-                    break;
+                    return b.username.localeCompare(a.username);
                 case 'kills':
-                    comparison = b.kills - a.kills;
-                    break;
+                    return b.kills - a.kills;
                 case 'deaths':
-                    comparison = b.deaths - a.deaths;
-                    break;
+                    return b.deaths - a.deaths;
                 case 'kd':
-                    comparison = b.kd - a.kd;
-                    break;
+                    return b.kd - a.kd;
                 case 'timePlayed':
-                    comparison = b.timePlayed - a.timePlayed;
-                    break;
+                    return b.timePlayed - a.timePlayed;
                 case 'score':
-                    comparison = b.score - a.score;
-                    break;
+                    return b.score - a.score;
+                default:
+                    return 0;
             }
-            return currentSort.direction === 'desc' ? -comparison : comparison;
         });
-
-        console.log('filteredPlayers - after sort:', sorted);
-
-        console.log('filteredPlayers - first:', sorted[0]?.username);
 
         return sorted;
     });
 
     ngOnInit() {
-        // Set up search debouncing
-        this.searchSubscription = this.searchSubject.pipe(
-            debounceTime(500),
-            distinctUntilChanged()
-        ).subscribe(query => {
-            this.searchQuery.set(query);
-            this.loadData();
-        });
-
         this.loadData();
-    }
-
-    ngOnDestroy() {
-        this.searchSubscription?.unsubscribe();
     }
 
     /**
@@ -149,9 +122,9 @@ export class PlayersComponent implements OnInit, OnDestroy {
         this.playerService.fetchPlayers(
             this.selectedDatabase(),
             page,
-            20,
-            this.sort().field,
-            this.searchQuery()
+            this.pageSize(),
+            this.sortField(),
+            this.filter().search || ''
         ).subscribe({
             error: err => console.error('Failed to load players:', err)
         });
@@ -167,11 +140,27 @@ export class PlayersComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * Handle search input change
+     * Handle search input Enter key
      */
-    onSearchChange(event: Event) {
-        const value = (event.target as HTMLInputElement).value;
-        this.searchSubject.next(value || '');
+    onSearchKeydown(event: KeyboardEvent) {
+        if (event.key === 'Enter') {
+            this.loadData(1);
+        }
+    }
+
+    /**
+     * Handle search button click
+     */
+    onSearchClick() {
+        this.loadData(1);
+    }
+
+    /**
+     * Clear search
+     */
+    clearSearch() {
+        this.filter.update(f => ({ ...f, search: undefined }));
+        this.loadData(1);
     }
 
     /**
@@ -186,13 +175,18 @@ export class PlayersComponent implements OnInit, OnDestroy {
      * Handle sort changes
      */
     onSortChange(field: PlayerSortField) {
-        this.sort.update(s => {
-            if (s.field === field) {
-                return { field, direction: s.direction === 'asc' ? 'desc' : 'asc' };
-            }
-            return { field, direction: 'desc' };
-        });
-        this.loadData(1); // Reload from server with new sort
+        // Toggle: if clicking the same field, clear selection; otherwise select new field
+        this.sortField.update(currentField => currentField === field ? 'score' : field);
+        this.loadData(1);
+    }
+
+    /**
+     * Handle page size change
+     */
+    onPageSizeChange(event: Event) {
+        const value = (event.target as HTMLSelectElement).value;
+        this.pageSize.set(parseInt(value, 10));
+        this.loadData(1);
     }
 
     /**
@@ -248,5 +242,63 @@ export class PlayersComponent implements OnInit, OnDestroy {
         };
         const key = keyMap[db] || db;
         return this.translocoService.translate(key);
+    }
+
+    /**
+     * Get page size display label
+     */
+    getPageSizeLabel(size: number): string {
+        const keyMap: Record<number, string> = {
+            20: 'players.page_size_20',
+            50: 'players.page_size_50',
+            100: 'players.page_size_100'
+        };
+        const key = keyMap[size] || `${size}`;
+        return this.translocoService.translate(key);
+    }
+
+    /**
+     * Check if a column is visible
+     */
+    isColumnVisible(key: PlayerColumnKey): boolean {
+        return this.settingsService.isPlayerColumnVisible(key);
+    }
+
+    /**
+     * Toggle column visibility
+     */
+    async toggleColumn(key: PlayerColumnKey): Promise<void> {
+        await this.settingsService.togglePlayerColumn(key);
+    }
+
+    /**
+     * Get column alignment class
+     */
+    getColumnAlignment(alignment: 'left' | 'center' | 'right'): string {
+        switch (alignment) {
+            case 'center':
+                return 'text-center';
+            case 'right':
+                return 'text-right';
+            default:
+                return 'text-left';
+        }
+    }
+
+    /**
+     * Check if a column is sortable
+     */
+    isColumnSortable(key: PlayerColumnKey): boolean {
+        const sortableFields: PlayerSortField[] = ['username', 'kills', 'deaths', 'kd', 'timePlayed', 'score'];
+        return sortableFields.includes(key as PlayerSortField);
+    }
+
+    /**
+     * Handle column sort change (safe wrapper for template)
+     */
+    onColumnSort(key: PlayerColumnKey): void {
+        if (this.isColumnSortable(key)) {
+            this.onSortChange(key as PlayerSortField);
+        }
     }
 }

@@ -105,3 +105,48 @@ export interface ServerSort {
     field: ServerSortField;
     direction: 'asc' | 'desc';
 }
+
+/**
+ * Server table column keys
+ * - Includes placeholders (mode/dedicated/mod) for future data expansion.
+ */
+export type ServerColumnKey =
+    | 'name'
+    | 'address'
+    | 'port'
+    | 'botCount'
+    | 'country'
+    | 'mode'
+    | 'map'
+    | 'playerCount'
+    | 'playerNames'
+    | 'comment'
+    | 'dedicated'
+    | 'mod'
+    | 'steamLink'
+    | 'version'
+    | 'lastUpdate'
+    | 'ping'
+    | 'status'
+    | 'action';
+
+/**
+ * Server column configuration
+ */
+export interface ServerColumn {
+    /** Column key */
+    key: ServerColumnKey;
+    /** Default label (fallback) */
+    label: string;
+    /** i18n key for translation */
+    i18nKey: string;
+    /** Text alignment */
+    alignment: 'left' | 'center' | 'right';
+    /** Always visible (cannot be toggled) */
+    alwaysVisible?: boolean;
+}
+
+/**
+ * Server column visibility state
+ */
+export type ServerColumnVisibility = Record<ServerColumnKey, boolean>;

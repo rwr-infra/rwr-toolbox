@@ -1,5 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { AppSettings, ApiEndpoint, FavoriteItem } from '../../shared/models/common.models';
+import { DEFAULT_COLUMN_VISIBILITY } from '../../features/players/player-columns';
+import { DEFAULT_SERVER_COLUMN_VISIBILITY } from '../../features/servers/server-columns';
 
 /**
  * Default application settings
@@ -11,7 +13,9 @@ const DEFAULT_SETTINGS: AppSettings = {
     enablePing: true,
     pingTimeout: 10000,
     cacheEnabled: true,
-    favorites: []
+    favorites: [],
+    playerColumnVisibility: DEFAULT_COLUMN_VISIBILITY,
+    serverColumnVisibility: DEFAULT_SERVER_COLUMN_VISIBILITY
 };
 
 /**
@@ -42,12 +46,48 @@ export class SettingsService {
     /** Local storage key */
     private readonly LOCAL_STORAGE_KEY = 'app_settings';
 
+    /** Tauri store filename (desktop) */
+    private readonly TAURI_STORE_FILE = 'settings.json';
+
+    /** Cached store instance promise */
+    private storePromise: Promise<{ get: (key: string) => Promise<any>; set: (key: string, value: any) => Promise<void>; save: () => Promise<void> } | null> | null = null;
+
+    private async getTauriStore(): Promise<{ get: (key: string) => Promise<any>; set: (key: string, value: any) => Promise<void>; save: () => Promise<void> } | null> {
+        if (this.storePromise) return this.storePromise;
+
+        this.storePromise = (async () => {
+            try {
+                // Dynamic import to keep web builds working
+                const mod = await import('@tauri-apps/plugin-store');
+                // v2: Store constructor is private; use Store.load(...)
+                const store = await mod.Store.load(this.TAURI_STORE_FILE);
+                return store as any;
+            } catch {
+                return null;
+            }
+        })();
+
+        return this.storePromise;
+    }
+
     /**
      * Initialize settings from storage
      */
     async initialize(): Promise<void> {
-        // For now, use localStorage
-        // Tauri Store integration will be added later
+        // Desktop: prefer Tauri Store. Web: fallback to localStorage.
+        const store = await this.getTauriStore();
+        if (store) {
+            try {
+                const stored = await store.get(this.LOCAL_STORAGE_KEY);
+                if (stored) {
+                    this.settingsState.set({ ...DEFAULT_SETTINGS, ...stored });
+                }
+                return;
+            } catch (error) {
+                console.error('Failed to load settings from Tauri Store:', error);
+            }
+        }
+
         try {
             const stored = localStorage.getItem(this.LOCAL_STORAGE_KEY);
             if (stored) {
@@ -55,7 +95,7 @@ export class SettingsService {
                 this.settingsState.set({ ...DEFAULT_SETTINGS, ...parsed });
             }
         } catch (error) {
-            console.error('Failed to load settings:', error);
+            console.error('Failed to load settings from localStorage:', error);
         }
     }
 
@@ -67,10 +107,21 @@ export class SettingsService {
         const newSettings = { ...this.settingsState(), ...updates };
         this.settingsState.set(newSettings);
 
+        const store = await this.getTauriStore();
+        if (store) {
+            try {
+                await store.set(this.LOCAL_STORAGE_KEY, newSettings);
+                await store.save();
+                return;
+            } catch (error) {
+                console.error('Failed to save settings to Tauri Store:', error);
+            }
+        }
+
         try {
             localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(newSettings));
         } catch (error) {
-            console.error('Failed to save settings:', error);
+            console.error('Failed to save settings to localStorage:', error);
         }
     }
 
@@ -163,10 +214,98 @@ export class SettingsService {
      */
     async resetToDefaults(): Promise<void> {
         this.settingsState.set(DEFAULT_SETTINGS);
-        try {
-            localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
-        } catch (error) {
-            console.error('Failed to save settings:', error);
-        }
+        await this.updateSettings(DEFAULT_SETTINGS);
+    }
+
+    /**
+     * Get player column visibility settings
+     * @returns Column visibility record
+     */
+    getPlayerColumnVisibility(): Record<string, boolean> {
+        return this.settingsState().playerColumnVisibility;
+    }
+
+    /**
+     * Check if a specific player column is visible
+     * @param key Column key
+     * @returns True if visible
+     */
+    isPlayerColumnVisible(key: string): boolean {
+        const visibility = this.settingsState().playerColumnVisibility as unknown as Record<string, boolean>;
+        return visibility[key] ?? false;
+    }
+
+    /**
+     * Toggle visibility of a player column
+     * @param key Column key
+     */
+    async togglePlayerColumn(key: string): Promise<void> {
+        const current = this.settingsState().playerColumnVisibility as unknown as Record<string, boolean>;
+        const updated = {
+            ...current,
+            [key]: !current[key]
+        };
+        await this.updateSettings({ playerColumnVisibility: updated as any });
+    }
+
+    /**
+     * Set player column visibility
+     * @param visibility Complete visibility record
+     */
+    async setPlayerColumnVisibility(visibility: Record<string, boolean>): Promise<void> {
+        await this.updateSettings({ playerColumnVisibility: visibility as any });
+    }
+
+    /**
+     * Reset player column visibility to defaults
+     */
+    async resetPlayerColumnVisibility(): Promise<void> {
+        await this.updateSettings({ playerColumnVisibility: DEFAULT_COLUMN_VISIBILITY });
+    }
+
+    /**
+     * Get server column visibility settings
+     * @returns Column visibility record
+     */
+    getServerColumnVisibility(): Record<string, boolean> {
+        return this.settingsState().serverColumnVisibility;
+    }
+
+    /**
+     * Check if a specific server column is visible
+     * @param key Column key
+     * @returns True if visible
+     */
+    isServerColumnVisible(key: string): boolean {
+        const visibility = this.settingsState().serverColumnVisibility as unknown as Record<string, boolean>;
+        return visibility[key] ?? false;
+    }
+
+    /**
+     * Toggle visibility of a server column
+     * @param key Column key
+     */
+    async toggleServerColumn(key: string): Promise<void> {
+        const current = this.settingsState().serverColumnVisibility as unknown as Record<string, boolean>;
+        const updated = {
+            ...current,
+            [key]: !current[key]
+        };
+        await this.updateSettings({ serverColumnVisibility: updated as any });
+    }
+
+    /**
+     * Set server column visibility
+     * @param visibility Complete visibility record
+     */
+    async setServerColumnVisibility(visibility: Record<string, boolean>): Promise<void> {
+        await this.updateSettings({ serverColumnVisibility: visibility as any });
+    }
+
+    /**
+     * Reset server column visibility to defaults
+     */
+    async resetServerColumnVisibility(): Promise<void> {
+        await this.updateSettings({ serverColumnVisibility: DEFAULT_SERVER_COLUMN_VISIBILITY });
     }
 }

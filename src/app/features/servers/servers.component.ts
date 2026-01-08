@@ -6,13 +6,15 @@ import {
     Server,
     ServerFilter,
     ServerSort,
-    ServerSortField
+    ServerSortField,
+    ServerColumnKey
 } from '../../shared/models/server.models';
 import { PaginationState } from '../../shared/models/common.models';
 import { ServerService } from './services/server.service';
 import { PingService, PingResult } from '../../core/services/ping.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { SERVER_COLUMNS } from './server-columns';
 
 /**
  * Servers list component with filtering, sorting, pagination, and ping functionality
@@ -47,6 +49,9 @@ export class ServersComponent implements OnInit {
         currentPage: 1,
         pageSize: 100
     });
+
+    // Column configuration
+    columns = SERVER_COLUMNS;
 
     // Computed state
     filteredServers = computed(() => {
@@ -201,6 +206,52 @@ export class ServersComponent implements OnInit {
     onRefresh() {
         this.serverService.clearCache();
         this.loadData();
+    }
+
+    /**
+     * Check if a column is visible
+     */
+    isColumnVisible(key: ServerColumnKey): boolean {
+        return this.settingsService.isServerColumnVisible(key);
+    }
+
+    /**
+     * Toggle column visibility
+     */
+    toggleColumn(key: ServerColumnKey): void {
+        // fire-and-forget (template doesn't await)
+        void this.settingsService.toggleServerColumn(key);
+    }
+
+    /**
+     * Get column alignment class
+     */
+    getColumnAlignment(alignment: 'left' | 'center' | 'right'): string {
+        switch (alignment) {
+            case 'center':
+                return 'text-center';
+            case 'right':
+                return 'text-right';
+            default:
+                return 'text-left';
+        }
+    }
+
+    /**
+     * Check if a column is sortable
+     */
+    isColumnSortable(key: ServerColumnKey): boolean {
+        const sortable: ServerSortField[] = ['name', 'playerCount', 'ping', 'lastUpdate', 'country'];
+        return sortable.includes(key as ServerSortField);
+    }
+
+    /**
+     * Handle column sort change (safe wrapper for template)
+     */
+    onColumnSort(key: ServerColumnKey): void {
+        if (this.isColumnSortable(key)) {
+            this.onSortChange(key as ServerSortField);
+        }
     }
 
     /**
