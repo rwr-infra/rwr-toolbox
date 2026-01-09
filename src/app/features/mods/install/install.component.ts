@@ -7,10 +7,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ModService } from '../services/mod.service';
 import { ModReadInfo, ModInstallOptions } from '../../../shared/models/mod.models';
 import { SettingsService } from '../../../core/services/settings.service';
+import { MarkdownPipe } from '../../../shared/pipes/markdown.pipe';
 
 @Component({
   selector: 'app-install',
-  imports: [CommonModule, FormsModule, LucideAngularModule, TranslocoDirective],
+  imports: [CommonModule, FormsModule, LucideAngularModule, TranslocoDirective, MarkdownPipe],
   templateUrl: './install.component.html',
   styleUrl: './install.component.css'
 })

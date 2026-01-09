@@ -76,7 +76,7 @@
                 <!-- Mod Info Display -->
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
-                        <span class="font-bold">{{ t('mods.install.title') }}:</span>
+                        <span class="font-bold">{{ t('mods.install.field_title') }}:</span>
                         <span>{{ modInfo.title }}</span>
                     </div>
                     <div class="flex justify-between">
@@ -243,8 +243,8 @@
             <div class="modal-box max-w-2xl">
                 <h3 class="font-bold text-lg">{{ t('mods.install.readme') }}</h3>
                 <div class="divider"></div>
-                <div class="h-96 overflow-y-auto prose prose-sm max-w-none">
-                    <div class="whitespace-pre-wrap text-xs">{{ modInfo.readme_content }}</div>
+                <div class="h-96 overflow-y-auto">
+                    <div class="markdown-body text-xs" [innerHTML]="modInfo.readme_content | markdown"></div>
                 </div>
                 <div class="modal-action">
                     <button class="btn btn-sm" (click)="closeModals()">{{ t('mods.install.close') }}</button>
@@ -260,8 +260,8 @@
             <div class="modal-box max-w-2xl">
                 <h3 class="font-bold text-lg">{{ t('mods.install.changelog') }}</h3>
                 <div class="divider"></div>
-                <div class="h-96 overflow-y-auto prose prose-sm max-w-none">
-                    <div class="whitespace-pre-wrap text-xs">{{ modInfo.changelog_content }}</div>
+                <div class="h-96 overflow-y-auto">
+                    <div class="markdown-body text-xs" [innerHTML]="modInfo.changelog_content | markdown"></div>
                 </div>
                 <div class="modal-action">
                     <button class="btn btn-sm" (click)="closeModals()">{{ t('mods.install.close') }}</button>
