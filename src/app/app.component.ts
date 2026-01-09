@@ -22,7 +22,9 @@ export class AppComponent {
     showShortcutsModal = signal(false);
 
     isActive(link: string | any[]): boolean {
-        return this.router.isActive(typeof link === 'string' ? link : link.join('/'), true);
+        const linkStr = typeof link === 'string' ? link : link.join('/');
+        // 精确匹配或前缀匹配
+        return this.router.isActive(linkStr, false) || this.router.url.startsWith(linkStr + '/');
     }
 
     showShortcuts(): void {

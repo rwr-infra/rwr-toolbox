@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 @plugin "daisyui" {
-    themes: all;
+  themes: all;
 }
 
 /* Markdown 内容样式 - 适配 DaisyUI 主题 */
@@ -116,4 +116,48 @@
 .markdown-body del {
   text-decoration: line-through;
   opacity: 0.7;
+}
+
+/* 侧边栏菜单激活状态高亮 - 适配所有主题 */
+.menu .active {
+  /* 使用固定的蓝紫色作为背景，不依赖 CSS 变量 */
+  background-color: oklch(0.65 0.18 264);
+  color: white;
+  font-weight: 600;
+  position: relative;
+  /* 添加明显的边框增强识别 */
+  border-left: 3px solid oklch(0.65 0.18 264);
+  /* 添加轻微阴影 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 父级菜单项（带子菜单）展开时轻微高亮 */
+.menu details[open] > summary {
+  background-color: rgba(0, 0, 0, 0.03);
+  font-weight: 600;
+  color: inherit;
+}
+
+/* 父级菜单项本身激活时（如本地模组） */
+.menu details > summary.active {
+  background-color: oklch(0.65 0.18 264);
+  color: white;
+}
+
+/* 子菜单激活项高亮 */
+.menu details ul .active {
+  background-color: oklch(0.65 0.18 264);
+  color: white;
+  font-weight: 600;
+}
+
+/* hover 状态优化 */
+.menu li:not(.my-1) > a:hover:not(.active),
+.menu li:not(.my-1) > summary:hover:not(.active) {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 激活项 hover 保持原有高亮 */
+.menu .active:hover {
+  background-color: oklch(0.6 0.18 264);
 }
