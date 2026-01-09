@@ -1,1 +1,50 @@
-<p>mods-layout works!</p>
+<div class="drawer lg:drawer-open">
+    <input id="mods-drawer" type="checkbox" class="drawer-toggle" />
+
+    <div class="drawer-content flex flex-col">
+        <!-- Navbar -->
+        <div class="w-full navbar bg-base-300 sticky top-0 z-50">
+            <div class="flex-none lg:hidden">
+                <label for="mods-drawer" class="btn btn-square btn-ghost">
+                    <i-lucide name="menu" class="h-5 w-5"></i-lucide>
+                </label>
+            </div>
+            <div class="flex-1 px-2 mx-2 font-bold">
+                <span *transloco="let t">{{ t('mods.title') }}</span>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div class="flex-1 overflow-auto p-2 sm:p-4">
+            <router-outlet></router-outlet>
+        </div>
+    </div>
+
+    <div class="drawer-side">
+        <label for="mods-drawer" class="drawer-overlay"></label>
+        <ul class="menu p-4 w-80 min-h-full bg-base-200">
+            <!-- Sidebar content -->
+            <li class="menu-title">
+                <span *transloco="let t">{{ t('mods.menu') }}</span>
+            </li>
+            <li>
+                <a
+                    routerLink="/mods/install"
+                    routerLinkActive="active"
+                    [class.active]="isRouteActive('/mods/install')">
+                    <i-lucide name="cloud-download" class="h-4 w-4"></i-lucide>
+                    <span *transloco="let t">{{ t('mods.install.title') }}</span>
+                </a>
+            </li>
+            <li>
+                <a
+                    routerLink="/mods/bundle"
+                    routerLinkActive="active"
+                    [class.active]="isRouteActive('/mods/bundle')">
+                    <i-lucide name="box" class="h-4 w-4"></i-lucide>
+                    <span *transloco="let t">{{ t('mods.bundle.title') }}</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>

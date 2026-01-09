@@ -1,4 +1,5 @@
 mod ping;
+mod rwrmi;
 
 use std::time::Duration;
 use tauri_plugin_http::reqwest::{Client, Url};
@@ -41,9 +42,16 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             proxy_fetch,
-            ping::ping_server
+            ping::ping_server,
+            rwrmi::bundle_mod,
+            rwrmi::generate_mod_config,
+            rwrmi::read_info,
+            rwrmi::install_mod,
+            rwrmi::make_backup,
+            rwrmi::recover_backup
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

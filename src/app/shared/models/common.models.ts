@@ -1,5 +1,6 @@
 import type { PlayerColumnVisibility } from './player.models';
 import type { ServerColumnVisibility } from './server.models';
+import type { ModInstallHistory } from './mod.models';
 
 /**
  * Favorite item for servers or players
@@ -49,6 +50,12 @@ export interface AppSettings {
     playerColumnVisibility: PlayerColumnVisibility;
     /** Server column visibility settings */
     serverColumnVisibility: ServerColumnVisibility;
+    /** Game installation path (for mod installation) */
+    gamePath?: string;
+    /** RWRMI mod target path (defaults to game root, mods directly replace game files) */
+    rwrmiTargetPath?: string;
+    /** Mod installation history */
+    modInstallHistory: ModInstallHistory[];
 }
 
 /**

@@ -30,7 +30,20 @@ import {
     Inbox,
     CheckCircle,
     XCircle,
-    Settings2
+    Settings2,
+    Upload,
+    FileText,
+    Folder,
+    File,
+    FileCode,
+    AlertCircle,
+    BookOpen,
+    ScrollText,
+    ArrowLeft,
+    ArrowRight,
+    ShieldCheck,
+    RefreshCcw,
+    RotateCcw,
 } from 'lucide-angular';
 
 /**
@@ -69,5 +82,18 @@ export const APP_ICONS = {
     Inbox,
     CheckCircle,
     XCircle,
-    Settings2
+    Settings2,
+    Upload,
+    FileText,
+    Folder,
+    File,
+    FileCode,
+    AlertCircle,
+    BookOpen,
+    ScrollText,
+    ArrowLeft,
+    ArrowRight,
+    ShieldCheck,
+    RefreshCcw,
+    RotateCcw,
 };

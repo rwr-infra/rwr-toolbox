@@ -1,1 +1,281 @@
-<p>install works!</p>
+<div class="container mx-auto p-2 sm:p-4" *transloco="let t">
+    <!-- Stepper -->
+    <ul class="steps w-full mb-4">
+        <li class="step" [class.step-primary]="activeStep >= 0">
+            <span class="hidden sm:inline">{{ t('mods.install.step1') }}</span>
+            <span class="sm:hidden">1</span>
+        </li>
+        <li class="step" [class.step-primary]="activeStep >= 1">
+            <span class="hidden sm:inline">{{ t('mods.install.step2') }}</span>
+            <span class="sm:hidden">2</span>
+        </li>
+        <li class="step" [class.step-primary]="activeStep >= 2">
+            <span class="hidden sm:inline">{{ t('mods.install.step3') }}</span>
+            <span class="sm:hidden">3</span>
+        </li>
+    </ul>
+
+    <!-- Game Path Warning -->
+    @if (!isGamePathConfigured) {
+        <div class="alert alert-warning mb-4">
+            <i-lucide name="alert-triangle" class="h-4 w-4"></i-lucide>
+            <div>
+                <h3 class="font-bold text-sm">{{ t('mods.install.no_game_path') }}</h3>
+                <div class="text-xs">{{ t('mods.install.no_game_path_desc') }}</div>
+            </div>
+        </div>
+    }
+
+    <!-- Step 1: Select Mod File -->
+    @if (activeStep === 0) {
+        <div class="card bg-base-200 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="card-title text-base mb-2">{{ t('mods.install.step1') }}</h2>
+
+                <!-- File Format Note -->
+                <div class="alert alert-info mb-4">
+                    <i-lucide name="info" class="h-4 w-4"></i-lucide>
+                    <div class="text-xs">
+                        <p class="font-bold">{{ t('mods.install.file_format_note') }}</p>
+                        <p class="opacity-70">[RWRMI][{{ '{' }}game_version{{ '}' }}]title v{{ '{' }}version{{ '}' }}.zip</p>
+                    </div>
+                </div>
+
+                <!-- Select File Button -->
+                <button
+                    class="btn btn-primary w-full"
+                    (click)="onSelectFile()"
+                    [disabled]="loading()">
+                    @if (loading()) {
+                        <span class="loading loading-spinner"></span>
+                        <span>{{ t('mods.install.loading') }}</span>
+                    } @else {
+                        <i-lucide name="upload" class="h-4 w-4"></i-lucide>
+                        <span>{{ t('mods.install.select_file') }}</span>
+                    }
+                </button>
+
+                <!-- Instructions -->
+                <div class="text-xs opacity-70 mt-4">
+                    <ol class="list-decimal list-inside space-y-1">
+                        <li>{{ t('mods.install.instruction1') }}</li>
+                        <li>{{ t('mods.install.instruction2') }}</li>
+                        <li>{{ t('mods.install.instruction3') }}</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Step 2: Read Mod Info -->
+    @if (activeStep === 1 && modInfo) {
+        <div class="card bg-base-200 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="card-title text-base mb-2">{{ t('mods.install.step2') }}</h2>
+
+                <!-- Mod Info Display -->
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="font-bold">{{ t('mods.install.title') }}:</span>
+                        <span>{{ modInfo.title }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-bold">{{ t('mods.install.description') }}:</span>
+                        <span class="text-right">{{ modInfo.description }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-bold">{{ t('mods.install.version') }}:</span>
+                        <span>{{ modInfo.version }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-bold">{{ t('mods.install.game_version') }}:</span>
+                        <span>{{ modInfo.game_version }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-bold">{{ t('mods.install.authors') }}:</span>
+                        <span>{{ modInfo.authors.join(', ') }}</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-2 mt-4">
+                    <button class="btn btn-sm flex-1" (click)="toggleFileList()">
+                        <i-lucide name="file-text" class="h-4 w-4"></i-lucide>
+                        <span>{{ t('mods.install.file_list') }}</span>
+                        <span class="badge badge-neutral">{{ modInfo.file_log_info.length }}</span>
+                    </button>
+                    <button class="btn btn-sm flex-1" (click)="toggleReadme()">
+                        <i-lucide name="book-open" class="h-4 w-4"></i-lucide>
+                        <span>{{ t('mods.install.readme') }}</span>
+                    </button>
+                    <button class="btn btn-sm flex-1" (click)="toggleChangelog()">
+                        <i-lucide name="scroll-text" class="h-4 w-4"></i-lucide>
+                        <span>{{ t('mods.install.changelog') }}</span>
+                    </button>
+                </div>
+
+                <!-- Navigation -->
+                <div class="flex justify-between mt-4">
+                    <button class="btn btn-sm btn-warning" (click)="onPrev()">
+                        <i-lucide name="arrow-left" class="h-4 w-4"></i-lucide>
+                        {{ t('mods.install.back') }}
+                    </button>
+                    <button class="btn btn-sm btn-primary" (click)="onNext()">
+                        {{ t('mods.install.next') }}
+                        <i-lucide name="arrow-right" class="h-4 w-4"></i-lucide>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Step 3: Install -->
+    @if (activeStep === 2) {
+        <div class="card bg-base-200 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="card-title text-base mb-2">{{ t('mods.install.step3') }}</h2>
+
+                <!-- Target Path Display -->
+                @if (gamePath) {
+                    <div class="text-xs opacity-70 mb-4">
+                        <span class="font-bold">{{ t('mods.install.target_path') }}:</span>
+                        <span class="break-all">{{ gamePath }}</span>
+                    </div>
+                }
+
+                <!-- Install Options -->
+                <div class="space-y-2 mb-4">
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-3">
+                            <input type="checkbox" class="checkbox checkbox-sm checkbox-primary" [(ngModel)]="installOptions.backup">
+                            <span class="label-text text-xs">{{ t('mods.install.backup_option') }}</span>
+                        </label>
+                    </div>
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-3">
+                            <input type="checkbox" class="checkbox checkbox-sm checkbox-primary" [(ngModel)]="installOptions.overwrite">
+                            <span class="label-text text-xs">{{ t('mods.install.overwrite_option') }}</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="space-y-2">
+                    <button
+                        class="btn btn-primary w-full"
+                        (click)="onInstall()"
+                        [disabled]="loading()">
+                        @if (loading()) {
+                            <span class="loading loading-spinner"></span>
+                            <span>{{ t('mods.install.installing') }}</span>
+                        } @else {
+                            <i-lucide name="download" class="h-4 w-4"></i-lucide>
+                            <span>{{ t('mods.install.install') }}</span>
+                        }
+                    </button>
+
+                    <div class="divider text-xs">{{ t('mods.install.backup_section') }}</div>
+
+                    <button
+                        class="btn btn-success w-full"
+                        (click)="onBackup()"
+                        [disabled]="loading()">
+                        <i-lucide name="shield-check" class="h-4 w-4"></i-lucide>
+                        <span>{{ t('mods.install.backup') }}</span>
+                    </button>
+
+                    <button
+                        class="btn btn-warning w-full"
+                        (click)="onRecover()"
+                        [disabled]="loading()">
+                        <i-lucide name="refresh-ccw" class="h-4 w-4"></i-lucide>
+                        <span>{{ t('mods.install.recover') }}</span>
+                    </button>
+                </div>
+
+                <!-- Navigation -->
+                <div class="flex justify-between mt-4">
+                    <button class="btn btn-sm btn-warning" (click)="onPrev()">
+                        <i-lucide name="arrow-left" class="h-4 w-4"></i-lucide>
+                        {{ t('mods.install.back') }}
+                    </button>
+                    <button class="btn btn-sm btn-error" (click)="reset()">
+                        <i-lucide name="rotate-ccw" class="h-4 w-4"></i-lucide>
+                        {{ t('mods.install.reset') }}
+                    </button>
+                </div>
+
+                <!-- Backup Note -->
+                <div class="text-xs opacity-70 mt-4">
+                    {{ t('mods.install.backup_note') }}
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- File List Modal -->
+    @if (showFileList && modInfo) {
+        <div class="modal modal-open">
+            <div class="modal-box max-w-2xl">
+                <h3 class="font-bold text-lg">
+                    {{ t('mods.install.file_list') }}
+                    <span class="badge badge-neutral">{{ modInfo.file_log_info.length }}</span>
+                </h3>
+                <div class="divider"></div>
+                <div class="h-96 overflow-y-auto">
+                    <ul class="space-y-1">
+                        @for (file of modInfo.file_log_info; track file) {
+                            <li class="text-xs font-mono bg-base-300 p-1 rounded">{{ file }}</li>
+                        }
+                    </ul>
+                </div>
+                <div class="modal-action">
+                    <button class="btn btn-sm" (click)="closeModals()">{{ t('mods.install.close') }}</button>
+                </div>
+            </div>
+            <div class="modal-backdrop" (click)="closeModals()"></div>
+        </div>
+    }
+
+    <!-- Readme Modal -->
+    @if (showReadme && modInfo) {
+        <div class="modal modal-open">
+            <div class="modal-box max-w-2xl">
+                <h3 class="font-bold text-lg">{{ t('mods.install.readme') }}</h3>
+                <div class="divider"></div>
+                <div class="h-96 overflow-y-auto prose prose-sm max-w-none">
+                    <div class="whitespace-pre-wrap text-xs">{{ modInfo.readme_content }}</div>
+                </div>
+                <div class="modal-action">
+                    <button class="btn btn-sm" (click)="closeModals()">{{ t('mods.install.close') }}</button>
+                </div>
+            </div>
+            <div class="modal-backdrop" (click)="closeModals()"></div>
+        </div>
+    }
+
+    <!-- Changelog Modal -->
+    @if (showChangelog && modInfo) {
+        <div class="modal modal-open">
+            <div class="modal-box max-w-2xl">
+                <h3 class="font-bold text-lg">{{ t('mods.install.changelog') }}</h3>
+                <div class="divider"></div>
+                <div class="h-96 overflow-y-auto prose prose-sm max-w-none">
+                    <div class="whitespace-pre-wrap text-xs">{{ modInfo.changelog_content }}</div>
+                </div>
+                <div class="modal-action">
+                    <button class="btn btn-sm" (click)="closeModals()">{{ t('mods.install.close') }}</button>
+                </div>
+            </div>
+            <div class="modal-backdrop" (click)="closeModals()"></div>
+        </div>
+    }
+
+    <!-- Error Alert -->
+    @if (error()) {
+        <div class="alert alert-error mt-4">
+            <i-lucide name="alert-circle" class="h-4 w-4"></i-lucide>
+            <span class="text-xs">{{ error() }}</span>
+        </div>
+    }
+</div>

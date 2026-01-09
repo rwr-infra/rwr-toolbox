@@ -15,7 +15,8 @@ const DEFAULT_SETTINGS: AppSettings = {
     cacheEnabled: true,
     favorites: [],
     playerColumnVisibility: DEFAULT_COLUMN_VISIBILITY,
-    serverColumnVisibility: DEFAULT_SERVER_COLUMN_VISIBILITY
+    serverColumnVisibility: DEFAULT_SERVER_COLUMN_VISIBILITY,
+    modInstallHistory: []
 };
 
 /**
