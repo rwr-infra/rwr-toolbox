@@ -419,7 +419,11 @@ pub fn read_info(path: String) -> Result<String, String> {
 
 /// Tauri command: Create backup
 #[tauri::command]
-pub fn make_backup(mod_path: String, file_list: Vec<String>, target_path: String) -> Result<String, String> {
+pub fn make_backup(
+    mod_path: String,
+    file_list: Vec<String>,
+    target_path: String,
+) -> Result<String, String> {
     println!("mod_path: {}", mod_path);
     println!("target_path: {}", target_path);
 

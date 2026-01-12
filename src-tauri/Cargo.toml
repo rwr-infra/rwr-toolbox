@@ -30,3 +30,5 @@ zip = "7.0"
 walkdir = "2.5"
 anyhow = "1.0"
 dirs = "5.0"
+quick-xml = { version = "0.37", features = ["serialize"] }
+tauri-plugin-clipboard-manager = "2"

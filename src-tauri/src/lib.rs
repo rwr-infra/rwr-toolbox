@@ -1,3 +1,4 @@
+mod hotkeys;
 mod ping;
 mod rwrmi;
 
@@ -27,18 +28,26 @@ async fn proxy_fetch(url: &str, timeout_ms: Option<u64>) -> Result<String, Strin
         .map_err(|e| format!("Request error: {}", e))?;
 
     let status = res.status();
-    let text = res.text().await.map_err(|e| format!("Read body error: {}", e))?;
+    let text = res
+        .text()
+        .await
+        .map_err(|e| format!("Read body error: {}", e))?;
 
     if status.is_success() {
         Ok(text)
     } else {
-        Err(format!("HTTP {} {}", status.as_u16(), status.canonical_reason().unwrap_or("")))
+        Err(format!(
+            "HTTP {} {}",
+            status.as_u16(),
+            status.canonical_reason().unwrap_or("")
+        ))
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -51,7 +60,16 @@ pub fn run() {
             rwrmi::read_info,
             rwrmi::install_mod,
             rwrmi::make_backup,
-            rwrmi::recover_backup
+            rwrmi::recover_backup,
+            hotkeys::read_hotkeys,
+            hotkeys::parse_hotkeys,
+            hotkeys::generate_hotkeys,
+            hotkeys::write_hotkeys,
+            hotkeys::read_profiles,
+            hotkeys::save_profiles,
+            hotkeys::export_profile,
+            hotkeys::import_profile,
+            hotkeys::open_hotkeys_in_editor
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

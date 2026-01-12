@@ -44,6 +44,16 @@ import {
     ShieldCheck,
     RefreshCcw,
     RotateCcw,
+    Layers,
+    SquarePen,
+    Plus,
+    MoreVertical,
+    Check,
+    Play,
+    Trash2,
+    Clipboard,
+    Share2,
+    Edit2,
 } from 'lucide-angular';
 
 /**
@@ -96,4 +106,14 @@ export const APP_ICONS = {
     ShieldCheck,
     RefreshCcw,
     RotateCcw,
+    Layers,
+    SquarePen,
+    Plus,
+    MoreVertical,
+    Check,
+    Play,
+    Trash2,
+    Clipboard,
+    Share2,
+    Edit2,
 };

@@ -27,7 +27,15 @@ pub fn ping_server(address: String, _port: u16, timeout_ms: u64) -> Result<u64, 
 /// The `-w` parameter on Windows uses milliseconds
 fn ping_windows(address: &str, timeout_ms: u64) -> Result<u64, String> {
     let output = Command::new("cmd")
-        .args(["/C", "ping", "-n", "1", "-w", &timeout_ms.to_string(), address])
+        .args([
+            "/C",
+            "ping",
+            "-n",
+            "1",
+            "-w",
+            &timeout_ms.to_string(),
+            address,
+        ])
         .output()
         .map_err(|e| format!("Failed to execute ping: {}", e))?;
 

@@ -1,1 +1,358 @@
-<p>hotkeys works!</p>
+<div class="container mx-auto p-2 sm:p-4" *transloco="let t">
+    <!-- Tab Navigation -->
+    <div class="tabs tabs-boxed mb-4">
+        <button
+            class="tab"
+            [class.tab-active]="activeTab === 'read'"
+            (click)="switchTab('read')">
+            <i-lucide name="book-open" class="h-4 w-4"></i-lucide>
+            <span class="hidden sm:inline">{{ t('hotkeys.tab_read') }}</span>
+        </button>
+        <button
+            class="tab"
+            [class.tab-active]="activeTab === 'profiles'"
+            (click)="switchTab('profiles')">
+            <i-lucide name="layers" class="h-4 w-4"></i-lucide>
+            <span class="hidden sm:inline">{{ t('hotkeys.tab_profiles') }}</span>
+            @if (profiles() && profiles()!.profiles.length) {
+                <span class="badge badge-sm badge-neutral ml-1">{{ profiles()!.profiles.length }}</span>
+            }
+        </button>
+    </div>
+
+    <!-- Tab: Read from Game -->
+    @if (activeTab === 'read') {
+        <div class="space-y-4">
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-base mb-4">{{ t('hotkeys.read_title') }}</h2>
+
+                    <div class="text-xs opacity-70 mb-4">
+                        <p>{{ t('hotkeys.read_desc') }}</p>
+                        @if (gamePath) {
+                            <p class="mt-2">
+                                <span class="font-bold">{{ t('hotkeys.game_path') }}:</span>
+                                <span class="break-all">{{ gamePath }}</span>
+                            </p>
+                        }
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button
+                            class="btn btn-primary flex-1"
+                            (click)="onReadFromGame()"
+                            [disabled]="loading()">
+                            @if (loading()) {
+                                <span class="loading loading-spinner"></span>
+                                <span>{{ t('hotkeys.loading') }}</span>
+                            } @else {
+                                <i-lucide name="download" class="h-4 w-4"></i-lucide>
+                                <span>{{ t('hotkeys.read_from_game') }}</span>
+                            }
+                        </button>
+                        <button
+                            class="btn btn-secondary flex-1"
+                            (click)="onOpenInEditor()">
+                            <i-lucide name="external-link" class="h-4 w-4"></i-lucide>
+                            <span>{{ t('hotkeys.open_in_editor') }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Game Hotkeys Preview -->
+            @if (currentConfig().length > 0) {
+                <div class="card bg-base-200 shadow-sm">
+                    <div class="card-body p-4">
+                        <h3 class="font-bold text-sm mb-2">{{ t('hotkeys.current_hotkeys') }}</h3>
+                        <div class="overflow-y-auto" style="max-height: 300px;">
+                            <table class="table table-sm table-zebra">
+                                <thead>
+                                    <tr>
+                                        <th>{{ t('hotkeys.label') }}</th>
+                                        <th>{{ t('hotkeys.key_combination') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (item of currentConfig(); track $index) {
+                                        <tr>
+                                            <td class="text-xs">{{ item.label }}</td>
+                                            <td><kbd class="kbd kbd-xs">{{ item.value }}</kbd></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Tab: Profiles -->
+    @if (activeTab === 'profiles') {
+        <div class="space-y-4">
+            <!-- Actions -->
+            <div class="flex gap-2">
+                <button
+                    class="btn btn-sm btn-primary flex-1"
+                    (click)="openCreateModal()">
+                    <i-lucide name="plus" class="h-4 w-4"></i-lucide>
+                    {{ t('hotkeys.create_profile') }}
+                </button>
+                <button
+                    class="btn btn-sm btn-secondary flex-1"
+                    (click)="onImportProfile()">
+                    <i-lucide name="upload" class="h-4 w-4"></i-lucide>
+                    {{ t('hotkeys.import_profile') }}
+                </button>
+                <button
+                    class="btn btn-sm btn-accent flex-1"
+                    (click)="onImportFromClipboard()">
+                    <i-lucide name="clipboard" class="h-4 w-4"></i-lucide>
+                    <span class="hidden sm:inline">{{ t('hotkeys.import_from_clipboard') }}</span>
+                </button>
+            </div>
+
+            <!-- Profiles List -->
+            @for (profile of profiles()?.profiles; track profile.id) {
+                <div class="card bg-base-200 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-sm">{{ profile.title }}</h3>
+                                <p class="text-xs opacity-70">
+                                    {{ t('hotkeys.hotkeys_count', { count: profile.config.length }) }}
+                                </p>
+                                <p class="text-xs opacity-50">
+                                    {{ t('hotkeys.updated_at', { date: formatDate(profile.updatedAt) }) }}
+                                </p>
+                            </div>
+                            <div class="flex gap-1">
+                                <div class="dropdown dropdown-end">
+                                    <button tabindex="0" class="btn btn-xs btn-ghost">
+                                        <i-lucide name="more-vertical" class="h-3 w-3"></i-lucide>
+                                    </button>
+                                    <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-32 p-1 shadow-sm border border-base-300">
+                                        <li>
+                                            <a (click)="openEditProfileModal(profile.id)">
+                                                <i-lucide name="edit-2" class="h-3 w-3"></i-lucide>
+                                                {{ t('hotkeys.edit') }}
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a (click)="onApplyProfile(profile.id)">
+                                                <i-lucide name="play" class="h-3 w-3"></i-lucide>
+                                                {{ t('hotkeys.apply_to_game') }}
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a (click)="onExportProfile(profile.id)">
+                                                <i-lucide name="download" class="h-3 w-3"></i-lucide>
+                                                {{ t('hotkeys.export') }}
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a (click)="onShareProfile(profile.id)">
+                                                <i-lucide name="share-2" class="h-3 w-3"></i-lucide>
+                                                {{ t('hotkeys.share') }}
+                                            </a>
+                                        </li>
+                                        <div class="divider my-0"></div>
+                                        <li>
+                                            <a (click)="onDeleteProfile(profile.id)" class="text-error">
+                                                <i-lucide name="trash-2" class="h-3 w-3"></i-lucide>
+                                                {{ t('hotkeys.delete') }}
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            } @empty {
+                <div class="text-center py-8 opacity-70">
+                    <i-lucide name="folder-open" class="h-12 w-12 mx-auto mb-2"></i-lucide>
+                    <p class="text-sm">{{ t('hotkeys.no_profiles') }}</p>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Create/Edit Profile Modal -->
+    @if (showCreateModal) {
+        <div class="modal modal-open">
+            <div class="modal-box max-w-4xl">
+                <h3 class="font-bold text-lg">
+                    @if (editingProfileId) {
+                        {{ t('hotkeys.edit_profile') }}
+                    } @else {
+                        {{ t('hotkeys.create_profile') }}
+                    }
+                </h3>
+                <div class="py-4 space-y-4">
+                    <!-- Title Input -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">{{ t('hotkeys.profile_title') }}</span>
+                        </label>
+                        <input
+                            type="text"
+                            class="input input-bordered"
+                            [(ngModel)]="newProfileTitle"
+                            [placeholder]="t('hotkeys.profile_title_placeholder')">
+                    </div>
+
+                    <!-- Hotkeys List -->
+                    <div class="form-control">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="label">
+                                <span class="label-text">{{ t('hotkeys.hotkeys_list') }}</span>
+                            </label>
+                            <button
+                                class="btn btn-xs btn-primary"
+                                (click)="onAddHotkey()">
+                                <i-lucide name="plus" class="h-3 w-3"></i-lucide>
+                                {{ t('hotkeys.add_hotkey') }}
+                            </button>
+                        </div>
+
+                        @if (newProfileConfig.length > 0) {
+                            <div class="overflow-y-auto" style="max-height: 300px;">
+                                <table class="table table-sm table-zebra">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ t('hotkeys.remark') }}</th>
+                                            <th>{{ t('hotkeys.content') }}</th>
+                                            <th class="w-16">{{ t('hotkeys.actions') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (item of newProfileConfig; track $index) {
+                                            <tr>
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        class="input input-bordered input-xs w-full"
+                                                        [(ngModel)]="item.label"
+                                                        placeholder="{{ t('hotkeys.remark_placeholder') }}">
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        class="input input-bordered input-xs w-full"
+                                                        [(ngModel)]="item.value"
+                                                        placeholder="{{ t('hotkeys.content_placeholder') }}">
+                                                </td>
+                                                <td>
+                                                    <button
+                                                        class="btn btn-xs btn-error"
+                                                        (click)="onRemoveHotkey($index)">
+                                                        <i-lucide name="trash-2" class="h-3 w-3"></i-lucide>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        } @else {
+                            <div class="text-center py-4 opacity-70">
+                                <p class="text-sm">{{ t('hotkeys.no_hotkeys_yet') }}</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-action">
+                    <button class="btn btn-ghost" (click)="closeModal()">{{ t('hotkeys.cancel') }}</button>
+                    <button
+                        class="btn btn-primary"
+                        (click)="onCreateProfile()"
+                        [disabled]="!newProfileTitle.trim() || newProfileConfig.length === 0">
+                        @if (editingProfileId) {
+                            {{ t('hotkeys.update') }}
+                        } @else {
+                            {{ t('hotkeys.create') }}
+                        }
+                    </button>
+                </div>
+            </div>
+            <div class="modal-backdrop" (click)="closeModal()"></div>
+        </div>
+    }
+
+    <!-- Delete Confirm Modal -->
+    @if (showDeleteConfirm) {
+        <div class="modal modal-open">
+            <div class="modal-box">
+                <h3 class="font-bold text-lg">{{ t('hotkeys.confirm_delete') }}</h3>
+                <p class="py-4">{{ t('hotkeys.confirm_delete_desc') }}</p>
+                <div class="modal-action">
+                    <button class="btn btn-ghost" (click)="showDeleteConfirm = false">{{ t('hotkeys.cancel') }}</button>
+                    <button class="btn btn-error" (click)="confirmDelete()">{{ t('hotkeys.delete') }}</button>
+                </div>
+            </div>
+            <div class="modal-backdrop" (click)="showDeleteConfirm = false"></div>
+        </div>
+    }
+
+    <!-- Clipboard Import Modal -->
+    @if (showImportFromClipboardModal) {
+        <div class="modal modal-open">
+            <div class="modal-box">
+                @if (clipboardImportSuccess) {
+                    <div class="text-center py-4">
+                        <i-lucide name="check-circle" class="h-12 w-12 mx-auto mb-2 text-success"></i-lucide>
+                        <h3 class="font-bold text-lg text-success">{{ t('hotkeys.import_success') }}</h3>
+                        <p class="text-sm opacity-70">{{ t('hotkeys.import_success_desc') }}</p>
+                    </div>
+                } @else {
+                    <h3 class="font-bold text-lg">{{ t('hotkeys.import_from_clipboard') }}</h3>
+                    <div class="py-4">
+                        @if (clipboardImportError) {
+                            <div class="alert alert-error">
+                                <span class="text-xs">{{ clipboardImportError }}</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-action">
+                        <button class="btn btn-ghost" (click)="closeClipboardModal()">{{ t('hotkeys.close') }}</button>
+                    </div>
+                }
+            </div>
+            <div class="modal-backdrop" (click)="closeClipboardModal()"></div>
+        </div>
+    }
+
+    <!-- Share Success Modal -->
+    @if (showShareSuccessModal) {
+        <div class="modal modal-open">
+            <div class="modal-box">
+                <div class="text-center py-4">
+                    <i-lucide name="check-circle" class="h-12 w-12 mx-auto mb-2 text-success"></i-lucide>
+                    <h3 class="font-bold text-lg text-success">{{ t('hotkeys.share_success') }}</h3>
+                    <p class="text-sm opacity-70">{{ t('hotkeys.share_success_desc') }}</p>
+                </div>
+            </div>
+            <div class="modal-backdrop" (click)="showShareSuccessModal = false"></div>
+        </div>
+    }
+
+    <!-- Share Error Alert -->
+    @if (shareError) {
+        <div class="alert alert-error mt-4">
+            <i-lucide name="alert-circle" class="h-4 w-4"></i-lucide>
+            <span class="text-xs">{{ shareError }}</span>
+            <button class="btn btn-ghost btn-xs" (click)="shareError = null">✕</button>
+        </div>
+    }
+
+    <!-- Error Alert -->
+    @if (error()) {
+        <div class="alert alert-error mt-4">
+            <i-lucide name="alert-circle" class="h-4 w-4"></i-lucide>
+            <span class="text-xs">{{ error() }}</span>
+        </div>
+    }
+</div>
