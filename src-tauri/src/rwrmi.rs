@@ -1,6 +1,5 @@
-use anyhow::{anyhow, Ok as AnyhowOk, Result as AnyhowResult};
+use anyhow::{anyhow, Result as AnyhowResult};
 use serde::{Deserialize, Serialize};
-use std::fmt;
 use std::fs;
 use std::fs::File;
 use std::io::{self, BufReader, Read, Write};
@@ -67,7 +66,7 @@ fn write_zip(folder_path: &str, output_file_name: &str) -> AnyhowResult<()> {
     let base_folder = folder_path;
     let output_path = format!("{}/{}", base_folder, output_file_name);
     let path = std::path::Path::new(&output_path);
-    let file = std::fs::File::create(&path)?;
+    let file = std::fs::File::create(path)?;
 
     let mut zip = zip::ZipWriter::new(file);
 
@@ -116,7 +115,7 @@ fn write_zip(folder_path: &str, output_file_name: &str) -> AnyhowResult<()> {
             let mut f = File::open(path)?;
 
             f.read_to_end(&mut buffer)?;
-            zip.write_all(&*buffer)?;
+            zip.write_all(&buffer)?;
             buffer.clear();
         } else if !name.as_os_str().is_empty() {
             println!("adding dir {:?}", path);
@@ -257,7 +256,7 @@ fn extract_zip(path: &str, target_path: &str) -> AnyhowResult<()> {
 
             if let Some(p) = outpath.parent() {
                 if !p.exists() {
-                    fs::create_dir_all(&p)?;
+                    fs::create_dir_all(p)?;
                 }
             }
             let mut outfile = fs::File::create(&outpath)?;
@@ -278,7 +277,7 @@ fn extract_zip(path: &str, target_path: &str) -> AnyhowResult<()> {
 }
 
 /// Create backup of original files
-fn backup(mod_path: &str, file_path_list: Vec<String>, target_path: &str) -> AnyhowResult<String> {
+fn backup(_mod_path: &str, file_path_list: Vec<String>, target_path: &str) -> AnyhowResult<String> {
     // Step1: extract effect file
     let app_cache_dir = dirs::cache_dir().unwrap();
     let _prefix_path = Path::new(app_cache_dir.as_path());
@@ -296,7 +295,7 @@ fn backup(mod_path: &str, file_path_list: Vec<String>, target_path: &str) -> Any
         println!("in zip file path: {:?}", file);
         let source_path = p.join(format!("./{}", file.clone()));
 
-        if let Some(file_name) = source_path.file_name() {
+        if let Some(_file_name) = source_path.file_name() {
             println!("full_path: {:?}", source_path);
             println!("path exists: {:?}", source_path.exists());
 
@@ -347,7 +346,7 @@ fn backup(mod_path: &str, file_path_list: Vec<String>, target_path: &str) -> Any
             let mut f = File::open(path)?;
 
             f.read_to_end(&mut buffer)?;
-            zip.write_all(&*buffer)?;
+            zip.write_all(&buffer)?;
             buffer.clear();
         } else if !name.as_os_str().is_empty() {
             zip.add_directory_from_path(name, options)?;

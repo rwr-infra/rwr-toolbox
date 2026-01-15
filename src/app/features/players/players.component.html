@@ -5,18 +5,32 @@
         <div class="join">
             <!-- Column Toggle Button -->
             <div class="dropdown dropdown-end">
-                <button tabindex="0" class="btn btn-sm sm:btn-md join-item" [title]="t('players.column_toggle')">
+                <button
+                    tabindex="0"
+                    class="btn btn-sm sm:btn-md join-item"
+                    [title]="t('players.column_toggle')"
+                >
                     <i-lucide name="settings-2" class="h-4 w-4"></i-lucide>
                 </button>
-                <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-48 p-2 shadow-sm border border-base-300">
+                <ul
+                    tabindex="0"
+                    class="dropdown-content menu bg-base-100 rounded-box z-[1] w-48 p-2 shadow-sm border border-base-300"
+                >
                     @for (column of columns; track column.key) {
                         @if (!column.alwaysVisible) {
                             <li>
-                                <label class="label cursor-pointer justify-start gap-2">
-                                    <input type="checkbox" class="checkbox checkbox-xs"
+                                <label
+                                    class="label cursor-pointer justify-start gap-2"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        class="checkbox checkbox-xs"
                                         [checked]="isColumnVisible(column.key)"
-                                        (change)="toggleColumn(column.key)">
-                                    <span class="label-text text-xs">{{ t(column.i18nKey) }}</span>
+                                        (change)="toggleColumn(column.key)"
+                                    />
+                                    <span class="label-text text-xs">{{
+                                        t(column.i18nKey)
+                                    }}</span>
                                 </label>
                             </li>
                         }
@@ -26,8 +40,13 @@
             <button
                 class="btn btn-sm sm:btn-md join-item"
                 (click)="onRefresh()"
-                [disabled]="loading()">
-                <i-lucide name="refresh-cw" [class.animate-spin]="loading()" class="h-4 w-4"></i-lucide>
+                [disabled]="loading()"
+            >
+                <i-lucide
+                    name="refresh-cw"
+                    [class.animate-spin]="loading()"
+                    class="h-4 w-4"
+                ></i-lucide>
                 <span class="hidden xs:inline">{{ t('players.refresh') }}</span>
             </button>
         </div>
@@ -48,14 +67,19 @@
                 <!-- Database Selector -->
                 <div class="form-control">
                     <label class="label py-1">
-                        <span class="label-text text-xs">{{ t('players.database') }}</span>
+                        <span class="label-text text-xs">{{
+                            t('players.database')
+                        }}</span>
                     </label>
                     <select
                         class="select select-bordered select-sm"
                         [value]="selectedDatabase()"
-                        (change)="onDatabaseChange($event)">
+                        (change)="onDatabaseChange($event)"
+                    >
                         @for (db of databases; track db) {
-                            <option [value]="db">{{ getDatabaseLabel(db) }}</option>
+                            <option [value]="db">
+                                {{ getDatabaseLabel(db) }}
+                            </option>
                         }
                     </select>
                 </div>
@@ -63,7 +87,9 @@
                 <!-- Search with Button -->
                 <div class="form-control">
                     <label class="label py-1">
-                        <span class="label-text text-xs">{{ t('players.search') }}</span>
+                        <span class="label-text text-xs">{{
+                            t('players.search')
+                        }}</span>
                     </label>
                     <div class="join">
                         <input
@@ -71,15 +97,21 @@
                             [placeholder]="t('players.search_placeholder')"
                             class="input input-bordered input-sm join-item"
                             [value]="filter().search || ''"
-                            (keydown)="onSearchKeydown($event)">
+                            (keydown)="onSearchKeydown($event)"
+                        />
                         <button
                             class="btn btn-sm btn-primary join-item"
                             (click)="onSearchClick()"
-                            [disabled]="loading()">
+                            [disabled]="loading()"
+                        >
                             <i-lucide name="search" class="h-3 w-3"></i-lucide>
                         </button>
                         @if (filter().search) {
-                            <button class="btn btn-sm join-item" (click)="clearSearch()" [disabled]="loading()">
+                            <button
+                                class="btn btn-sm join-item"
+                                (click)="clearSearch()"
+                                [disabled]="loading()"
+                            >
                                 <i-lucide name="x" class="h-3 w-3"></i-lucide>
                             </button>
                         }
@@ -89,27 +121,37 @@
                 <!-- Page Size Selector -->
                 <div class="form-control">
                     <label class="label py-1">
-                        <span class="label-text text-xs">{{ t('players.page_size') }}</span>
+                        <span class="label-text text-xs">{{
+                            t('players.page_size')
+                        }}</span>
                     </label>
                     <select
                         class="select select-bordered select-sm"
                         [value]="pageSize()"
-                        (change)="onPageSizeChange($event)">
+                        (change)="onPageSizeChange($event)"
+                    >
                         @for (size of pageSizeOptions; track size) {
-                            <option [value]="size">{{ getPageSizeLabel(size) }}</option>
+                            <option [value]="size">
+                                {{ getPageSizeLabel(size) }}
+                            </option>
                         }
                     </select>
                 </div>
 
                 <!-- Favorites Toggle -->
                 <div class="form-control flex justify-end">
-                    <label class="label cursor-pointer justify-start gap-3 py-1 mt-auto">
+                    <label
+                        class="label cursor-pointer justify-start gap-3 py-1 mt-auto"
+                    >
                         <input
                             type="checkbox"
                             class="checkbox checkbox-primary checkbox-sm"
                             [checked]="filter().isFavorite"
-                            (change)="onFavoritesToggleChange($event)">
-                        <span class="label-text text-xs">{{ t('players.show_favorites') }}</span>
+                            (change)="onFavoritesToggleChange($event)"
+                        />
+                        <span class="label-text text-xs">{{
+                            t('players.show_favorites')
+                        }}</span>
                     </label>
                 </div>
             </div>
@@ -131,11 +173,16 @@
                 <thead>
                     <tr>
                         <!-- Left sticky: Row # -->
-                        <th class="w-10 min-w-10 max-w-10 sticky left-0 z-30 bg-base-200 text-center">
+                        <th
+                            class="w-10 min-w-10 max-w-10 sticky left-0 z-30 bg-base-200 text-center"
+                        >
                             {{ t('players.column.rowNumber') }}
                         </th>
                         <!-- Left sticky: Username -->
-                        <th (click)="onColumnSort('username')" class="cursor-pointer hover:bg-base-300 sticky left-10 z-30 bg-base-200 border-r border-base-300">
+                        <th
+                            (click)="onColumnSort('username')"
+                            class="cursor-pointer hover:bg-base-300 sticky left-10 z-30 bg-base-200 border-r border-base-300"
+                        >
                             {{ t('players.column.username') }}
                             @if (sortField() === 'username') {
                                 <span class="ml-1 opacity-50">↓</span>
@@ -143,24 +190,41 @@
                         </th>
                         <!-- Middle columns (scrollable) -->
                         @for (column of columns; track column.key) {
-                            @if (column.key !== 'rowNumber' && column.key !== 'username' && column.key !== 'action' && isColumnVisible(column.key)) {
+                            @if (
+                                column.key !== 'rowNumber' &&
+                                column.key !== 'username' &&
+                                column.key !== 'action' &&
+                                isColumnVisible(column.key)
+                            ) {
                                 @if (isColumnSortable(column.key)) {
-                                    <th (click)="onColumnSort(column.key)"
-                                        class="cursor-pointer hover:bg-base-300 {{ getColumnAlignment(column.alignment) }}">
+                                    <th
+                                        (click)="onColumnSort(column.key)"
+                                        class="cursor-pointer hover:bg-base-300 {{
+                                            getColumnAlignment(column.alignment)
+                                        }}"
+                                    >
                                         {{ t(column.i18nKey) }}
                                         @if (sortField() === column.key) {
-                                            <span class="ml-1 opacity-50">↓</span>
+                                            <span class="ml-1 opacity-50"
+                                                >↓</span
+                                            >
                                         }
                                     </th>
                                 } @else {
-                                    <th class="{{ getColumnAlignment(column.alignment) }}">
+                                    <th
+                                        class="{{
+                                            getColumnAlignment(column.alignment)
+                                        }}"
+                                    >
                                         {{ t(column.i18nKey) }}
                                     </th>
                                 }
                             }
                         }
                         <!-- Right sticky: Action -->
-                        <th class="w-12 min-w-12 sticky right-0 z-30 bg-base-200 border-l border-base-300 text-center">
+                        <th
+                            class="w-12 min-w-12 sticky right-0 z-30 bg-base-200 border-l border-base-300 text-center"
+                        >
                             {{ t('players.column.action') }}
                         </th>
                     </tr>
@@ -169,89 +233,212 @@
                     @for (player of players; track player.id; let i = $index) {
                         <tr>
                             <!-- Left sticky: Row # -->
-                            <td class="sticky left-0 z-20 text-center border-r border-base-300"
+                            <td
+                                class="sticky left-0 z-20 text-center border-r border-base-300"
                                 [class.bg-base-100]="i % 2 === 0"
-                                [class.bg-base-200]="i % 2 === 1">
-                                <span class="text-[10px] opacity-50">{{ player.rowNumber }}</span>
+                                [class.bg-base-200]="i % 2 === 1"
+                            >
+                                <span class="text-[10px] opacity-50">{{
+                                    player.rowNumber
+                                }}</span>
                             </td>
                             <!-- Left sticky: Username -->
-                            <td class="sticky left-10 z-20 border-r border-base-300"
+                            <td
+                                class="sticky left-10 z-20 border-r border-base-300"
                                 [class.bg-base-100]="i % 2 === 0"
-                                [class.bg-base-200]="i % 2 === 1">
-                                <span class="font-medium truncate max-w-[140px] sm:max-w-[220px] inline-block">{{ player.username }}</span>
+                                [class.bg-base-200]="i % 2 === 1"
+                            >
+                                <span
+                                    class="font-medium truncate max-w-[140px] sm:max-w-[220px] inline-block"
+                                    >{{ player.username }}</span
+                                >
                             </td>
                             <!-- Middle cells (scrollable) -->
                             @for (column of columns; track column.key) {
-                                @if (column.key !== 'rowNumber' && column.key !== 'username' && column.key !== 'action' && isColumnVisible(column.key)) {
-                                    <td class="{{ getColumnAlignment(column.alignment) }}">
+                                @if (
+                                    column.key !== 'rowNumber' &&
+                                    column.key !== 'username' &&
+                                    column.key !== 'action' &&
+                                    isColumnVisible(column.key)
+                                ) {
+                                    <td
+                                        class="{{
+                                            getColumnAlignment(column.alignment)
+                                        }}"
+                                    >
                                         @switch (column.key) {
                                             @case ('kills') {
-                                                <span class="font-mono text-[10px]">{{ player.kills?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px]"
+                                                    >{{
+                                                        player.kills?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('deaths') {
-                                                <span class="font-mono text-[10px] opacity-60">{{ player.deaths?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px] opacity-60"
+                                                    >{{
+                                                        player.deaths?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('kd') {
-                                                <span class="font-mono text-[10px]"
-                                                    [class.text-success]="player.kd >= 1.5"
-                                                    [class.text-warning]="player.kd >= 1.0 && player.kd < 1.5"
-                                                    [class.text-error]="player.kd < 1.0">
-                                                    {{ player.kd?.toFixed(2) ?? '-' }}
+                                                <span
+                                                    class="font-mono text-[10px]"
+                                                    [class.text-success]="
+                                                        player.kd >= 1.5
+                                                    "
+                                                    [class.text-warning]="
+                                                        player.kd >= 1.0 &&
+                                                        player.kd < 1.5
+                                                    "
+                                                    [class.text-error]="
+                                                        player.kd < 1.0
+                                                    "
+                                                >
+                                                    {{
+                                                        player.kd?.toFixed(2) ??
+                                                            '-'
+                                                    }}
                                                 </span>
                                             }
                                             @case ('score') {
-                                                <span class="font-mono text-[10px] opacity-60">{{ player.score?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px] opacity-60"
+                                                    >{{
+                                                        player.score?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('timePlayed') {
-                                                <span class="text-[10px] opacity-70">{{ player.timePlayedFormatted ?? '-' }}</span>
+                                                <span
+                                                    class="text-[10px] opacity-70"
+                                                    >{{
+                                                        player.timePlayedFormatted ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('longestKillStreak') {
-                                                <span class="font-mono text-[10px] opacity-60">{{ player.longestKillStreak?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px] opacity-60"
+                                                    >{{
+                                                        player.longestKillStreak?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('targetsDestroyed') {
-                                                <span class="font-mono text-[10px] opacity-60">{{ player.targetsDestroyed?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px] opacity-60"
+                                                    >{{
+                                                        player.targetsDestroyed?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('vehiclesDestroyed') {
-                                                <span class="font-mono text-[10px] opacity-60">{{ player.vehiclesDestroyed?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px] opacity-60"
+                                                    >{{
+                                                        player.vehiclesDestroyed?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('soldiersHealed') {
-                                                <span class="font-mono text-[10px] opacity-60">{{ player.soldiersHealed?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px] opacity-60"
+                                                    >{{
+                                                        player.soldiersHealed?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('teamkills') {
-                                                <span class="font-mono text-[10px] opacity-60">{{ player.teamkills?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px] opacity-60"
+                                                    >{{
+                                                        player.teamkills?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('distanceMoved') {
-                                                <span class="text-[10px] opacity-60">{{ player.distanceMoved ? (player.distanceMoved / 1000).toFixed(1) + ' km' : '-' }}</span>
+                                                <span
+                                                    class="text-[10px] opacity-60"
+                                                    >{{
+                                                        player.distanceMoved
+                                                            ? (
+                                                                  player.distanceMoved /
+                                                                  1000
+                                                              ).toFixed(1) +
+                                                              ' km'
+                                                            : '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('shotsFired') {
-                                                <span class="font-mono text-[10px] opacity-60">{{ player.shotsFired?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px] opacity-60"
+                                                    >{{
+                                                        player.shotsFired?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('throwablesThrown') {
-                                                <span class="font-mono text-[10px] opacity-60">{{ player.throwablesThrown?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px] opacity-60"
+                                                    >{{
+                                                        player.throwablesThrown?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('rankProgression') {
-                                                <span class="font-mono text-[10px] opacity-60">{{ player.rankProgression?.toLocaleString() ?? '-' }}</span>
+                                                <span
+                                                    class="font-mono text-[10px] opacity-60"
+                                                    >{{
+                                                        player.rankProgression?.toLocaleString() ??
+                                                            '-'
+                                                    }}</span
+                                                >
                                             }
                                             @case ('rankName') {
-                                                <span class="text-[10px]">{{ player.rankName ?? '-' }}</span>
+                                                <span class="text-[10px]">{{
+                                                    player.rankName ?? '-'
+                                                }}</span>
                                             }
                                         }
                                     </td>
                                 }
                             }
                             <!-- Right sticky: Action (Favorite) -->
-                            <td class="sticky right-0 z-20 border-l border-base-300 text-center"
+                            <td
+                                class="sticky right-0 z-20 border-l border-base-300 text-center"
                                 [class.bg-base-100]="i % 2 === 0"
-                                [class.bg-base-200]="i % 2 === 1">
+                                [class.bg-base-200]="i % 2 === 1"
+                            >
                                 <button
                                     class="btn btn-ghost btn-xs btn-square"
                                     (click)="onToggleFavorite(player)"
-                                    [title]="t('players.favorite')">
+                                    [title]="t('players.favorite')"
+                                >
                                     <i-lucide
                                         name="star"
                                         class="h-3.5 w-3.5"
-                                        [class.fill-warning]="isFavorite(player.id)"
-                                        [class.text-warning]="isFavorite(player.id)">
+                                        [class.fill-warning]="
+                                            isFavorite(player.id)
+                                        "
+                                        [class.text-warning]="
+                                            isFavorite(player.id)
+                                        "
+                                    >
                                     </i-lucide>
                                 </button>
                             </td>
@@ -262,7 +449,9 @@
         </div>
 
         <!-- Pagination (Compact) -->
-        <div class="flex flex-col sm:flex-row justify-between items-center mt-4 gap-3 px-1">
+        <div
+            class="flex flex-col sm:flex-row justify-between items-center mt-4 gap-3 px-1"
+        >
             <div class="text-[10px] text-base-content/50 order-2 sm:order-1">
                 {{ t('players.showing_count', { count: players.length }) }}
             </div>
@@ -271,9 +460,12 @@
                 <button
                     class="btn btn-xs"
                     (click)="onPreviousPage()"
-                    [disabled]="!hasPreviousPage()">
+                    [disabled]="!hasPreviousPage()"
+                >
                     <i-lucide name="chevron-left" class="h-3 w-3"></i-lucide>
-                    <span class="hidden xs:inline">{{ t('players.previous') }}</span>
+                    <span class="hidden xs:inline">{{
+                        t('players.previous')
+                    }}</span>
                 </button>
                 <span class="text-[10px] font-medium min-w-[60px] text-center">
                     {{ t('players.page', { current: currentPage() }) }}
@@ -281,8 +473,11 @@
                 <button
                     class="btn btn-xs"
                     (click)="onNextPage()"
-                    [disabled]="!hasNextPage()">
-                    <span class="hidden xs:inline">{{ t('players.next') }}</span>
+                    [disabled]="!hasNextPage()"
+                >
+                    <span class="hidden xs:inline">{{
+                        t('players.next')
+                    }}</span>
                     <i-lucide name="chevron-right" class="h-3 w-3"></i-lucide>
                 </button>
             </div>
@@ -293,7 +488,9 @@
     @if (!loading() && players.length === 0) {
         <div class="text-center py-10 opacity-40">
             <i-lucide name="users" class="mx-auto h-12 w-12 mb-2"></i-lucide>
-            <h3 class="text-base font-semibold">{{ t('players.no_players') }}</h3>
+            <h3 class="text-base font-semibold">
+                {{ t('players.no_players') }}
+            </h3>
             <p class="text-xs">{{ t('players.no_players_desc') }}</p>
         </div>
     }

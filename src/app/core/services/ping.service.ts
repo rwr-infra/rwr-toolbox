@@ -30,7 +30,7 @@ export interface ServerToPing {
  * For web mode, returns mock data
  */
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class PingService {
     private settingsService = inject(SettingsService);
@@ -67,39 +67,47 @@ export class PingService {
     /**
      * Ping using Tauri command
      */
-    private pingServerTauri(address: string, port: number): Observable<PingResult> {
+    private pingServerTauri(
+        address: string,
+        port: number,
+    ): Observable<PingResult> {
         // Dynamic import to avoid errors in web mode
-        return from(import('@tauri-apps/api/core').then(({ invoke }) => {
-            return invoke<number>('ping_server', {
-                address,
-                port,
-                timeout: this.settingsService.settings().pingTimeout
-            });
-        })).pipe(
-            map(ping => ({ address: `${address}:${port}`, ping })),
-            catchError(error => {
+        return from(
+            import('@tauri-apps/api/core').then(({ invoke }) => {
+                return invoke<number>('ping_server', {
+                    address,
+                    port,
+                    timeout: this.settingsService.settings().pingTimeout,
+                });
+            }),
+        ).pipe(
+            map((ping) => ({ address: `${address}:${port}`, ping })),
+            catchError((error) => {
                 this.pingingSubject.next(false);
                 return of({
                     address: `${address}:${port}`,
                     ping: null,
-                    error: error.toString()
+                    error: error.toString(),
                 });
-            })
+            }),
         );
     }
 
     /**
      * Mock ping for web mode
      */
-    private pingServerMock(address: string, port: number): Observable<PingResult> {
+    private pingServerMock(
+        address: string,
+        port: number,
+    ): Observable<PingResult> {
         return of({
             address: `${address}:${port}`,
-            ping: Math.floor(Math.random() * 200) + 20
+            ping: Math.floor(Math.random() * 200) + 20,
         }).pipe(
-            map(result => {
+            map((result) => {
                 this.pingingSubject.next(false);
                 return result;
-            })
+            }),
         );
     }
 
@@ -121,16 +129,21 @@ export class PingService {
     /**
      * Batch ping using Tauri
      */
-    private pingServersTauri(servers: ServerToPing[]): Observable<PingResult[]> {
-        const promises = servers.map(server => {
-            return this.pingServerTauri(server.address, server.port).toPromise();
+    private pingServersTauri(
+        servers: ServerToPing[],
+    ): Observable<PingResult[]> {
+        const promises = servers.map((server) => {
+            return this.pingServerTauri(
+                server.address,
+                server.port,
+            ).toPromise();
         });
 
         return from(Promise.all(promises)).pipe(
-            map(results => {
+            map((results) => {
                 this.pingingSubject.next(false);
                 return results as PingResult[];
-            })
+            }),
         );
     }
 
@@ -138,16 +151,16 @@ export class PingService {
      * Batch mock ping for web mode
      */
     private pingServersMock(servers: ServerToPing[]): Observable<PingResult[]> {
-        const results = servers.map(server => ({
+        const results = servers.map((server) => ({
             address: `${server.address}:${server.port}`,
-            ping: Math.floor(Math.random() * 200) + 20
+            ping: Math.floor(Math.random() * 200) + 20,
         }));
 
         return of(results).pipe(
-            map(results => {
+            map((results) => {
                 this.pingingSubject.next(false);
                 return results;
-            })
+            }),
         );
     }
 }

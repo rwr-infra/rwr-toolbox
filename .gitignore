@@ -50,5 +50,6 @@ Thumbs.db
 # docs for AI
 # /docs-ai
 /.claude
+/.gemini
 /.specify
 /specs

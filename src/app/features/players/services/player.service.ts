@@ -10,7 +10,7 @@ import {
     PlayerListResponse,
     PlayerFilter,
     PlayerSort,
-    PlayerDatabase
+    PlayerDatabase,
 } from '../../../shared/models/player.models';
 import { HttpParams } from '@angular/common/http';
 
@@ -18,7 +18,7 @@ import { HttpParams } from '@angular/common/http';
  * Service for fetching and managing player data
  */
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class PlayerService {
     private httpClient = inject(HttpClientService);
@@ -26,14 +26,15 @@ export class PlayerService {
     private cacheService = inject(CacheService);
 
     private readonly CACHE_KEY_PREFIX = 'players_list_';
-    private readonly BASE_URL = 'http://rwr.runningwithrifles.com/rwr_stats/view_players.php';
+    private readonly BASE_URL =
+        'http://rwr.runningwithrifles.com/rwr_stats/view_players.php';
     private readonly xmlParser = new XMLParser({
         ignoreAttributes: false,
         attributeNamePrefix: '@_',
         textNodeName: '#text',
         parseAttributeValue: true,
         trimValues: true,
-        allowBooleanAttributes: true
+        allowBooleanAttributes: true,
     });
 
     // State management with BehaviorSubjects
@@ -68,7 +69,7 @@ export class PlayerService {
         pageSize: number = 20,
         sortBy: string = 'rank_progression',
         search: string = '',
-        forceRefresh = false
+        forceRefresh = false,
     ): Observable<PlayerListResponse> {
         this.loadingSubject.next(true);
         this.errorSubject.next(null);
@@ -80,46 +81,54 @@ export class PlayerService {
             .set('start', ((page - 1) * pageSize).toString())
             .set('size', pageSize.toString());
 
-        return this.httpClient.get<string>(this.BASE_URL, {
-            timeout: this.settingsService.settings().pingTimeout,
-            params,
-            withCacheBuster: true,
-            responseType: 'text'
-        }).pipe(
-            map(html => this.parsePlayerList(html, database)),
-            tap(response => {
-                this.playersSubject.next(response.players);
-                this.currentPageSubject.next(page);
-                this.hasNextPageSubject.next(response.hasNextPage);
-                this.hasPreviousPageSubject.next(response.hasPreviousPage);
-                // Cache the response
-                this.cacheService.set(`${this.CACHE_KEY_PREFIX}${database}`, {
-                    players: response.players,
-                    timestamp: Date.now()
-                });
-            }),
-            catchError(error => {
-                this.errorSubject.next(error.message);
+        return this.httpClient
+            .get<string>(this.BASE_URL, {
+                timeout: this.settingsService.settings().pingTimeout,
+                params,
+                withCacheBuster: true,
+                responseType: 'text',
+            })
+            .pipe(
+                map((html) => this.parsePlayerList(html, database)),
+                tap((response) => {
+                    this.playersSubject.next(response.players);
+                    this.currentPageSubject.next(page);
+                    this.hasNextPageSubject.next(response.hasNextPage);
+                    this.hasPreviousPageSubject.next(response.hasPreviousPage);
+                    // Cache the response
+                    this.cacheService.set(
+                        `${this.CACHE_KEY_PREFIX}${database}`,
+                        {
+                            players: response.players,
+                            timestamp: Date.now(),
+                        },
+                    );
+                }),
+                catchError((error) => {
+                    this.errorSubject.next(error.message);
 
-                // Try to load from cache
-                const cached = this.cacheService.get<{ players: Player[]; timestamp: number }>(`${this.CACHE_KEY_PREFIX}${database}`);
-                if (cached) {
-                    this.playersSubject.next(cached.players);
-                    return of({
-                        players: cached.players,
-                        currentPage: page,
-                        hasNextPage: false,
-                        hasPreviousPage: page > 1,
-                        timestamp: cached.timestamp,
-                        fromCache: true
-                    });
-                }
+                    // Try to load from cache
+                    const cached = this.cacheService.get<{
+                        players: Player[];
+                        timestamp: number;
+                    }>(`${this.CACHE_KEY_PREFIX}${database}`);
+                    if (cached) {
+                        this.playersSubject.next(cached.players);
+                        return of({
+                            players: cached.players,
+                            currentPage: page,
+                            hasNextPage: false,
+                            hasPreviousPage: page > 1,
+                            timestamp: cached.timestamp,
+                            fromCache: true,
+                        });
+                    }
 
-                return throwError(() => error);
-            }),
-            finalize(() => this.loadingSubject.next(false)),
-            shareReplay(1)
-        );
+                    return throwError(() => error);
+                }),
+                finalize(() => this.loadingSubject.next(false)),
+                shareReplay(1),
+            );
     }
 
     /**
@@ -128,7 +137,10 @@ export class PlayerService {
      * @param database Player database to use for player IDs
      * @returns Parsed player list response
      */
-    private parsePlayerList(html: string, database: PlayerDatabase): PlayerListResponse {
+    private parsePlayerList(
+        html: string,
+        database: PlayerDatabase,
+    ): PlayerListResponse {
         const parsed = this.xmlParser.parse(html);
         const players: Player[] = [];
 
@@ -149,14 +161,16 @@ export class PlayerService {
         }
 
         if (!table) {
-            console.warn('[PlayerService] No table found in player list response');
+            console.warn(
+                '[PlayerService] No table found in player list response',
+            );
             return {
                 players: [],
                 currentPage: 1,
                 hasNextPage: false,
                 hasPreviousPage: false,
                 timestamp: Date.now(),
-                fromCache: false
+                fromCache: false,
             };
         }
 
@@ -169,7 +183,7 @@ export class PlayerService {
                 hasNextPage: false,
                 hasPreviousPage: false,
                 timestamp: Date.now(),
-                fromCache: false
+                fromCache: false,
             };
         }
 
@@ -183,7 +197,11 @@ export class PlayerService {
             const row = dataRows[i];
             const cells = row.td || [];
             // fast-xml-parser returns an array for repeated tags, but a single object for one tag
-            const cellArray = Array.isArray(cells) ? cells : cells ? [cells] : [];
+            const cellArray = Array.isArray(cells)
+                ? cells
+                : cells
+                  ? [cells]
+                  : [];
 
             if (cellArray.length < 13) continue;
 
@@ -191,12 +209,16 @@ export class PlayerService {
             if (!username) continue;
 
             const parseNumber = (text: string): number => {
-                const cleaned = (text || '').toString().replace(/,/g, '').trim();
+                const cleaned = (text || '')
+                    .toString()
+                    .replace(/,/g, '')
+                    .trim();
                 const n = Number(cleaned);
                 return Number.isFinite(n) ? n : 0;
             };
 
-            const rowNumber = parseInt(this.extractCellText(cellArray[0])) || (i + 1);
+            const rowNumber =
+                parseInt(this.extractCellText(cellArray[0])) || i + 1;
             const timePlayedText = this.extractCellText(cellArray[6]) || '';
             const distanceMovedText = this.extractCellText(cellArray[12]) || '';
 
@@ -210,17 +232,36 @@ export class PlayerService {
                 kd: parseFloat(this.extractCellText(cellArray[5])) || 0,
                 timePlayed: this.parseTimeToSeconds(timePlayedText),
                 timePlayedFormatted: timePlayedText,
-                longestKillStreak: parseInt(this.extractCellText(cellArray[7])) || 0,
-                targetsDestroyed: parseInt(this.extractCellText(cellArray[8])) || 0,
-                vehiclesDestroyed: parseInt(this.extractCellText(cellArray[9])) || 0,
-                soldiersHealed: parseInt(this.extractCellText(cellArray[10])) || 0,
+                longestKillStreak:
+                    parseInt(this.extractCellText(cellArray[7])) || 0,
+                targetsDestroyed:
+                    parseInt(this.extractCellText(cellArray[8])) || 0,
+                vehiclesDestroyed:
+                    parseInt(this.extractCellText(cellArray[9])) || 0,
+                soldiersHealed:
+                    parseInt(this.extractCellText(cellArray[10])) || 0,
                 teamkills: parseInt(this.extractCellText(cellArray[11])) || 0,
                 distanceMoved: this.parseDistanceToMeters(distanceMovedText),
-                shotsFired: cellArray.length > 13 ? parseNumber(this.extractCellText(cellArray[13])) : undefined,
-                throwablesThrown: cellArray.length > 14 ? parseNumber(this.extractCellText(cellArray[14])) : undefined,
-                rankProgression: cellArray.length > 15 ? parseNumber(this.extractCellText(cellArray[15])) : undefined,
-                rankName: cellArray.length > 16 ? (this.extractCellText(cellArray[16]) || undefined) : undefined,
-                rankIcon: cellArray.length > 17 ? (this.extractImgSrc(cellArray[17]) || undefined) : undefined
+                shotsFired:
+                    cellArray.length > 13
+                        ? parseNumber(this.extractCellText(cellArray[13]))
+                        : undefined,
+                throwablesThrown:
+                    cellArray.length > 14
+                        ? parseNumber(this.extractCellText(cellArray[14]))
+                        : undefined,
+                rankProgression:
+                    cellArray.length > 15
+                        ? parseNumber(this.extractCellText(cellArray[15]))
+                        : undefined,
+                rankName:
+                    cellArray.length > 16
+                        ? this.extractCellText(cellArray[16]) || undefined
+                        : undefined,
+                rankIcon:
+                    cellArray.length > 17
+                        ? this.extractImgSrc(cellArray[17]) || undefined
+                        : undefined,
             };
 
             players.push(player);
@@ -235,7 +276,7 @@ export class PlayerService {
             hasNextPage: hasNext,
             hasPreviousPage: hasPrevious,
             timestamp: Date.now(),
-            fromCache: false
+            fromCache: false,
         };
     }
 
@@ -246,7 +287,7 @@ export class PlayerService {
      * @returns Filtered player list
      */
     filterPlayers(players: Player[], filter: PlayerFilter): Player[] {
-        return players.filter(player => {
+        return players.filter((player) => {
             // Search filter
             if (filter.search) {
                 const search = filter.search.toLowerCase();
@@ -256,10 +297,16 @@ export class PlayerService {
             }
 
             // Kills filters
-            if (filter.minKills !== undefined && player.kills < filter.minKills) {
+            if (
+                filter.minKills !== undefined &&
+                player.kills < filter.minKills
+            ) {
                 return false;
             }
-            if (filter.maxKills !== undefined && player.kills > filter.maxKills) {
+            if (
+                filter.maxKills !== undefined &&
+                player.kills > filter.maxKills
+            ) {
                 return false;
             }
 
@@ -269,7 +316,10 @@ export class PlayerService {
             }
 
             // Time played filter
-            if (filter.minTimePlayed !== undefined && player.timePlayed < filter.minTimePlayed) {
+            if (
+                filter.minTimePlayed !== undefined &&
+                player.timePlayed < filter.minTimePlayed
+            ) {
                 return false;
             }
 
@@ -328,7 +378,7 @@ export class PlayerService {
             this.cacheService.delete(`${this.CACHE_KEY_PREFIX}${database}`);
         } else {
             // Clear all player caches
-            ['invasion', 'pacific', 'prereset_invasion'].forEach(db => {
+            ['invasion', 'pacific', 'prereset_invasion'].forEach((db) => {
                 this.cacheService.delete(`${this.CACHE_KEY_PREFIX}${db}`);
             });
         }
@@ -360,7 +410,10 @@ export class PlayerService {
     /**
      * Recursively find pagination links
      */
-    private findPaginationLinks(parsed: any): { hasNext: boolean; hasPrevious: boolean } {
+    private findPaginationLinks(parsed: any): {
+        hasNext: boolean;
+        hasPrevious: boolean;
+    } {
         let hasNext = false;
         let hasPrevious = false;
 
@@ -440,7 +493,7 @@ export class PlayerService {
         const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
         const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
 
-        return (hours * 3600) + (minutes * 60);
+        return hours * 3600 + minutes * 60;
     }
 
     private parseDistanceToMeters(text: string): number {

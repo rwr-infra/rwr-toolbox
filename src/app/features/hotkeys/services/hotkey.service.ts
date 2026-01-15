@@ -9,16 +9,21 @@ import {
     IHotkeyProfilesConfig,
     IHotkeyConfigItem,
     IHotkeyProfileCreate,
-    IHotkeyConflict
+    IHotkeyConflict,
 } from '../../../shared/models/hotkeys.models';
 import { SettingsService } from '../../../core/services/settings.service';
-import { transformProfileToShare, transformShareToProfile, validateShareFormat, serializeShareItem } from '../../../shared/utils/hotkey-share.utils';
+import {
+    transformProfileToShare,
+    transformShareToProfile,
+    validateShareFormat,
+    serializeShareItem,
+} from '../../../shared/utils/hotkey-share.utils';
 
 /**
  * Service for managing game hotkeys
  */
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class HotkeyService {
     private settingsService = inject(SettingsService);
@@ -28,7 +33,7 @@ export class HotkeyService {
     private errorSubject = new BehaviorSubject<string | null>(null);
     private profilesSubject = new BehaviorSubject<IHotkeyProfilesConfig>({
         profiles: [],
-        activeProfileId: null
+        activeProfileId: null,
     });
     private currentConfigSubject = new BehaviorSubject<IHotkeyConfigItem[]>([]);
 
@@ -40,10 +45,13 @@ export class HotkeyService {
 
     /** Currently active profile */
     readonly activeProfile = this.profilesSubject.pipe(
-        map(config => {
+        map((config) => {
             if (!config.activeProfileId) return null;
-            return config.profiles.find(p => p.id === config.activeProfileId) || null;
-        })
+            return (
+                config.profiles.find((p) => p.id === config.activeProfileId) ||
+                null
+            );
+        }),
     );
 
     /**
@@ -54,16 +62,16 @@ export class HotkeyService {
         this.errorSubject.next(null);
 
         return from(invoke<string>('read_profiles')).pipe(
-            map(result => JSON.parse(result) as IHotkeyProfilesConfig),
-            tap(config => this.profilesSubject.next(config)),
-            catchError(error => {
+            map((result) => JSON.parse(result) as IHotkeyProfilesConfig),
+            tap((config) => this.profilesSubject.next(config)),
+            catchError((error) => {
                 this.errorSubject.next(`Failed to load profiles: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
             }),
-            map(() => undefined)
+            map(() => undefined),
         );
     }
 
@@ -80,20 +88,20 @@ export class HotkeyService {
         this.errorSubject.next(null);
 
         return from(invoke<string>('read_hotkeys', { gamePath })).pipe(
-            switchMap(xmlContent => {
+            switchMap((xmlContent) => {
                 return from(invoke<string>('parse_hotkeys', { xmlContent }));
             }),
-            map(result => JSON.parse(result) as IHotkeyConfigItem[]),
-            tap(config => {
+            map((result) => JSON.parse(result) as IHotkeyConfigItem[]),
+            tap((config) => {
                 this.currentConfigSubject.next(config);
             }),
-            catchError(error => {
+            catchError((error) => {
                 this.errorSubject.next(`Failed to read hotkeys: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
-            })
+            }),
         );
     }
 
@@ -110,20 +118,22 @@ export class HotkeyService {
         this.errorSubject.next(null);
 
         return from(invoke<string>('generate_hotkeys', { config })).pipe(
-            switchMap(xmlContent => {
-                return from(invoke('write_hotkeys', {
-                    gamePath,
-                    xmlContent
-                }));
+            switchMap((xmlContent) => {
+                return from(
+                    invoke('write_hotkeys', {
+                        gamePath,
+                        xmlContent,
+                    }),
+                );
             }),
             map(() => undefined),
-            catchError(error => {
+            catchError((error) => {
                 this.errorSubject.next(`Failed to write hotkeys: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
-            })
+            }),
         );
     }
 
@@ -136,26 +146,27 @@ export class HotkeyService {
             title: create.title,
             config: create.config,
             createdAt: Date.now(),
-            updatedAt: Date.now()
+            updatedAt: Date.now(),
         };
 
         const current = this.profilesSubject.value;
         const updated: IHotkeyProfilesConfig = {
             ...current,
-            profiles: [...current.profiles, newProfile]
+            profiles: [...current.profiles, newProfile],
         };
 
-        return this.saveProfiles(updated).pipe(
-            map(() => newProfile)
-        );
+        return this.saveProfiles(updated).pipe(map(() => newProfile));
     }
 
     /**
      * Update profile
      */
-    updateProfile(id: string, updates: Partial<IHotkeyProfileCreate>): Observable<void> {
+    updateProfile(
+        id: string,
+        updates: Partial<IHotkeyProfileCreate>,
+    ): Observable<void> {
         const current = this.profilesSubject.value;
-        const profileIndex = current.profiles.findIndex(p => p.id === id);
+        const profileIndex = current.profiles.findIndex((p) => p.id === id);
 
         if (profileIndex === -1) {
             return throwError(() => 'Profile not found');
@@ -165,12 +176,12 @@ export class HotkeyService {
         updatedProfiles[profileIndex] = {
             ...updatedProfiles[profileIndex],
             ...updates,
-            updatedAt: Date.now()
+            updatedAt: Date.now(),
         };
 
         const updated: IHotkeyProfilesConfig = {
             ...current,
-            profiles: updatedProfiles
+            profiles: updatedProfiles,
         };
 
         return this.saveProfiles(updated);
@@ -183,8 +194,9 @@ export class HotkeyService {
         const current = this.profilesSubject.value;
 
         const updated: IHotkeyProfilesConfig = {
-            profiles: current.profiles.filter(p => p.id !== id),
-            activeProfileId: current.activeProfileId === id ? null : current.activeProfileId
+            profiles: current.profiles.filter((p) => p.id !== id),
+            activeProfileId:
+                current.activeProfileId === id ? null : current.activeProfileId,
         };
 
         return this.saveProfiles(updated);
@@ -194,7 +206,9 @@ export class HotkeyService {
      * Apply profile to game (also sets as active)
      */
     applyProfile(id: string): Observable<void> {
-        const profile = this.profilesSubject.value.profiles.find(p => p.id === id);
+        const profile = this.profilesSubject.value.profiles.find(
+            (p) => p.id === id,
+        );
         if (!profile) {
             return throwError(() => 'Profile not found');
         }
@@ -206,9 +220,9 @@ export class HotkeyService {
                 const current = this.profilesSubject.value;
                 this.profilesSubject.next({
                     ...current,
-                    activeProfileId: id
+                    activeProfileId: id,
                 });
-            })
+            }),
         );
     }
 
@@ -216,23 +230,27 @@ export class HotkeyService {
      * Export profile
      */
     async exportProfile(id: string): Promise<void> {
-        const profile = this.profilesSubject.value.profiles.find(p => p.id === id);
+        const profile = this.profilesSubject.value.profiles.find(
+            (p) => p.id === id,
+        );
         if (!profile) {
             throw new Error('Profile not found');
         }
 
         const filePath = await save({
-            filters: [{
-                name: 'RWR Hotkey Profile',
-                extensions: ['json']
-            }],
-            defaultPath: `${profile.title}.json`
+            filters: [
+                {
+                    name: 'RWR Hotkey Profile',
+                    extensions: ['json'],
+                },
+            ],
+            defaultPath: `${profile.title}.json`,
         });
 
         if (filePath) {
             await invoke('export_profile', {
                 profileJson: JSON.stringify(profile, null, 2),
-                filePath
+                filePath,
             });
         }
     }
@@ -242,14 +260,18 @@ export class HotkeyService {
      */
     async importProfile(): Promise<void> {
         const filePath = await open({
-            filters: [{
-                name: 'RWR Hotkey Profile',
-                extensions: ['json']
-            }]
+            filters: [
+                {
+                    name: 'RWR Hotkey Profile',
+                    extensions: ['json'],
+                },
+            ],
         });
 
         if (filePath) {
-            const profileJson = await invoke<string>('import_profile', { filePath });
+            const profileJson = await invoke<string>('import_profile', {
+                filePath,
+            });
             const profile: IHotkeyProfile = JSON.parse(profileJson);
 
             // Generate new ID to avoid conflicts
@@ -257,13 +279,13 @@ export class HotkeyService {
                 ...profile,
                 id: this.generateId(),
                 createdAt: Date.now(),
-                updatedAt: Date.now()
+                updatedAt: Date.now(),
             };
 
             const current = this.profilesSubject.value;
             const updated: IHotkeyProfilesConfig = {
                 ...current,
-                profiles: [...current.profiles, newProfile]
+                profiles: [...current.profiles, newProfile],
             };
 
             await this.saveProfiles(updated).toPromise();
@@ -317,10 +339,10 @@ export class HotkeyService {
                 this.profilesSubject.next(config);
             }),
             map(() => undefined),
-            catchError(error => {
+            catchError((error) => {
                 this.errorSubject.next(`Failed to save profiles: ${error}`);
                 return throwError(() => error);
-            })
+            }),
         );
     }
 
@@ -342,7 +364,9 @@ export class HotkeyService {
      * Share profile to clipboard
      */
     async shareProfile(id: string): Promise<void> {
-        const profile = this.profilesSubject.value.profiles.find(p => p.id === id);
+        const profile = this.profilesSubject.value.profiles.find(
+            (p) => p.id === id,
+        );
         if (!profile) {
             throw new Error('Profile not found');
         }
@@ -371,13 +395,13 @@ export class HotkeyService {
             title: `${profileData.title} (Imported)`,
             config: profileData.config,
             createdAt: Date.now(),
-            updatedAt: Date.now()
+            updatedAt: Date.now(),
         };
 
         const current = this.profilesSubject.value;
         const updated: IHotkeyProfilesConfig = {
             ...current,
-            profiles: [...current.profiles, newProfile]
+            profiles: [...current.profiles, newProfile],
         };
 
         await this.saveProfiles(updated).toPromise();
@@ -390,7 +414,9 @@ export class HotkeyService {
     async validateClipboard(): Promise<boolean> {
         try {
             const clipboardText = await readText();
-            return clipboardText ? validateShareFormat(clipboardText) !== null : false;
+            return clipboardText
+                ? validateShareFormat(clipboardText) !== null
+                : false;
         } catch {
             return false;
         }

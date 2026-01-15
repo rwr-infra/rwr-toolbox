@@ -4,13 +4,22 @@ import { LucideAngularModule } from 'lucide-angular';
 import { RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslocoDirective } from '@jsverse/transloco';
-import { DashboardService, DashboardStats, Activity } from './services/dashboard.service';
+import {
+    DashboardService,
+    DashboardStats,
+    Activity,
+} from './services/dashboard.service';
 
 @Component({
     selector: 'app-dashboard',
-    imports: [CommonModule, LucideAngularModule, RouterLink, TranslocoDirective],
+    imports: [
+        CommonModule,
+        LucideAngularModule,
+        RouterLink,
+        TranslocoDirective,
+    ],
     templateUrl: './dashboard.component.html',
-    styleUrl: './dashboard.component.css'
+    styleUrl: './dashboard.component.css',
 })
 export class DashboardComponent implements OnInit {
     private dashboardService = inject(DashboardService);
@@ -22,12 +31,12 @@ export class DashboardComponent implements OnInit {
             playerCount: 0,
             modCount: 0,
             apiStatus: 'loading',
-            lastUpdate: Date.now()
-        }
+            lastUpdate: Date.now(),
+        },
     });
 
     activities = toSignal(this.dashboardService.getRecentActivities$(), {
-        initialValue: []
+        initialValue: [],
     });
 
     ngOnInit(): void {

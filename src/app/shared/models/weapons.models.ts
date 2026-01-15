@@ -116,9 +116,9 @@ export interface AdvancedFilters {
     };
 
     /** Exact match filters */
-    classTag?: string;           // assault, sniper, smg, etc.
-    suppressed?: boolean;        // true/false
-    canRespawnWith?: boolean;    // true/false
+    classTag?: string; // assault, sniper, smg, etc.
+    suppressed?: boolean; // true/false
+    canRespawnWith?: boolean; // true/false
 }
 
 /**

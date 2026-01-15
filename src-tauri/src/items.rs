@@ -1,0 +1,444 @@
+//! Items directory scanner module
+//!
+//! Scans RWR game directory for item XML files (.carry_item, .visual_item, etc.),
+//! parses them, and returns structured item data to the frontend.
+
+use quick_xml::de::from_str;
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::path::Path;
+
+/// Unified item structure (all item types)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Item {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
+    pub name: String,
+    #[serde(rename = "itemType")]
+    pub item_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encumbrance: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub can_respawn_with: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub in_stock: Option<bool>,
+    #[serde(rename = "filePath")]
+    pub file_path: String,
+    #[serde(rename = "sourceFile")]
+    pub source_file: String,
+    #[serde(rename = "packageName")]
+    pub package_name: String,
+    // CarryItem-specific
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slot: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transform_on_consume: Option<String>,
+    #[serde(rename = "timeToLive")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub time_to_live: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modifiers: Option<Vec<ItemModifier>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hud_icon: Option<String>,
+    #[serde(rename = "modelFilename")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model_filename: Option<String>,
+    // VisualItem-specific
+    #[serde(rename = "meshFilenames")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mesh_filenames: Option<Vec<String>>,
+    #[serde(rename = "effectRef")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub effect_ref: Option<String>,
+}
+
+/// Item modifier
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ItemModifier {
+    #[serde(rename = "class")]
+    pub modifier_class: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<f64>,
+    #[serde(rename = "inputCharacterState")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_character_state: Option<String>,
+    #[serde(rename = "outputCharacterState")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_character_state: Option<String>,
+    #[serde(rename = "consumesItem")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub consumes_item: Option<bool>,
+}
+
+/// Item capacity requirement
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ItemCapacity {
+    pub value: f64,
+    pub source: String,
+    #[serde(rename = "sourceValue")]
+    pub source_value: f64,
+}
+
+/// Error during item scanning
+#[derive(Debug, Serialize)]
+pub struct ScanError {
+    pub file: String,
+    pub error: String,
+    pub severity: String,
+}
+
+/// Item scan result
+#[derive(Debug, Serialize)]
+pub struct ItemScanResult {
+    pub items: Vec<Item>,
+    pub errors: Vec<ScanError>,
+    #[serde(rename = "duplicateKeys")]
+    pub duplicate_keys: Vec<String>,
+    #[serde(rename = "scanTime")]
+    pub scan_time: u64,
+}
+
+/// Raw carry_item XML structure (for parsing)
+#[derive(Debug, Deserialize, Default)]
+struct RawCarryItem {
+    #[serde(rename = "@key", default)]
+    key: Option<String>,
+    #[serde(rename = "@name", default)]
+    name: Option<String>,
+    #[serde(rename = "@slot", default)]
+    slot: Option<String>,
+    #[serde(rename = "@transform_on_consume", default)]
+    transform_on_consume: Option<String>,
+    #[serde(rename = "@time_to_live_out_in_the_open", default)]
+    time_to_live: Option<f64>,
+    #[serde(rename = "@player_death_drop_owner_lock_time", default)]
+    player_death_drop_owner_lock_time: Option<f64>,
+    #[serde(rename = "hud_icon", default)]
+    hud_icon: Option<RawHudIcon>,
+    #[serde(rename = "capacity", default)]
+    capacities: Vec<RawCapacity>,
+    #[serde(rename = "inventory", default)]
+    inventory: Option<RawInventory>,
+    #[serde(rename = "commonness", default)]
+    commonness: Option<RawCommonness>,
+    #[serde(rename = "modifier", default)]
+    modifiers: Vec<RawItemModifier>,
+    #[serde(rename = "model", default)]
+    model: Option<RawModel>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct RawHudIcon {
+    #[serde(rename = "@filename", default)]
+    filename: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct RawCapacity {
+    #[serde(rename = "@value", default)]
+    value: Option<f64>,
+    #[serde(rename = "@source", default)]
+    source: Option<String>,
+    #[serde(rename = "@sourceValue", default)]
+    source_value: Option<f64>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct RawInventory {
+    #[serde(rename = "@encumbrance", default)]
+    encumbrance: Option<f64>,
+    #[serde(rename = "@price", default)]
+    price: Option<f64>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct RawCommonness {
+    #[serde(rename = "@value", default)]
+    value: Option<f64>,
+    #[serde(rename = "@in_stock", default)]
+    in_stock: Option<String>,
+    #[serde(rename = "@can_respawn_with", default)]
+    can_respawn_with: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct RawItemModifier {
+    #[serde(rename = "@class", default)]
+    class: Option<String>,
+    #[serde(rename = "@value", default)]
+    value: Option<f64>,
+    #[serde(rename = "@input_character_state", default)]
+    input_character_state: Option<String>,
+    #[serde(rename = "@output_character_state", default)]
+    output_character_state: Option<String>,
+    #[serde(rename = "@consumes_item", default)]
+    consumes_item: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct RawModel {
+    #[serde(rename = "@mesh_filename", default)]
+    mesh_filename: Option<String>,
+}
+
+/// Raw visual_item XML structure (for parsing)
+#[derive(Debug, Deserialize, Default)]
+struct RawVisualItem {
+    #[serde(rename = "@key", default)]
+    key: Option<String>,
+    #[serde(rename = "model", default)]
+    models: Vec<RawVisualModel>,
+    #[serde(rename = "effect", default)]
+    effect: Option<RawEffect>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct RawVisualModel {
+    #[serde(rename = "@mesh_filename", default)]
+    mesh_filename: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct RawEffect {
+    #[serde(rename = "@ref", default)]
+    effect_ref: Option<String>,
+}
+
+/// Scan items from game directory
+#[tauri::command]
+pub async fn scan_items(game_path: String) -> Result<ItemScanResult, String> {
+    let start_time = std::time::Instant::now();
+
+    let input_path = Path::new(&game_path);
+    if !input_path.exists() {
+        return Err(format!("Path does not exist: {}", game_path));
+    }
+
+    // Determine packages directory
+    let packages_dir = if input_path.ends_with("packages") {
+        input_path.to_path_buf()
+    } else {
+        input_path.join("packages")
+    };
+
+    if !packages_dir.exists() {
+        return Err(format!(
+            "packages directory not found. Expected: {}",
+            packages_dir.display()
+        ));
+    }
+
+    let mut items = Vec::new();
+    let mut errors = Vec::new();
+    let mut seen_keys = HashSet::new();
+    let mut duplicate_keys = Vec::new();
+
+    // Scan for item files in packages/**/items/
+    let items_pattern = packages_dir.join("**/items/*.carry_item");
+    let visual_items_pattern = packages_dir.join("**/items/*.visual_item");
+
+    // Scan carry_item files
+    if let Ok(entries) = glob::glob(&items_pattern.to_string_lossy()) {
+        for entry in entries {
+            if let Ok(path) = entry {
+                if path.is_file() {
+                    match parse_carry_item(&path, &packages_dir) {
+                        Ok(item) => {
+                            if let Some(ref key) = item.key {
+                                if seen_keys.contains(key) {
+                                    duplicate_keys.push(key.clone());
+                                } else {
+                                    seen_keys.insert(key.clone());
+                                }
+                            }
+                            items.push(item);
+                        }
+                        Err(e) => {
+                            errors.push(ScanError {
+                                file: path.display().to_string(),
+                                error: e,
+                                severity: "error".to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Scan visual_item files
+    if let Ok(entries) = glob::glob(&visual_items_pattern.to_string_lossy()) {
+        for entry in entries {
+            if let Ok(path) = entry {
+                if path.is_file() {
+                    match parse_visual_item(&path, &packages_dir) {
+                        Ok(item) => {
+                            if let Some(ref key) = item.key {
+                                if seen_keys.contains(key) {
+                                    duplicate_keys.push(key.clone());
+                                } else {
+                                    seen_keys.insert(key.clone());
+                                }
+                            }
+                            items.push(item);
+                        }
+                        Err(e) => {
+                            errors.push(ScanError {
+                                file: path.display().to_string(),
+                                error: e,
+                                severity: "error".to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let scan_time = start_time.elapsed().as_millis() as u64;
+
+    Ok(ItemScanResult {
+        items,
+        errors,
+        duplicate_keys,
+        scan_time,
+    })
+}
+
+/// Parse a carry_item XML file
+fn parse_carry_item(path: &Path, packages_dir: &Path) -> Result<Item, String> {
+    let content =
+        std::fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))?;
+
+    // Parse as <carry_items> root with multiple <carry_item> children
+    let raw_root: RawCarryItemsRoot =
+        from_str(&content).map_err(|e| format!("XML parse error: {}", e))?;
+
+    // Use the first carry_item from the root
+    let raw = raw_root
+        .items
+        .first()
+        .ok_or_else(|| format!("No carry_item found in file"))?;
+
+    let file_name = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_string();
+
+    let package_name = path
+        .ancestors()
+        .skip_while(|p| *p != packages_dir)
+        .skip(1)
+        .next()
+        .and_then(|p| p.file_name())
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    let modifiers = raw
+        .modifiers
+        .iter()
+        .filter_map(|m| {
+            if let Some(class) = &m.class {
+                Some(ItemModifier {
+                    modifier_class: class.clone(),
+                    value: m.value,
+                    input_character_state: m.input_character_state.clone(),
+                    output_character_state: m.output_character_state.clone(),
+                    consumes_item: m.consumes_item.as_ref().and_then(|s| s.parse().ok()),
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    Ok(Item {
+        key: raw.key.clone().or_else(|| Some(file_name.clone())),
+        name: raw.name.clone().unwrap_or_default(),
+        item_type: "carry_item".to_string(),
+        encumbrance: raw.inventory.as_ref().and_then(|i| i.encumbrance),
+        price: raw.inventory.as_ref().and_then(|i| i.price),
+        can_respawn_with: raw
+            .commonness
+            .as_ref()
+            .and_then(|c| c.can_respawn_with.as_ref().and_then(|s| s.parse().ok())),
+        in_stock: raw
+            .commonness
+            .as_ref()
+            .and_then(|c| c.in_stock.as_ref().and_then(|s| s.parse().ok())),
+        file_path: format!("{}/{}", package_name, file_name),
+        source_file: path.display().to_string(),
+        package_name,
+        slot: raw.slot.clone(),
+        transform_on_consume: raw.transform_on_consume.clone(),
+        time_to_live: raw.time_to_live,
+        modifiers: Some(modifiers),
+        hud_icon: raw.hud_icon.as_ref().and_then(|h| h.filename.clone()),
+        model_filename: raw.model.as_ref().and_then(|m| m.mesh_filename.clone()),
+        mesh_filenames: None,
+        effect_ref: None,
+    })
+}
+
+/// Parse a visual_item XML file
+fn parse_visual_item(path: &Path, packages_dir: &Path) -> Result<Item, String> {
+    let content =
+        std::fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))?;
+
+    let raw: RawVisualItem = from_str(&content).map_err(|e| format!("XML parse error: {}", e))?;
+
+    let file_name = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_string();
+
+    let package_name = path
+        .ancestors()
+        .skip_while(|p| *p != packages_dir)
+        .skip(1)
+        .next()
+        .and_then(|p| p.file_name())
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    let mesh_filenames: Vec<String> = raw
+        .models
+        .iter()
+        .filter_map(|m| m.mesh_filename.clone())
+        .collect();
+
+    Ok(Item {
+        key: Some(file_name.clone()),
+        name: file_name.clone(),
+        item_type: "visual_item".to_string(),
+        encumbrance: None,
+        price: None,
+        can_respawn_with: None,
+        in_stock: None,
+        file_path: format!("{}/{}", package_name, file_name),
+        source_file: path.display().to_string(),
+        package_name,
+        slot: None,
+        transform_on_consume: None,
+        time_to_live: None,
+        modifiers: None,
+        hud_icon: None,
+        model_filename: None,
+        mesh_filenames: Some(mesh_filenames),
+        effect_ref: raw.effect.and_then(|e| e.effect_ref),
+    })
+}
+
+/// Root container for carry_item XML files
+#[derive(Debug, Deserialize)]
+struct RawCarryItemsRoot {
+    #[serde(rename = "carry_item")]
+    items: Vec<RawCarryItem>,
+}

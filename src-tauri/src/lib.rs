@@ -1,4 +1,5 @@
 mod hotkeys;
+mod items;
 mod ping;
 mod rwrmi;
 mod weapons;
@@ -73,7 +74,8 @@ pub fn run() {
             hotkeys::open_hotkeys_in_editor,
             weapons::validate_game_path,
             weapons::scan_weapons,
-            weapons::open_file_in_editor
+            weapons::open_file_in_editor,
+            items::scan_items
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

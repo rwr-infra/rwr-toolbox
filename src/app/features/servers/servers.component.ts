@@ -7,7 +7,7 @@ import {
     ServerFilter,
     ServerSort,
     ServerSortField,
-    ServerColumnKey
+    ServerColumnKey,
 } from '../../shared/models/server.models';
 import { PaginationState } from '../../shared/models/common.models';
 import { ServerService } from './services/server.service';
@@ -24,7 +24,7 @@ import { SERVER_COLUMNS } from './server-columns';
     standalone: true,
     imports: [CommonModule, LucideAngularModule, TranslocoDirective],
     templateUrl: './servers.component.html',
-    styleUrl: './servers.component.css'
+    styleUrl: './servers.component.css',
 })
 export class ServersComponent implements OnInit {
     private serverService = inject(ServerService);
@@ -47,7 +47,7 @@ export class ServersComponent implements OnInit {
     sort = signal<ServerSort>({ field: 'playerCount', direction: 'desc' });
     pagination = signal<Pick<PaginationState, 'currentPage' | 'pageSize'>>({
         currentPage: 1,
-        pageSize: 100
+        pageSize: 100,
     });
 
     // Column configuration
@@ -59,7 +59,10 @@ export class ServersComponent implements OnInit {
         const currentFilter = this.filter();
         const currentSort = this.sort();
 
-        let filtered = this.serverService.filterServers(allServers, currentFilter);
+        let filtered = this.serverService.filterServers(
+            allServers,
+            currentFilter,
+        );
         filtered = this.serverService.sortServers(filtered, currentSort);
 
         return filtered;
@@ -67,7 +70,9 @@ export class ServersComponent implements OnInit {
 
     // Computed pagination totals (derived from filtered servers)
     totalItems = computed(() => this.filteredServers().length);
-    totalPages = computed(() => Math.ceil(this.totalItems() / this.pagination().pageSize) || 1);
+    totalPages = computed(
+        () => Math.ceil(this.totalItems() / this.pagination().pageSize) || 1,
+    );
 
     paginatedServers = computed(() => {
         const filtered = this.filteredServers();
@@ -82,12 +87,12 @@ export class ServersComponent implements OnInit {
     // Available options for filters
     countries = computed(() => {
         const servers = this.servers();
-        return [...new Set(servers.map(s => s.country))].sort();
+        return [...new Set(servers.map((s) => s.country))].sort();
     });
 
     maps = computed(() => {
         const servers = this.servers();
-        return [...new Set(servers.map(s => s.map))].sort();
+        return [...new Set(servers.map((s) => s.map))].sort();
     });
 
     ngOnInit() {
@@ -99,7 +104,7 @@ export class ServersComponent implements OnInit {
      */
     loadData() {
         this.serverService.fetchServers().subscribe({
-            error: err => console.error('Failed to load servers:', err)
+            error: (err) => console.error('Failed to load servers:', err),
         });
     }
 
@@ -107,8 +112,8 @@ export class ServersComponent implements OnInit {
      * Handle filter changes
      */
     onFilterChange(newFilter: Partial<ServerFilter>) {
-        this.filter.update(f => ({ ...f, ...newFilter }));
-        this.pagination.update(p => ({ ...p, currentPage: 1 }));
+        this.filter.update((f) => ({ ...f, ...newFilter }));
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
     }
 
     /**
@@ -147,9 +152,12 @@ export class ServersComponent implements OnInit {
      * Handle sort changes
      */
     onSortChange(field: ServerSortField) {
-        this.sort.update(s => {
+        this.sort.update((s) => {
             if (s.field === field) {
-                return { field, direction: s.direction === 'asc' ? 'desc' : 'asc' };
+                return {
+                    field,
+                    direction: s.direction === 'asc' ? 'desc' : 'asc',
+                };
             }
             return { field, direction: 'desc' };
         });
@@ -159,24 +167,26 @@ export class ServersComponent implements OnInit {
      * Handle page changes
      */
     onPageChange(page: number) {
-        this.pagination.update(p => ({ ...p, currentPage: page }));
+        this.pagination.update((p) => ({ ...p, currentPage: page }));
     }
 
     /**
      * Ping all visible servers
      */
     onPingServers() {
-        const serversToPing = this.paginatedServers().map(s => ({
+        const serversToPing = this.paginatedServers().map((s) => ({
             address: s.address,
-            port: s.port
+            port: s.port,
         }));
 
-        this.pingService.pingServers(serversToPing).subscribe(results => {
-            results.forEach(result => {
+        this.pingService.pingServers(serversToPing).subscribe((results) => {
+            results.forEach((result) => {
                 if (result.ping !== null) {
                     // Update server ping in the list
-                    this.serverService.servers$.subscribe(servers => {
-                        const server = servers.find(s => s.id === result.address);
+                    this.serverService.servers$.subscribe((servers) => {
+                        const server = servers.find(
+                            (s) => s.id === result.address,
+                        );
                         if (server) {
                             (server as any).ping = result.ping;
                         }
@@ -241,7 +251,12 @@ export class ServersComponent implements OnInit {
      * Check if a column is sortable
      */
     isColumnSortable(key: ServerColumnKey): boolean {
-        const sortable: ServerSortField[] = ['name', 'playerCount', 'ping', 'country'];
+        const sortable: ServerSortField[] = [
+            'name',
+            'playerCount',
+            'ping',
+            'country',
+        ];
         return sortable.includes(key as ServerSortField);
     }
 
@@ -301,10 +316,14 @@ export class ServersComponent implements OnInit {
         const { currentPlayers, maxPlayers } = server;
         const occupancy = maxPlayers > 0 ? currentPlayers / maxPlayers : 0;
 
-        if (currentPlayers === 0) return 'badge bg-gray-100 text-gray-500 border-gray-200 opacity-60';
-        if (occupancy >= 1.0 || currentPlayers >= maxPlayers) return 'badge bg-red-100 text-red-700 border-red-200';
-        if (occupancy >= 0.8) return 'badge bg-orange-100 text-orange-700 border-orange-200';
-        if (occupancy >= 0.6) return 'badge bg-amber-100 text-amber-700 border-amber-200';
+        if (currentPlayers === 0)
+            return 'badge bg-gray-100 text-gray-500 border-gray-200 opacity-60';
+        if (occupancy >= 1.0 || currentPlayers >= maxPlayers)
+            return 'badge bg-red-100 text-red-700 border-red-200';
+        if (occupancy >= 0.8)
+            return 'badge bg-orange-100 text-orange-700 border-orange-200';
+        if (occupancy >= 0.6)
+            return 'badge bg-amber-100 text-amber-700 border-amber-200';
         return 'badge bg-green-100 text-green-700 border-green-200';
     }
 
@@ -312,7 +331,8 @@ export class ServersComponent implements OnInit {
         const { currentPlayers, maxPlayers } = server;
         const occupancy = maxPlayers > 0 ? currentPlayers / maxPlayers : 0;
         if (currentPlayers === 0) return 'Empty server';
-        if (occupancy >= 1.0 || currentPlayers >= maxPlayers) return 'Full server';
+        if (occupancy >= 1.0 || currentPlayers >= maxPlayers)
+            return 'Full server';
         return `${Math.round(occupancy * 100)}% full`;
     }
 

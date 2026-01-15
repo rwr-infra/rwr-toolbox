@@ -2,65 +2,71 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
 import { TranslocoService } from '@jsverse/transloco';
 import {
-    Weapon,
-    WeaponScanResult,
-    AdvancedFilters,
-    ColumnVisibility,
-    StanceAccuracy,
-} from '../../../../shared/models/weapons.models';
+    GenericItem,
+    ItemScanResult,
+} from '../../../../shared/models/items.models';
+import { ColumnVisibility } from '../../../../shared/models/column.models';
 import { SortState } from '../../../../shared/models/sort.models';
 
 /**
- * Manages weapon data state and communicates with Rust backend via Tauri commands.
+ * Item filters for advanced search
+ */
+export interface ItemFilters {
+    itemType?: 'carry_item' | 'visual_item';
+    encumbrance?: { min?: number; max?: number };
+    price?: { min?: number; max?: number };
+    canRespawnWith?: boolean;
+    inStock?: boolean;
+}
+
+/**
+ * Manages item data state and communicates with Rust backend via Tauri commands.
  * Uses Angular v20 Signals pattern for reactive state management.
+ * Mirrors the structure of WeaponService for consistency.
  */
 @Injectable({ providedIn: 'root' })
-export class WeaponService {
+export class ItemService {
     private transloco = inject(TranslocoService);
 
     // Private writable signals
-    private weapons = signal<Weapon[]>([]);
+    private items = signal<GenericItem[]>([]);
     private loading = signal<boolean>(false);
     private error = signal<string | null>(null);
     private searchTerm = signal<string>('');
-    private advancedFilters = signal<AdvancedFilters>({});
+    private filters = signal<ItemFilters>({});
     private _visibleColumns = signal<ColumnVisibility[]>(
         this.getDefaultColumns(),
     );
     private sortState = signal<SortState>({ columnKey: null, direction: null });
 
     // Public computed signals
-    readonly filteredWeapons = computed(() => {
-        const weapons = this.weapons();
+    readonly filteredItems = computed(() => {
+        const items = this.items();
         const term = this.searchTerm();
-        const filters = this.advancedFilters();
+        const filters = this.filters();
         const sort = this.sortState();
 
-        let filtered = weapons.filter(
-            (w) =>
-                this.matchesSearch(w, term) && this.matchesFilters(w, filters),
+        let filtered = items.filter(
+            (i) =>
+                this.matchesSearch(i, term) && this.matchesFilters(i, filters),
         );
 
         // Apply sorting if active
         if (sort.columnKey && sort.direction) {
-            filtered = this.sortWeapons(
-                filtered,
-                sort.columnKey,
-                sort.direction,
-            );
+            filtered = this.sortItems(filtered, sort.columnKey, sort.direction);
         }
 
         return filtered;
     });
 
-    readonly weaponsSig = this.weapons.asReadonly();
+    readonly itemsSig = this.items.asReadonly();
     readonly loadingSig = this.loading.asReadonly();
     readonly errorSig = this.error.asReadonly();
     readonly visibleColumnsSig = this._visibleColumns.asReadonly();
     readonly sortStateSig = this.sortState.asReadonly();
 
-    /** Scan weapons from game directory */
-    async scanWeapons(gamePath: string): Promise<void> {
+    /** Scan items from game directory */
+    async scanItems(gamePath: string): Promise<void> {
         // Prevent duplicate scans
         if (this.loading()) {
             return;
@@ -69,15 +75,15 @@ export class WeaponService {
         this.loading.set(true);
         this.error.set(null);
         try {
-            const result = await invoke<WeaponScanResult>('scan_weapons', {
+            const result = await invoke<ItemScanResult>('scan_items', {
                 gamePath,
             });
-            console.log('result', result);
-            this.weapons.set(result.weapons);
+            console.log('items result', result);
+            this.items.set(result.items);
 
             // Report errors if any
             if (result.errors.length > 0) {
-                const errorMsg = this.transloco.translate('weapons.scanError', {
+                const errorMsg = this.transloco.translate('items.scanError', {
                     error: `${result.errors.length} files failed`,
                 });
                 this.error.set(errorMsg);
@@ -86,13 +92,13 @@ export class WeaponService {
             // Report duplicate keys if any
             if (result.duplicateKeys.length > 0) {
                 const duplicateMsg = this.transloco.translate(
-                    'weapons.errors.duplicateKeys',
+                    'items.errors.duplicateKeys',
                     { keys: result.duplicateKeys.join(', ') },
                 );
                 this.error.set(duplicateMsg);
             }
         } catch (e) {
-            const errorMsg = this.transloco.translate('weapons.scanError', {
+            const errorMsg = this.transloco.translate('items.scanError', {
                 error: String(e),
             });
             this.error.set(errorMsg);
@@ -101,9 +107,9 @@ export class WeaponService {
         }
     }
 
-    /** Refresh weapons using stored game path */
-    async refreshWeapons(gamePath: string): Promise<void> {
-        return this.scanWeapons(gamePath);
+    /** Refresh items using stored game path */
+    async refreshItems(gamePath: string): Promise<void> {
+        return this.scanItems(gamePath);
     }
 
     /** Update search term */
@@ -111,15 +117,15 @@ export class WeaponService {
         this.searchTerm.set(term);
     }
 
-    /** Update advanced filters */
-    setAdvancedFilters(filters: AdvancedFilters): void {
-        this.advancedFilters.set(filters);
+    /** Update filters */
+    setFilters(filters: ItemFilters): void {
+        this.filters.set(filters);
     }
 
     /** Clear all filters */
     clearFilters(): void {
         this.searchTerm.set('');
-        this.advancedFilters.set({});
+        this.filters.set({});
     }
 
     /** Set column visibility */
@@ -128,7 +134,7 @@ export class WeaponService {
         // Persist to localStorage
         try {
             localStorage.setItem(
-                'weapons.column.visibility',
+                'items.column.visibility',
                 JSON.stringify(columns),
             );
         } catch {
@@ -151,113 +157,88 @@ export class WeaponService {
         return this.sortState();
     }
 
-    /** Get weapon details by key */
-    getWeaponDetails(weaponKey: string): Weapon | undefined {
-        return this.weapons().find((w) => w.key === weaponKey);
+    /** Get item details by key */
+    getItemDetails(itemKey: string): GenericItem | undefined {
+        return this.items().find((i) => i.key === itemKey);
     }
 
-    /** Check if weapon matches search term */
-    private matchesSearch(weapon: Weapon, term: string): boolean {
+    /** Check if item matches search term */
+    private matchesSearch(item: GenericItem, term: string): boolean {
         if (!term) return true;
         const lowerTerm = term.toLowerCase();
         return (
-            weapon.name.toLowerCase().includes(lowerTerm) ||
-            weapon.key?.toLowerCase().includes(lowerTerm) ||
-            weapon.classTag.toLowerCase().includes(lowerTerm)
+            item.name.toLowerCase().includes(lowerTerm) ||
+            item.key?.toLowerCase().includes(lowerTerm) ||
+            item.itemType.toLowerCase().includes(lowerTerm) ||
+            item.packageName.toLowerCase().includes(lowerTerm)
         );
     }
 
-    /** Check if weapon matches advanced filters */
-    private matchesFilters(weapon: Weapon, filters: AdvancedFilters): boolean {
+    /** Check if item matches filters */
+    private matchesFilters(item: GenericItem, filters: ItemFilters): boolean {
+        // Item type filter
+        if (filters.itemType && item.itemType !== filters.itemType) {
+            return false;
+        }
+
         // Range filters
-        if (filters.damage) {
-            const dmg = weapon.killProbability;
-            if (dmg < filters.damage.min || dmg > filters.damage.max)
-                return false;
-        }
-
-        if (filters.fireRate) {
-            const rate = weapon.retriggerTime;
-            if (rate < filters.fireRate.min || rate > filters.fireRate.max)
-                return false;
-        }
-
-        if (filters.magazineSize) {
-            const mag = weapon.magazineSize;
-            if (
-                mag < filters.magazineSize.min ||
-                mag > filters.magazineSize.max
-            )
-                return false;
-        }
-
         if (filters.encumbrance) {
-            const enc = weapon.encumbrance ?? 0;
-            if (enc < filters.encumbrance.min || enc > filters.encumbrance.max)
+            const enc = item.encumbrance ?? 0;
+            if (
+                filters.encumbrance.min !== undefined &&
+                enc < filters.encumbrance.min
+            ) {
                 return false;
+            }
+            if (
+                filters.encumbrance.max !== undefined &&
+                enc > filters.encumbrance.max
+            ) {
+                return false;
+            }
         }
 
         if (filters.price) {
-            const price = weapon.price ?? 0;
-            if (price < filters.price.min || price > filters.price.max)
+            const price = item.price ?? 0;
+            if (filters.price.min !== undefined && price < filters.price.min) {
                 return false;
-        }
-
-        // Stance accuracy filters
-        if (filters.stanceAccuracies) {
-            for (const [stance, range] of Object.entries(
-                filters.stanceAccuracies,
-            ) as [string, { min: number; max: number }][]) {
-                const accuracy = weapon.stanceAccuracies.find(
-                    (sa: StanceAccuracy) => sa.stance === stance,
-                );
-                if (!accuracy) return false;
-                if (
-                    accuracy.accuracy < range.min ||
-                    accuracy.accuracy > range.max
-                )
-                    return false;
+            }
+            if (filters.price.max !== undefined && price > filters.price.max) {
+                return false;
             }
         }
 
         // Exact match filters
-        if (filters.classTag && weapon.classTag !== filters.classTag) {
-            return false;
-        }
-
-        if (
-            filters.suppressed !== undefined &&
-            weapon.suppressed !== filters.suppressed
-        ) {
-            return false;
-        }
-
         if (
             filters.canRespawnWith !== undefined &&
-            weapon.canRespawnWith !== filters.canRespawnWith
+            item.canRespawnWith !== filters.canRespawnWith
         ) {
+            return false;
+        }
+
+        if (filters.inStock !== undefined && item.inStock !== filters.inStock) {
             return false;
         }
 
         return true;
     }
 
-    /** Sort weapons by column with stable sort */
-    private sortWeapons(
-        weapons: Weapon[],
+    /** Sort items by column with stable sort */
+    private sortItems(
+        items: GenericItem[],
         columnKey: string,
         direction: 'asc' | 'desc',
-    ): Weapon[] {
+    ): GenericItem[] {
         // Create a copy with original indices for stable sort
-        const indexed = weapons.map((w, i) => ({
-            weapon: w,
-            originalIndex: i,
+        const indexed = items.map((i, idx) => ({
+            item: i,
+            originalIndex: idx,
         }));
 
         indexed.sort((a, b) => {
             const comparison = this.compareValues(
-                a.weapon[columnKey as keyof Weapon],
-                b.weapon[columnKey as keyof Weapon],
+                a.item[columnKey as keyof GenericItem],
+                b.item[columnKey as keyof GenericItem],
             );
             // Apply direction
             const result = direction === 'asc' ? comparison : -comparison;
@@ -265,7 +246,7 @@ export class WeaponService {
             return result !== 0 ? result : a.originalIndex - b.originalIndex;
         });
 
-        return indexed.map((item) => item.weapon);
+        return indexed.map((indexedItem) => indexedItem.item);
     }
 
     /** Compare two values for sorting with null-safe comparison */
@@ -290,7 +271,7 @@ export class WeaponService {
     private getDefaultColumns(): ColumnVisibility[] {
         // Try to load from localStorage
         try {
-            const stored = localStorage.getItem('weapons.column.visibility');
+            const stored = localStorage.getItem('items.column.visibility');
             if (stored) {
                 return JSON.parse(stored) as ColumnVisibility[];
             }
@@ -302,10 +283,11 @@ export class WeaponService {
         return [
             { columnId: 'key', visible: true, order: 0 },
             { columnId: 'name', visible: true, order: 1 },
-            { columnId: 'classTag', visible: true, order: 2 },
-            { columnId: 'magazineSize', visible: true, order: 3 },
-            { columnId: 'killProbability', visible: true, order: 4 },
-            { columnId: 'retriggerTime', visible: true, order: 5 },
+            { columnId: 'itemType', visible: true, order: 2 },
+            { columnId: 'slot', visible: false, order: 3 },
+            { columnId: 'encumbrance', visible: true, order: 4 },
+            { columnId: 'price', visible: true, order: 5 },
+            { columnId: 'filePath', visible: true, order: 6 },
         ];
     }
 }

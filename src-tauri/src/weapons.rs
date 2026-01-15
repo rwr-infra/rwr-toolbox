@@ -5,7 +5,7 @@
 
 use quick_xml::de::from_str;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -13,7 +13,7 @@ const MAX_TEMPLATE_DEPTH: usize = 10;
 
 /// Main weapon structure with all attributes from XML
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]  // Apply camelCase to all fields by default
+#[serde(rename_all = "camelCase")] // Apply camelCase to all fields by default
 pub struct Weapon {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key: Option<String>,
@@ -195,12 +195,18 @@ pub async fn validate_game_path(path: String) -> Result<ValidationResult, String
 
     // Check if packages directory exists
     if !packages_dir.exists() {
-        return Err(format!("packages directory not found. Expected: {}", packages_dir.display()));
+        return Err(format!(
+            "packages directory not found. Expected: {}",
+            packages_dir.display()
+        ));
     }
 
     // Check if it's a directory
     if !packages_dir.is_dir() {
-        return Err(format!("packages path is not a directory: {}", packages_dir.display()));
+        return Err(format!(
+            "packages path is not a directory: {}",
+            packages_dir.display()
+        ));
     }
 
     // Count packages
@@ -299,9 +305,7 @@ fn discover_weapons(base_path: &Path) -> Vec<PathBuf> {
     WalkDir::new(base_path)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| {
-            e.path().extension().map_or(false, |ext| ext == "weapon")
-        })
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "weapon"))
         .map(|e| e.path().to_path_buf())
         .collect()
 }
@@ -329,17 +333,22 @@ fn parse_weapon_file(weapon_path: &Path, base_path: &Path) -> Result<Weapon, any
 
     // T010: Fix classTag derivation priority
     // Priority: tag name (first non-empty) → specification.class → empty string fallback
-    let class_tag = raw_weapon.tags
+    let class_tag = raw_weapon
+        .tags
         .iter()
         .find_map(|t| t.name.as_ref().map(|s| s.to_string()))
-        .or_else(|| raw_weapon.specification.class.as_ref().map(|s| s.to_string()))
+        .or_else(|| {
+            raw_weapon
+                .specification
+                .class
+                .as_ref()
+                .map(|s| s.to_string())
+        })
         .unwrap_or_default();
 
     // T011: Fix name derivation priority
     // Priority: specification.@name → root fallback (empty string is valid)
-    let name = raw_weapon.specification.name
-        .clone()
-        .unwrap_or_default();
+    let name = raw_weapon.specification.name.clone().unwrap_or_default();
 
     // Extract numeric values from specification
     let retrigger_time = raw_weapon.specification.retrigger_time.unwrap_or(0.0);
@@ -351,20 +360,25 @@ fn parse_weapon_file(weapon_path: &Path, base_path: &Path) -> Result<Weapon, any
     let price = raw_weapon.inventory.as_ref().and_then(|i| i.price);
 
     // T012: Extract kill_probability from projectile/result.@kill_probability
-    let kill_probability = raw_weapon.projectile
+    let kill_probability = raw_weapon
+        .projectile
         .as_ref()
         .and_then(|p| p.result.as_ref())
         .and_then(|r| r.kill_probability)
         .unwrap_or(0.0);
 
     // Determine suppressed status (from specification.@suppressed as "0"/"1")
-    let suppressed = raw_weapon.specification.suppressed.as_ref()
+    let suppressed = raw_weapon
+        .specification
+        .suppressed
+        .as_ref()
         .and_then(|s| s.parse::<i32>().ok())
         .map(|v| v == 1)
         .unwrap_or(false);
 
     // Convert stances from Vec<RawStance> to Vec<StanceAccuracy>
-    let stance_accuracies: Vec<StanceAccuracy> = raw_weapon.stances
+    let stance_accuracies: Vec<StanceAccuracy> = raw_weapon
+        .stances
         .into_iter()
         .map(|s| StanceAccuracy {
             stance: s.state_key,
@@ -383,28 +397,27 @@ fn parse_weapon_file(weapon_path: &Path, base_path: &Path) -> Result<Weapon, any
 
     // Convert to final Weapon structure
     let weapon = Weapon {
-        key: raw_weapon.key.filter(|k| !k.is_empty())
-            .or_else(|| {
-                weapon_path
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .map(|s| s.to_string())
-            }),
+        key: raw_weapon.key.filter(|k| !k.is_empty()).or_else(|| {
+            weapon_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string())
+        }),
         name,
         class_tag,
         magazine_size,
         kill_probability,
         retrigger_time,
-        burst_shots: None,  // Not in current XML structure
-        spread_range: None,  // Not in current XML structure
-        sight_range_modifier: None,  // Not in current XML structure
+        burst_shots: None,          // Not in current XML structure
+        spread_range: None,         // Not in current XML structure
+        sight_range_modifier: None, // Not in current XML structure
         projectile_speed,
-        barrel_offset: None,  // Not in current XML structure
+        barrel_offset: None, // Not in current XML structure
         encumbrance,
         price,
         suppressed,
-        can_respawn_with: true,  // Default true
-        in_stock: true,  // Default true
+        can_respawn_with: true, // Default true
+        in_stock: true,         // Default true
         chain_variants: raw_weapon.chain_variants,
         stance_accuracies,
         file_path,
@@ -425,11 +438,17 @@ fn resolve_template(
 
     // Cycle detection
     if !visited.insert(template_path.clone()) {
-        return Err(anyhow::anyhow!("Circular reference detected: {}", template_file));
+        return Err(anyhow::anyhow!(
+            "Circular reference detected: {}",
+            template_file
+        ));
     }
 
     if visited.len() > MAX_TEMPLATE_DEPTH {
-        return Err(anyhow::anyhow!("Template depth exceeded limit (>{})", MAX_TEMPLATE_DEPTH));
+        return Err(anyhow::anyhow!(
+            "Template depth exceeded limit (>{})",
+            MAX_TEMPLATE_DEPTH
+        ));
     }
 
     let content = std::fs::read_to_string(&template_path)?;
@@ -462,7 +481,9 @@ fn merge_attributes(parent: RawWeapon, mut child: RawWeapon) -> RawWeapon {
     }
 
     // Merge tags (child inherits parent's tags that don't conflict)
-    let parent_tags: Vec<_> = parent.tags.into_iter()
+    let parent_tags: Vec<_> = parent
+        .tags
+        .into_iter()
         .filter(|pt| !child.tags.iter().any(|ct| ct.name == pt.name))
         .collect();
     child.tags.extend(parent_tags);
@@ -505,7 +526,8 @@ fn merge_specification(parent: &RawSpecification, child: &mut RawSpecification) 
     if child.sustained_fire_grow_step.is_none() && parent.sustained_fire_grow_step.is_some() {
         child.sustained_fire_grow_step = parent.sustained_fire_grow_step;
     }
-    if child.sustained_fire_diminish_rate.is_none() && parent.sustained_fire_diminish_rate.is_some() {
+    if child.sustained_fire_diminish_rate.is_none() && parent.sustained_fire_diminish_rate.is_some()
+    {
         child.sustained_fire_diminish_rate = parent.sustained_fire_diminish_rate;
     }
     if child.magazine_size.is_none() && parent.magazine_size.is_some() {
@@ -541,7 +563,7 @@ pub async fn open_file_in_editor(file_path: String) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
         std::process::Command::new("open")
-            .arg("-t")  // Open with default text editor
+            .arg("-t") // Open with default text editor
             .arg(&file_path)
             .spawn()
             .map_err(|e| format!("Failed to open file: {}", e))?;

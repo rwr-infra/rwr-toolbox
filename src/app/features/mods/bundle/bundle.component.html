@@ -1,7 +1,9 @@
 <div class="container mx-auto p-2 sm:p-4" *transloco="let t">
     <!-- Header -->
     <div class="mb-4">
-        <h1 class="text-xl sm:text-2xl font-bold">{{ t('mods.bundle.title') }}</h1>
+        <h1 class="text-xl sm:text-2xl font-bold">
+            {{ t('mods.bundle.title') }}
+        </h1>
         <p class="text-sm opacity-70">{{ t('mods.bundle.description') }}</p>
     </div>
 
@@ -10,7 +12,8 @@
         <button
             class="btn btn-primary"
             (click)="onBundle()"
-            [disabled]="loading()">
+            [disabled]="loading()"
+        >
             @if (loading()) {
                 <span class="loading loading-spinner"></span>
             }
@@ -21,7 +24,8 @@
         <button
             class="btn btn-warning"
             (click)="onGenerateConfig()"
-            [disabled]="loading()">
+            [disabled]="loading()"
+        >
             @if (loading()) {
                 <span class="loading loading-spinner"></span>
             }
@@ -33,27 +37,49 @@
     <!-- Structure Card -->
     <div class="card bg-base-200 shadow-sm mb-4">
         <div class="card-body p-4">
-            <h2 class="card-title text-base">{{ t('mods.bundle.structure_title') }}</h2>
+            <h2 class="card-title text-base">
+                {{ t('mods.bundle.structure_title') }}
+            </h2>
             <ul class="text-sm space-y-1">
                 <li class="flex items-center gap-2">
-                    <i-lucide name="folder" class="h-4 w-4 text-primary"></i-lucide>
+                    <i-lucide
+                        name="folder"
+                        class="h-4 w-4 text-primary"
+                    ></i-lucide>
                     <code class="text-xs">media/</code>
-                    <span class="text-xs opacity-70">{{ t('mods.bundle.media_folder') }}</span>
+                    <span class="text-xs opacity-70">{{
+                        t('mods.bundle.media_folder')
+                    }}</span>
                 </li>
                 <li class="flex items-center gap-2">
-                    <i-lucide name="file" class="h-4 w-4 text-secondary"></i-lucide>
+                    <i-lucide
+                        name="file"
+                        class="h-4 w-4 text-secondary"
+                    ></i-lucide>
                     <code class="text-xs">README.md</code>
-                    <span class="text-xs opacity-70">{{ t('mods.bundle.readme_file') }}</span>
+                    <span class="text-xs opacity-70">{{
+                        t('mods.bundle.readme_file')
+                    }}</span>
                 </li>
                 <li class="flex items-center gap-2">
-                    <i-lucide name="file" class="h-4 w-4 text-secondary"></i-lucide>
+                    <i-lucide
+                        name="file"
+                        class="h-4 w-4 text-secondary"
+                    ></i-lucide>
                     <code class="text-xs">CHANGELOG.md</code>
-                    <span class="text-xs opacity-70">{{ t('mods.bundle.changelog_file') }}</span>
+                    <span class="text-xs opacity-70">{{
+                        t('mods.bundle.changelog_file')
+                    }}</span>
                 </li>
                 <li class="flex items-center gap-2">
-                    <i-lucide name="file-code" class="h-4 w-4 text-accent"></i-lucide>
+                    <i-lucide
+                        name="file-code"
+                        class="h-4 w-4 text-accent"
+                    ></i-lucide>
                     <code class="text-xs">config.json</code>
-                    <span class="text-xs opacity-70">{{ t('mods.bundle.config_file') }}</span>
+                    <span class="text-xs opacity-70">{{
+                        t('mods.bundle.config_file')
+                    }}</span>
                 </li>
             </ul>
         </div>
@@ -62,20 +88,40 @@
     <!-- Config Format Card -->
     <div class="card bg-base-200 shadow-sm mb-4">
         <div class="card-body p-4">
-            <h2 class="card-title text-base">{{ t('mods.bundle.config_format') }}</h2>
+            <h2 class="card-title text-base">
+                {{ t('mods.bundle.config_format') }}
+            </h2>
 
             <div class="text-xs space-y-2">
                 <p class="font-bold">{{ t('mods.bundle.config_fields') }}:</p>
                 <ul class="list-disc list-inside space-y-1 opacity-80">
-                    <li><code>title</code>: {{ t('mods.bundle.field_title') }}</li>
-                    <li><code>description</code>: {{ t('mods.bundle.field_description') }}</li>
-                    <li><code>authors</code>: {{ t('mods.bundle.field_authors') }}</li>
-                    <li><code>version</code>: {{ t('mods.bundle.field_version') }}</li>
-                    <li><code>game_version</code>: {{ t('mods.bundle.field_game_version') }}</li>
+                    <li>
+                        <code>title</code>: {{ t('mods.bundle.field_title') }}
+                    </li>
+                    <li>
+                        <code>description</code>:
+                        {{ t('mods.bundle.field_description') }}
+                    </li>
+                    <li>
+                        <code>authors</code>:
+                        {{ t('mods.bundle.field_authors') }}
+                    </li>
+                    <li>
+                        <code>version</code>:
+                        {{ t('mods.bundle.field_version') }}
+                    </li>
+                    <li>
+                        <code>game_version</code>:
+                        {{ t('mods.bundle.field_game_version') }}
+                    </li>
                 </ul>
 
-                <p class="font-bold mt-2">{{ t('mods.bundle.config_example') }}:</p>
-                <pre class="bg-base-300 p-2 rounded text-xs overflow-x-auto"><code>{{ configExample | json }}</code></pre>
+                <p class="font-bold mt-2">
+                    {{ t('mods.bundle.config_example') }}:
+                </p>
+                <pre
+                    class="bg-base-300 p-2 rounded text-xs overflow-x-auto"
+                ><code>{{ configExample | json }}</code></pre>
             </div>
         </div>
     </div>
@@ -83,7 +129,9 @@
     <!-- Working Principle Card -->
     <div class="card bg-base-200 shadow-sm">
         <div class="card-body p-4">
-            <h2 class="card-title text-base">{{ t('mods.bundle.working_principle') }}</h2>
+            <h2 class="card-title text-base">
+                {{ t('mods.bundle.working_principle') }}
+            </h2>
             <ol class="text-sm list-decimal list-inside space-y-1">
                 <li>{{ t('mods.bundle.step1') }}</li>
                 <li>{{ t('mods.bundle.step2') }}</li>

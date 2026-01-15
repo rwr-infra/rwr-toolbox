@@ -1,10 +1,16 @@
 <div class="flex h-screen overflow-hidden" *transloco="let t">
     <!-- Left Navigation Sidebar (200px fixed for 800px width support) -->
-    <aside class="w-[200px] border-r border-base-300 bg-base-200 flex flex-col shrink-0">
+    <aside
+        class="w-[200px] border-r border-base-300 bg-base-200 flex flex-col shrink-0"
+    >
         <!-- App Title -->
-        <div class="h-14 flex items-center px-3 border-b border-base-300 shrink-0">
+        <div
+            class="h-14 flex items-center px-3 border-b border-base-300 shrink-0"
+        >
             <i-lucide name="box" class="h-5 w-5 shrink-0"></i-lucide>
-            <span class="ml-2 text-sm font-bold truncate">{{ t('app.title') }}</span>
+            <span class="ml-2 text-sm font-bold truncate">{{
+                t('app.title')
+            }}</span>
         </div>
 
         <!-- Menu Items -->
@@ -16,20 +22,40 @@
                     <!-- Item with Children (Submenu) -->
                     <li>
                         <details [open]="isActive(item.link!)">
-                            <summary [class.active]="isActive(item.link!)" class="py-2 px-3 text-sm">
-                                <i-lucide [name]="item.icon" class="h-4 w-4"></i-lucide>
-                                <span class="truncate">{{ t(item.label || '') }}</span>
+                            <summary
+                                [class.active]="isActive(item.link!)"
+                                class="py-2 px-3 text-sm"
+                            >
+                                <i-lucide
+                                    [name]="item.icon"
+                                    class="h-4 w-4"
+                                ></i-lucide>
+                                <span class="truncate">{{
+                                    t(item.label || '')
+                                }}</span>
                             </summary>
-                            <ul class="before:hidden ml-2 border-l border-base-300">
-                                @for (child of item.children; track child.label) {
+                            <ul
+                                class="before:hidden ml-2 border-l border-base-300"
+                            >
+                                @for (
+                                    child of item.children;
+                                    track child.label
+                                ) {
                                     <li>
                                         <a
                                             [routerLink]="child.link!"
-                                            [class.active]="isActive(child.link!)"
+                                            [class.active]="
+                                                isActive(child.link!)
+                                            "
                                             class="py-1.5 px-3 text-sm"
                                         >
-                                            <i-lucide [name]="child.icon" class="h-3.5 w-3.5"></i-lucide>
-                                            <span class="truncate">{{ t(child.label || '') }}</span>
+                                            <i-lucide
+                                                [name]="child.icon"
+                                                class="h-3.5 w-3.5"
+                                            ></i-lucide>
+                                            <span class="truncate">{{
+                                                t(child.label || '')
+                                            }}</span>
                                         </a>
                                     </li>
                                 }
@@ -45,10 +71,18 @@
                             class="flex items-center gap-2 py-2 px-3 text-sm"
                             [title]="t(item.description || '')"
                         >
-                            <i-lucide [name]="item.icon" class="h-4 w-4 shrink-0"></i-lucide>
-                            <span class="flex-1 truncate">{{ t(item.label || '') }}</span>
+                            <i-lucide
+                                [name]="item.icon"
+                                class="h-4 w-4 shrink-0"
+                            ></i-lucide>
+                            <span class="flex-1 truncate">{{
+                                t(item.label || '')
+                            }}</span>
                             @if (item.shortcut) {
-                                <span class="text-[10px] text-base-content/40 shrink-0">{{ item.shortcut }}</span>
+                                <span
+                                    class="text-[10px] text-base-content/40 shrink-0"
+                                    >{{ item.shortcut }}</span
+                                >
                             }
                         </a>
                     </li>
@@ -57,7 +91,9 @@
         </ul>
 
         <!-- Footer -->
-        <div class="p-2 text-xs border-t border-base-300 shrink-0 text-base-content/60 text-center">
+        <div
+            class="p-2 text-xs border-t border-base-300 shrink-0 text-base-content/60 text-center"
+        >
             <span>{{ t('app.copyright', { year: currentYear }) }}</span>
         </div>
     </aside>
@@ -65,9 +101,13 @@
     <!-- Main Workspace -->
     <main class="flex-1 flex flex-col overflow-hidden min-w-0">
         <!-- Top Bar -->
-        <header class="h-12 border-b border-base-300 bg-base-100 flex items-center justify-between px-4 shrink-0">
+        <header
+            class="h-12 border-b border-base-300 bg-base-100 flex items-center justify-between px-4 shrink-0"
+        >
             <div class="flex items-center gap-3">
-                <span class="text-xs text-base-content/60">{{ t('common.quick_search') }}</span>
+                <span class="text-xs text-base-content/60">{{
+                    t('common.quick_search')
+                }}</span>
                 <div class="join">
                     <input
                         type="text"
@@ -80,18 +120,28 @@
                 </div>
             </div>
             <div class="flex items-center gap-1">
-                <button class="btn btn-square btn-ghost btn-sm" [title]="t('shortcuts.toggle_status')" (click)="toggleStatusPanel()">
+                <button
+                    class="btn btn-square btn-ghost btn-sm"
+                    [title]="t('shortcuts.toggle_status')"
+                    (click)="toggleStatusPanel()"
+                >
                     <i-lucide name="panel-right" class="h-4 w-4"></i-lucide>
                 </button>
-                <button class="btn btn-square btn-ghost btn-sm" [title]="t('settings.theme')">
+                <button
+                    class="btn btn-square btn-ghost btn-sm"
+                    [title]="t('settings.theme')"
+                >
                     <i-lucide name="palette" class="h-4 w-4"></i-lucide>
                 </button>
-                <button class="btn btn-square btn-ghost btn-sm" [title]="t('shortcuts.title')" (click)="showShortcuts()">
+                <button
+                    class="btn btn-square btn-ghost btn-sm"
+                    [title]="t('shortcuts.title')"
+                    (click)="showShortcuts()"
+                >
                     <i-lucide name="keyboard" class="h-4 w-4"></i-lucide>
                 </button>
             </div>
         </header>
-
 
         <!-- Content Area -->
         <div class="flex-1 overflow-auto p-2 bg-base-100 min-h-0">
@@ -99,15 +149,21 @@
         </div>
 
         <!-- Bottom Status Bar -->
-        <footer class="h-7 border-t border-base-300 bg-base-200 flex items-center justify-between px-4 text-xs shrink-0">
+        <footer
+            class="h-7 border-t border-base-300 bg-base-200 flex items-center justify-between px-4 text-xs shrink-0"
+        >
             <div class="flex items-center gap-3">
                 <span class="flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
-                    <span class="hidden sm:inline">{{ t('common.api_connected') }}</span>
+                    <span class="hidden sm:inline">{{
+                        t('common.api_connected')
+                    }}</span>
                     <span class="sm:hidden">API</span>
                 </span>
                 <span class="text-base-content/40">|</span>
-                <span class="text-base-content/60 truncate">{{ t('common.last_update') }}</span>
+                <span class="text-base-content/60 truncate">{{
+                    t('common.last_update')
+                }}</span>
             </div>
             <div class="flex items-center gap-3">
                 <span class="text-base-content/40 font-mono">v0.1.0</span>
@@ -117,63 +173,130 @@
 
     <!-- Right Status Panel (240px, hidden by default, toggle with Ctrl+S) -->
     @if (showStatusPanel()) {
-        <aside class="w-[240px] border-l border-base-300 bg-base-200 flex flex-col shrink-0">
+        <aside
+            class="w-[240px] border-l border-base-300 bg-base-200 flex flex-col shrink-0"
+        >
             <!-- Panel Header -->
-            <div class="h-12 flex items-center justify-between px-4 border-b border-base-300 shrink-0">
-                <span class="font-medium text-xs uppercase tracking-wider">{{ t('common.status_panel') }}</span>
-                <button class="btn btn-ghost btn-xs btn-square" (click)="toggleStatusPanel()">
+            <div
+                class="h-12 flex items-center justify-between px-4 border-b border-base-300 shrink-0"
+            >
+                <span class="font-medium text-xs uppercase tracking-wider">{{
+                    t('common.status_panel')
+                }}</span>
+                <button
+                    class="btn btn-ghost btn-xs btn-square"
+                    (click)="toggleStatusPanel()"
+                >
                     <i-lucide name="x" class="h-4 w-4"></i-lucide>
                 </button>
             </div>
 
             <!-- Panel Content -->
-            <div class="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-3 min-h-0">
+            <div
+                class="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-3 min-h-0"
+            >
                 <!-- System Status Section -->
-                <div class="card card-compact bg-base-100 shadow-sm border border-base-200">
+                <div
+                    class="card card-compact bg-base-100 shadow-sm border border-base-200"
+                >
                     <div class="card-body p-3">
-                        <h3 class="card-title text-xs uppercase opacity-50">{{ t('common.system_status') }}</h3>
+                        <h3 class="card-title text-xs uppercase opacity-50">
+                            {{ t('common.system_status') }}
+                        </h3>
                         <div class="space-y-2 text-xs">
-                            <div class="flex justify-between items-center gap-2">
-                                <span class="text-base-content/60 truncate">{{ t('common.api_connection') }}</span>
-                                <span class="badge badge-success badge-sm h-4 text-[10px] font-medium">{{ t('common.connected') }}</span>
+                            <div
+                                class="flex justify-between items-center gap-2"
+                            >
+                                <span class="text-base-content/60 truncate">{{
+                                    t('common.api_connection')
+                                }}</span>
+                                <span
+                                    class="badge badge-success badge-sm h-4 text-[10px] font-medium"
+                                    >{{ t('common.connected') }}</span
+                                >
                             </div>
-                            <div class="flex justify-between items-center gap-2">
-                                <span class="text-base-content/60 truncate">{{ t('common.cache') }}</span>
-                                <span class="badge badge-neutral badge-sm h-4 text-[10px] font-medium">{{ t('common.active') }}</span>
+                            <div
+                                class="flex justify-between items-center gap-2"
+                            >
+                                <span class="text-base-content/60 truncate">{{
+                                    t('common.cache')
+                                }}</span>
+                                <span
+                                    class="badge badge-neutral badge-sm h-4 text-[10px] font-medium"
+                                    >{{ t('common.active') }}</span
+                                >
                             </div>
-                            <div class="flex justify-between items-center gap-2">
-                                <span class="text-base-content/60 truncate">{{ t('common.game_path') }}</span>
-                                <span class="badge badge-warning badge-sm h-4 text-[10px] font-medium shrink-0">{{ t('common.not_set') }}</span>
+                            <div
+                                class="flex justify-between items-center gap-2"
+                            >
+                                <span class="text-base-content/60 truncate">{{
+                                    t('common.game_path')
+                                }}</span>
+                                <span
+                                    class="badge badge-warning badge-sm h-4 text-[10px] font-medium shrink-0"
+                                    >{{ t('common.not_set') }}</span
+                                >
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Quick Stats Section -->
-                <div class="card card-compact bg-base-100 shadow-sm border border-base-200">
+                <div
+                    class="card card-compact bg-base-100 shadow-sm border border-base-200"
+                >
                     <div class="card-body p-3">
-                        <h3 class="card-title text-xs uppercase opacity-50">{{ t('common.quick_stats') }}</h3>
-                        <div class="stats stats-vertical stats-sm bg-transparent p-0 w-full">
+                        <h3 class="card-title text-xs uppercase opacity-50">
+                            {{ t('common.quick_stats') }}
+                        </h3>
+                        <div
+                            class="stats stats-vertical stats-sm bg-transparent p-0 w-full"
+                        >
                             <div class="stat p-1">
-                                <div class="stat-value text-xl font-bold leading-none">--</div>
-                                <div class="stat-desc text-[10px]">{{ t('common.active_servers') }}</div>
+                                <div
+                                    class="stat-value text-xl font-bold leading-none"
+                                >
+                                    --
+                                </div>
+                                <div class="stat-desc text-[10px]">
+                                    {{ t('common.active_servers') }}
+                                </div>
                             </div>
                             <div class="stat p-1 border-t border-base-200">
-                                <div class="stat-value text-xl font-bold leading-none">--</div>
-                                <div class="stat-desc text-[10px]">{{ t('common.players_online') }}</div>
+                                <div
+                                    class="stat-value text-xl font-bold leading-none"
+                                >
+                                    --
+                                </div>
+                                <div class="stat-desc text-[10px]">
+                                    {{ t('common.players_online') }}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Recent Activity Section -->
-                <div class="card card-compact bg-base-100 shadow-sm border border-base-200">
+                <div
+                    class="card card-compact bg-base-100 shadow-sm border border-base-200"
+                >
                     <div class="card-body p-3">
-                        <h3 class="card-title text-xs uppercase opacity-50">{{ t('common.recent_activity') }}</h3>
+                        <h3 class="card-title text-xs uppercase opacity-50">
+                            {{ t('common.recent_activity') }}
+                        </h3>
                         <div class="mt-1 space-y-2">
                             <div class="flex gap-2.5 items-start">
-                                <div class="mt-1"><i-lucide name="circle-dot" class="h-2.5 w-2.5 text-primary"></i-lucide></div>
-                                <div class="text-xs leading-normal text-base-content/80">{{ t('app.welcome') }}</div>
+                                <div class="mt-1">
+                                    <i-lucide
+                                        name="circle-dot"
+                                        class="h-2.5 w-2.5 text-primary"
+                                    ></i-lucide>
+                                </div>
+                                <div
+                                    class="text-xs leading-normal text-base-content/80"
+                                >
+                                    {{ t('app.welcome') }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -182,24 +305,37 @@
         </aside>
     }
 
-
     <!-- Keyboard Shortcuts Modal -->
     @if (showShortcutsModal()) {
         <dialog class="modal modal-open">
             <div class="modal-box p-4 max-w-sm">
-                <h3 class="font-bold text-base mb-3">{{ t('shortcuts.title') }}</h3>
+                <h3 class="font-bold text-base mb-3">
+                    {{ t('shortcuts.title') }}
+                </h3>
                 <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
                     <!-- Navigation Shortcuts -->
                     <div>
-                        <h4 class="text-xs font-semibold uppercase opacity-50 mb-2">{{ t('shortcuts.navigation') }}</h4>
+                        <h4
+                            class="text-xs font-semibold uppercase opacity-50 mb-2"
+                        >
+                            {{ t('shortcuts.navigation') }}
+                        </h4>
                         <table class="table table-xs">
                             <tbody>
-                                @for (item of getShortcutItems(); track item.shortcut) {
+                                @for (
+                                    item of getShortcutItems();
+                                    track item.shortcut
+                                ) {
                                     <tr>
                                         <td class="w-1/4 p-1">
-                                            <kbd class="kbd kbd-xs text-[9px]">{{ item.shortcut }}</kbd>
+                                            <kbd
+                                                class="kbd kbd-xs text-[9px]"
+                                                >{{ item.shortcut }}</kbd
+                                            >
                                         </td>
-                                        <td class="p-1 text-[11px]">{{ t(item.label || '') }}</td>
+                                        <td class="p-1 text-[11px]">
+                                            {{ t(item.label || '') }}
+                                        </td>
                                     </tr>
                                 }
                             </tbody>
@@ -208,32 +344,52 @@
 
                     <!-- Global Shortcuts -->
                     <div>
-                        <h4 class="text-xs font-semibold uppercase opacity-50 mb-2">{{ t('shortcuts.global') }}</h4>
+                        <h4
+                            class="text-xs font-semibold uppercase opacity-50 mb-2"
+                        >
+                            {{ t('shortcuts.global') }}
+                        </h4>
                         <table class="table table-xs">
                             <tbody>
                                 <tr>
                                     <td class="w-1/4 p-1">
                                         <div class="flex gap-0.5">
-                                            <kbd class="kbd kbd-xs text-[9px]">Ctrl</kbd>
-                                            <kbd class="kbd kbd-xs text-[9px]">K</kbd>
+                                            <kbd class="kbd kbd-xs text-[9px]"
+                                                >Ctrl</kbd
+                                            >
+                                            <kbd class="kbd kbd-xs text-[9px]"
+                                                >K</kbd
+                                            >
                                         </div>
                                     </td>
-                                    <td class="p-1 text-[11px]">{{ t('shortcuts.quick_search') }}</td>
+                                    <td class="p-1 text-[11px]">
+                                        {{ t('shortcuts.quick_search') }}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="w-1/4 p-1">
                                         <div class="flex gap-0.5">
-                                            <kbd class="kbd kbd-xs text-[9px]">Ctrl</kbd>
-                                            <kbd class="kbd kbd-xs text-[9px]">S</kbd>
+                                            <kbd class="kbd kbd-xs text-[9px]"
+                                                >Ctrl</kbd
+                                            >
+                                            <kbd class="kbd kbd-xs text-[9px]"
+                                                >S</kbd
+                                            >
                                         </div>
                                     </td>
-                                    <td class="p-1 text-[11px]">{{ t('shortcuts.toggle_status') }}</td>
+                                    <td class="p-1 text-[11px]">
+                                        {{ t('shortcuts.toggle_status') }}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="w-1/4 p-1">
-                                        <kbd class="kbd kbd-xs text-[9px]">Esc</kbd>
+                                        <kbd class="kbd kbd-xs text-[9px]"
+                                            >Esc</kbd
+                                        >
                                     </td>
-                                    <td class="p-1 text-[11px]">{{ t('shortcuts.close_modals') }}</td>
+                                    <td class="p-1 text-[11px]">
+                                        {{ t('shortcuts.close_modals') }}
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -241,10 +397,18 @@
                 </div>
 
                 <div class="modal-action mt-4">
-                    <button class="btn btn-sm btn-ghost" (click)="closeShortcuts()">{{ t('common.close') }}</button>
+                    <button
+                        class="btn btn-sm btn-ghost"
+                        (click)="closeShortcuts()"
+                    >
+                        {{ t('common.close') }}
+                    </button>
                 </div>
             </div>
-            <form method="dialog" class="modal-backdrop bg-base-900/40 backdrop-blur-[1px]">
+            <form
+                method="dialog"
+                class="modal-backdrop bg-base-900/40 backdrop-blur-[1px]"
+            >
                 <button (click)="closeShortcuts()">close</button>
             </form>
         </dialog>

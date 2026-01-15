@@ -7,9 +7,15 @@ import { MAIN_MENU_ITEMS } from './shared/constants/menu-items';
 
 @Component({
     selector: 'app-root',
-    imports: [CommonModule, RouterOutlet, RouterLink, LucideAngularModule, TranslocoDirective],
+    imports: [
+        CommonModule,
+        RouterOutlet,
+        RouterLink,
+        LucideAngularModule,
+        TranslocoDirective,
+    ],
     templateUrl: './app.component.html',
-    styleUrl: './app.component.css'
+    styleUrl: './app.component.css',
 })
 export class AppComponent {
     private router = inject(Router);
@@ -24,7 +30,10 @@ export class AppComponent {
     isActive(link: string | any[]): boolean {
         const linkStr = typeof link === 'string' ? link : link.join('/');
         // 精确匹配或前缀匹配
-        return this.router.isActive(linkStr, false) || this.router.url.startsWith(linkStr + '/');
+        return (
+            this.router.isActive(linkStr, false) ||
+            this.router.url.startsWith(linkStr + '/')
+        );
     }
 
     showShortcuts(): void {
@@ -44,7 +53,9 @@ export class AppComponent {
         // Ctrl+K: Quick search
         if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
             event.preventDefault();
-            const searchInput = document.querySelector('input[placeholder="Ctrl+K"]') as HTMLInputElement;
+            const searchInput = document.querySelector(
+                'input[placeholder="Ctrl+K"]',
+            ) as HTMLInputElement;
             if (searchInput) {
                 searchInput.focus();
             }
@@ -60,7 +71,9 @@ export class AppComponent {
         if ((event.ctrlKey || event.metaKey) && /^[1-9]$/.test(event.key)) {
             event.preventDefault();
             const index = parseInt(event.key) - 1;
-            const topLevelItems = this.menuItems.filter(item => !item.divider && item.link);
+            const topLevelItems = this.menuItems.filter(
+                (item) => !item.divider && item.link,
+            );
             if (topLevelItems[index]) {
                 this.router.navigate([topLevelItems[index].link]);
             }
@@ -86,7 +99,7 @@ export class AppComponent {
     // Get menu items with shortcuts for display
     getShortcutItems(): { label: string; shortcut: string }[] {
         return this.menuItems
-            .filter(item => !item.divider && item.link && item.shortcut)
-            .map(item => ({ label: item.label!, shortcut: item.shortcut! }));
+            .filter((item) => !item.divider && item.link && item.shortcut)
+            .map((item) => ({ label: item.label!, shortcut: item.shortcut! }));
     }
 }

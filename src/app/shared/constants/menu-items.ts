@@ -10,21 +10,21 @@ export const MAIN_MENU_ITEMS: MenuItem[] = [
         icon: 'layout-dashboard',
         link: '/dashboard',
         shortcut: 'Ctrl+1',
-        description: 'menu.dashboard_desc'
+        description: 'menu.dashboard_desc',
     },
     {
         label: 'menu.servers',
         icon: 'server',
         link: '/servers',
         shortcut: 'Ctrl+2',
-        description: 'menu.servers_desc'
+        description: 'menu.servers_desc',
     },
     {
         label: 'menu.players',
         icon: 'users',
         link: '/players',
         shortcut: 'Ctrl+3',
-        description: 'menu.players_desc'
+        description: 'menu.players_desc',
     },
     {
         label: 'menu.data',
@@ -36,21 +36,21 @@ export const MAIN_MENU_ITEMS: MenuItem[] = [
                 label: 'menu.local_data',
                 icon: 'hard-drive',
                 link: '/data/local',
-                description: 'menu.local_data_desc'
+                description: 'menu.local_data_desc',
             },
             {
                 label: 'menu.extract',
                 icon: 'download',
                 link: '/data/extract',
-                description: 'menu.extract_desc'
+                description: 'menu.extract_desc',
             },
             {
                 label: 'menu.workshop',
                 icon: 'folder-open',
                 link: '/data/workshop',
-                description: 'menu.workshop_desc'
-            }
-        ]
+                description: 'menu.workshop_desc',
+            },
+        ],
     },
     {
         label: 'menu.mods',
@@ -62,41 +62,41 @@ export const MAIN_MENU_ITEMS: MenuItem[] = [
                 label: 'menu.install',
                 icon: 'cloud-download',
                 link: '/mods/install',
-                description: 'menu.install_desc'
+                description: 'menu.install_desc',
             },
             {
                 label: 'menu.bundle',
                 icon: 'box',
                 link: '/mods/bundle',
-                description: 'menu.bundle_desc'
-            }
-        ]
+                description: 'menu.bundle_desc',
+            },
+        ],
     },
     {
         label: 'menu.hotkeys',
         icon: 'keyboard',
         link: '/hotkeys',
         shortcut: 'Ctrl+4',
-        description: 'menu.hotkeys_desc'
+        description: 'menu.hotkeys_desc',
     },
     {
-        divider: true
+        divider: true,
     },
     {
         label: 'menu.settings',
         icon: 'settings',
         link: '/settings',
         shortcut: 'Ctrl+5',
-        description: 'menu.settings_desc'
+        description: 'menu.settings_desc',
     },
     {
-        divider: true
+        divider: true,
     },
     {
         label: 'menu.about',
         icon: 'info',
         link: '/about',
         shortcut: 'Ctrl+6',
-        description: 'menu.about_desc'
-    }
+        description: 'menu.about_desc',
+    },
 ];

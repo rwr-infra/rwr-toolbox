@@ -8,7 +8,9 @@
                 <h2 class="card-title mb-4">{{ t('settings.language') }}</h2>
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text">{{ t('settings.language') }}</span>
+                        <span class="label-text">{{
+                            t('settings.language')
+                        }}</span>
                     </label>
                     <select
                         class="select select-bordered"
@@ -16,13 +18,18 @@
                         (change)="onLocaleChange($event)"
                     >
                         @for (locale of locales; track locale.value) {
-                            <option [value]="locale.value" [selected]="localeValue === locale.value">
+                            <option
+                                [value]="locale.value"
+                                [selected]="localeValue === locale.value"
+                            >
                                 {{ locale.label }}
                             </option>
                         }
                     </select>
                     <label class="label">
-                        <span class="label-text-alt">{{ t('settings.reload_hint') }}</span>
+                        <span class="label-text-alt">{{
+                            t('settings.reload_hint')
+                        }}</span>
                     </label>
                 </div>
             </div>
@@ -35,7 +42,9 @@
 
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text">{{ t('settings.gamePath') }}</span>
+                        <span class="label-text">{{
+                            t('settings.gamePath')
+                        }}</span>
                     </label>
                     <div class="join w-full">
                         <input
@@ -43,7 +52,9 @@
                             class="input input-bordered join-item flex-1"
                             [placeholder]="t('settings.gamePathHint')"
                             [value]="gamePathInput()"
-                            (input)="gamePathInput.set($any($event.target).value)"
+                            (input)="
+                                gamePathInput.set($any($event.target).value)
+                            "
                         />
                         <button
                             class="btn btn-neutral join-item"
@@ -51,7 +62,9 @@
                             [disabled]="isValidating()"
                         >
                             @if (isValidating()) {
-                                <span class="loading loading-spinner loading-sm"></span>
+                                <span
+                                    class="loading loading-spinner loading-sm"
+                                ></span>
                             }
                             {{ t('settings.validatePath') }}
                         </button>
@@ -60,11 +73,16 @@
                     <!-- Validation feedback -->
                     @if (pathError()) {
                         <label class="label text-error">
-                            <span class="label-text-alt">{{ pathError() }}</span>
+                            <span class="label-text-alt">{{
+                                pathError()
+                            }}</span>
                         </label>
                     } @else if (isValidPath()) {
                         <label class="label text-success">
-                            <span class="label-text-alt">{{ 'settings.pathValid' | transloco : { count: packageCount() } }}</span>
+                            <span class="label-text-alt">{{
+                                'settings.pathValid'
+                                    | transloco: { count: packageCount() }
+                            }}</span>
                         </label>
                     }
                 </div>
@@ -75,7 +93,9 @@
         <div class="card bg-base-100 shadow-lg">
             <div class="card-body">
                 <h2 class="card-title mb-4">{{ t('settings.theme') }}</h2>
-                <p class="text-sm opacity-70">{{ t('settings.coming_soon') }}</p>
+                <p class="text-sm opacity-70">
+                    {{ t('settings.coming_soon') }}
+                </p>
             </div>
         </div>
     </div>

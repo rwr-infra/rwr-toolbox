@@ -8,7 +8,7 @@ import {
     PlayerSortField,
     PlayerDatabase,
     PlayerColumn,
-    PlayerColumnKey
+    PlayerColumnKey,
 } from '../../shared/models/player.models';
 import { PlayerService } from './services/player.service';
 import { SettingsService } from '../../core/services/settings.service';
@@ -23,7 +23,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
     standalone: true,
     imports: [CommonModule, LucideAngularModule, TranslocoDirective],
     templateUrl: './players.component.html',
-    styleUrl: './players.component.css'
+    styleUrl: './players.component.css',
 })
 export class PlayersComponent implements OnInit {
     private playerService = inject(PlayerService);
@@ -70,22 +70,32 @@ export class PlayersComponent implements OnInit {
         let filtered = allPlayers;
         if (currentFilter.search) {
             const search = currentFilter.search.toLowerCase();
-            filtered = filtered.filter(p => p.username.toLowerCase().includes(search));
+            filtered = filtered.filter((p) =>
+                p.username.toLowerCase().includes(search),
+            );
         }
         if (currentFilter.minKills !== undefined) {
-            filtered = filtered.filter(p => p.kills >= currentFilter.minKills!);
+            filtered = filtered.filter(
+                (p) => p.kills >= currentFilter.minKills!,
+            );
         }
         if (currentFilter.maxKills !== undefined) {
-            filtered = filtered.filter(p => p.kills <= currentFilter.maxKills!);
+            filtered = filtered.filter(
+                (p) => p.kills <= currentFilter.maxKills!,
+            );
         }
         if (currentFilter.minKd !== undefined) {
-            filtered = filtered.filter(p => p.kd >= currentFilter.minKd!);
+            filtered = filtered.filter((p) => p.kd >= currentFilter.minKd!);
         }
         if (currentFilter.minTimePlayed !== undefined) {
-            filtered = filtered.filter(p => p.timePlayed >= currentFilter.minTimePlayed!);
+            filtered = filtered.filter(
+                (p) => p.timePlayed >= currentFilter.minTimePlayed!,
+            );
         }
         if (currentFilter.isFavorite) {
-            filtered = filtered.filter(p => this.settingsService.isFavorite(p.id, 'player'));
+            filtered = filtered.filter((p) =>
+                this.settingsService.isFavorite(p.id, 'player'),
+            );
         }
 
         // Inline sorting (descending only)
@@ -108,7 +118,6 @@ export class PlayersComponent implements OnInit {
             }
         });
 
-
         console.log('Touch sorted', sorted);
 
         return sorted;
@@ -122,15 +131,17 @@ export class PlayersComponent implements OnInit {
      * Load players from API
      */
     loadData(page: number = 1) {
-        this.playerService.fetchPlayers(
-            this.selectedDatabase(),
-            page,
-            this.pageSize(),
-            this.sortField(),
-            this.filter().search || ''
-        ).subscribe({
-            error: err => console.error('Failed to load players:', err)
-        });
+        this.playerService
+            .fetchPlayers(
+                this.selectedDatabase(),
+                page,
+                this.pageSize(),
+                this.sortField(),
+                this.filter().search || '',
+            )
+            .subscribe({
+                error: (err) => console.error('Failed to load players:', err),
+            });
     }
 
     /**
@@ -162,7 +173,7 @@ export class PlayersComponent implements OnInit {
      * Clear search
      */
     clearSearch() {
-        this.filter.update(f => ({ ...f, search: undefined }));
+        this.filter.update((f) => ({ ...f, search: undefined }));
         this.loadData(1);
     }
 
@@ -171,7 +182,7 @@ export class PlayersComponent implements OnInit {
      */
     onFavoritesToggleChange(event: Event) {
         const checked = (event.target as HTMLInputElement).checked;
-        this.filter.update(f => ({ ...f, isFavorite: checked || undefined }));
+        this.filter.update((f) => ({ ...f, isFavorite: checked || undefined }));
     }
 
     /**
@@ -179,7 +190,9 @@ export class PlayersComponent implements OnInit {
      */
     onSortChange(field: PlayerSortField) {
         // Toggle: if clicking the same field, clear selection; otherwise select new field
-        this.sortField.update(currentField => currentField === field ? 'score' : field);
+        this.sortField.update((currentField) =>
+            currentField === field ? 'score' : field,
+        );
         this.loadData(1);
     }
 
@@ -241,7 +254,7 @@ export class PlayersComponent implements OnInit {
         const keyMap: Record<PlayerDatabase, string> = {
             invasion: 'players.db_invasion',
             pacific: 'players.db_pacific',
-            prereset_invasion: 'players.db_prereset'
+            prereset_invasion: 'players.db_prereset',
         };
         const key = keyMap[db] || db;
         return this.translocoService.translate(key);
@@ -254,7 +267,7 @@ export class PlayersComponent implements OnInit {
         const keyMap: Record<number, string> = {
             20: 'players.page_size_20',
             50: 'players.page_size_50',
-            100: 'players.page_size_100'
+            100: 'players.page_size_100',
         };
         const key = keyMap[size] || `${size}`;
         return this.translocoService.translate(key);
@@ -292,7 +305,14 @@ export class PlayersComponent implements OnInit {
      * Check if a column is sortable
      */
     isColumnSortable(key: PlayerColumnKey): boolean {
-        const sortableFields: PlayerSortField[] = ['username', 'kills', 'deaths', 'kd', 'timePlayed', 'score'];
+        const sortableFields: PlayerSortField[] = [
+            'username',
+            'kills',
+            'deaths',
+            'kd',
+            'timePlayed',
+            'score',
+        ];
         return sortableFields.includes(key as PlayerSortField);
     }
 

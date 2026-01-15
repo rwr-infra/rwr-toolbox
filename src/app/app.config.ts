@@ -1,6 +1,14 @@
-import { ApplicationConfig, isDevMode, provideAppInitializer, inject } from '@angular/core';
+import {
+    ApplicationConfig,
+    isDevMode,
+    provideAppInitializer,
+    inject,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+    provideHttpClient,
+    withInterceptorsFromDi,
+} from '@angular/common/http';
 import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 
 import { routes } from './app.routes';
@@ -19,7 +27,7 @@ export const appConfig: ApplicationConfig = {
         {
             provide: LUCIDE_ICONS,
             multi: true,
-            useValue: new LucideIconProvider(APP_ICONS)
+            useValue: new LucideIconProvider(APP_ICONS),
         },
         provideTransloco({
             config: {
@@ -28,7 +36,7 @@ export const appConfig: ApplicationConfig = {
                 reRenderOnLangChange: true,
                 prodMode: !isDevMode(),
             },
-            loader: TranslocoHttpLoader
-        })
+            loader: TranslocoHttpLoader,
+        }),
     ],
 };

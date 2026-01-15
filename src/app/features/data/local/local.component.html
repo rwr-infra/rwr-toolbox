@@ -1,1 +1,19 @@
-<app-weapons />
+<!-- Tabs for Weapons and Items -->
+<div class="tabs tabs-boxed mb-4">
+    @for (tab of tabs; track tab.key) {
+        <a
+            class="tab"
+            [class.tab-active]="activeTab() === tab.key"
+            (click)="activeTab.set(tab.key)"
+        >
+            {{ tab.label | transloco }}
+        </a>
+    }
+</div>
+
+<!-- Tab Content -->
+@if (activeTab() === 'weapons') {
+    <app-weapons />
+} @else if (activeTab() === 'items') {
+    <app-items />
+}

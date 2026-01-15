@@ -1,163 +1,182 @@
 @import 'tailwindcss';
 @plugin "daisyui" {
-  themes: all;
+    themes: all;
 }
 
 /* Markdown 内容样式 - 适配 DaisyUI 主题 */
 .markdown-body {
-  /* 使用 CSS 变量适配主题 */
-  --md-bg-color: oklch(var(--b2));
-  --md-text-color: oklch(var(--bc));
-  --md-link-color: oklch(var(--p));
-  --md-code-bg: oklch(var(--b3));
-  --md-border-color: oklch(var(--bc) / 0.2);
+    /* 使用 CSS 变量适配主题 */
+    --md-bg-color: oklch(var(--b2));
+    --md-text-color: oklch(var(--bc));
+    --md-link-color: oklch(var(--p));
+    --md-code-bg: oklch(var(--b3));
+    --md-border-color: oklch(var(--bc) / 0.2);
 
-  background-color: var(--md-bg-color);
-  color: var(--md-text-color);
-  line-height: 1.6;
+    background-color: var(--md-bg-color);
+    color: var(--md-text-color);
+    line-height: 1.6;
 }
 
 /* 标题 */
-.markdown-body h1, .markdown-body h2, .markdown-body h3,
-.markdown-body h4, .markdown-body h5, .markdown-body h6 {
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-  font-weight: 600;
-  line-height: 1.25;
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    line-height: 1.25;
 }
 
-.markdown-body h1 { font-size: 1.5em; border-bottom: 1px solid var(--md-border-color); padding-bottom: 0.3em; }
-.markdown-body h2 { font-size: 1.25em; border-bottom: 1px solid var(--md-border-color); padding-bottom: 0.3em; }
-.markdown-body h3 { font-size: 1.1em; }
+.markdown-body h1 {
+    font-size: 1.5em;
+    border-bottom: 1px solid var(--md-border-color);
+    padding-bottom: 0.3em;
+}
+.markdown-body h2 {
+    font-size: 1.25em;
+    border-bottom: 1px solid var(--md-border-color);
+    padding-bottom: 0.3em;
+}
+.markdown-body h3 {
+    font-size: 1.1em;
+}
 
 /* 段落 */
-.markdown-body p { margin: 0.5em 0; }
+.markdown-body p {
+    margin: 0.5em 0;
+}
 
 /* 链接 */
 .markdown-body a {
-  color: var(--md-link-color);
-  text-decoration: underline;
+    color: var(--md-link-color);
+    text-decoration: underline;
 }
 
 /* 列表 */
-.markdown-body ul, .markdown-body ol {
-  padding-left: 1.5em;
-  margin: 0.5em 0;
+.markdown-body ul,
+.markdown-body ol {
+    padding-left: 1.5em;
+    margin: 0.5em 0;
 }
 
-.markdown-body li { margin: 0.25em 0; }
+.markdown-body li {
+    margin: 0.25em 0;
+}
 
 /* 任务列表 */
-.markdown-body input[type="checkbox"] {
-  margin-right: 0.5em;
+.markdown-body input[type='checkbox'] {
+    margin-right: 0.5em;
 }
 
 /* 代码块 */
 .markdown-body code {
-  background-color: var(--md-code-bg);
-  padding: 0.2em 0.4em;
-  border-radius: 3px;
-  font-family: ui-monospace, monospace;
-  font-size: 0.9em;
+    background-color: var(--md-code-bg);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: ui-monospace, monospace;
+    font-size: 0.9em;
 }
 
 .markdown-body pre {
-  background-color: var(--md-code-bg);
-  padding: 1em;
-  border-radius: 6px;
-  overflow-x: auto;
-  margin: 1em 0;
+    background-color: var(--md-code-bg);
+    padding: 1em;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 1em 0;
 }
 
 .markdown-body pre code {
-  background: none;
-  padding: 0;
+    background: none;
+    padding: 0;
 }
 
 /* 引用 */
 .markdown-body blockquote {
-  border-left: 4px solid var(--md-border-color);
-  padding-left: 1em;
-  margin: 1em 0;
-  opacity: 0.8;
+    border-left: 4px solid var(--md-border-color);
+    padding-left: 1em;
+    margin: 1em 0;
+    opacity: 0.8;
 }
 
 /* 表格 */
 .markdown-body table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1em 0;
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
 }
 
 .markdown-body table th,
 .markdown-body table td {
-  border: 1px solid var(--md-border-color);
-  padding: 0.5em;
+    border: 1px solid var(--md-border-color);
+    padding: 0.5em;
 }
 
 .markdown-body table th {
-  background-color: var(--md-code-bg);
+    background-color: var(--md-code-bg);
 }
 
 /* 分隔线 */
 .markdown-body hr {
-  border: none;
-  border-top: 1px solid var(--md-border-color);
-  margin: 1.5em 0;
+    border: none;
+    border-top: 1px solid var(--md-border-color);
+    margin: 1.5em 0;
 }
 
 /* 图片 */
 .markdown-body img {
-  max-width: 100%;
-  height: auto;
+    max-width: 100%;
+    height: auto;
 }
 
 /* 删除线 */
 .markdown-body del {
-  text-decoration: line-through;
-  opacity: 0.7;
+    text-decoration: line-through;
+    opacity: 0.7;
 }
 
 /* 侧边栏菜单激活状态高亮 - 适配所有主题 */
 .menu .active {
-  /* 使用固定的蓝紫色作为背景，不依赖 CSS 变量 */
-  background-color: oklch(0.65 0.18 264);
-  color: white;
-  font-weight: 600;
-  position: relative;
-  /* 添加明显的边框增强识别 */
-  border-left: 3px solid oklch(0.65 0.18 264);
-  /* 添加轻微阴影 */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    /* 使用固定的蓝紫色作为背景，不依赖 CSS 变量 */
+    background-color: oklch(0.65 0.18 264);
+    color: white;
+    font-weight: 600;
+    position: relative;
+    /* 添加明显的边框增强识别 */
+    border-left: 3px solid oklch(0.65 0.18 264);
+    /* 添加轻微阴影 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* 父级菜单项（带子菜单）展开时轻微高亮 */
 .menu details[open] > summary {
-  background-color: rgba(0, 0, 0, 0.03);
-  font-weight: 600;
-  color: inherit;
+    background-color: rgba(0, 0, 0, 0.03);
+    font-weight: 600;
+    color: inherit;
 }
 
 /* 父级菜单项本身激活时（如本地模组） */
 .menu details > summary.active {
-  background-color: oklch(0.65 0.18 264);
-  color: white;
+    background-color: oklch(0.65 0.18 264);
+    color: white;
 }
 
 /* 子菜单激活项高亮 */
 .menu details ul .active {
-  background-color: oklch(0.65 0.18 264);
-  color: white;
-  font-weight: 600;
+    background-color: oklch(0.65 0.18 264);
+    color: white;
+    font-weight: 600;
 }
 
 /* hover 状态优化 */
 .menu li:not(.my-1) > a:hover:not(.active),
 .menu li:not(.my-1) > summary:hover:not(.active) {
-  background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 /* 激活项 hover 保持原有高亮 */
 .menu .active:hover {
-  background-color: oklch(0.6 0.18 264);
+    background-color: oklch(0.6 0.18 264);
 }

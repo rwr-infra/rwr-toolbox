@@ -9,7 +9,7 @@ import {
     Server,
     ServerListResponse,
     ServerFilter,
-    ServerSort
+    ServerSort,
 } from '../../../shared/models/server.models';
 import { HttpParams } from '@angular/common/http';
 
@@ -17,7 +17,7 @@ import { HttpParams } from '@angular/common/http';
  * Service for fetching and managing server data
  */
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class ServerService {
     private httpClient = inject(HttpClientService);
@@ -25,7 +25,8 @@ export class ServerService {
     private cacheService = inject(CacheService);
 
     private readonly CACHE_KEY = 'servers_list';
-    private readonly BASE_URL = 'http://rwr.runningwithrifles.com/rwr_server_list/get_server_list.php';
+    private readonly BASE_URL =
+        'http://rwr.runningwithrifles.com/rwr_server_list/get_server_list.php';
     private readonly PAGE_SIZE = 100;
     private readonly xmlParser = new XMLParser();
 
@@ -53,56 +54,63 @@ export class ServerService {
         const timestamp = Date.now();
 
         // Recursive function to fetch all pages
-        const fetchPage = (currentPageStart: number): Observable<ServerListResponse> => {
+        const fetchPage = (
+            currentPageStart: number,
+        ): Observable<ServerListResponse> => {
             const params = new HttpParams()
                 .set('start', currentPageStart.toString())
                 .set('size', this.PAGE_SIZE.toString())
                 .set('names', '1')
                 .set('_t', timestamp.toString()); // Cache buster
 
-            return this.httpClient.get<string>(this.BASE_URL, {
-                timeout: this.settingsService.settings().pingTimeout,
-                params,
-                responseType: 'text'
-            }).pipe(
-                map(html => this.parseServerList(html)),
-                tap(response => {
-                    allServers.push(...response.servers);
-                }),
-                // Continue fetching if we got a full page
-                concatMap((response: ServerListResponse) => {
-                    if (response.servers.length === this.PAGE_SIZE) {
-                        // Fetch next page
-                        return fetchPage(currentPageStart + this.PAGE_SIZE);
-                    }
-                    // All pages fetched, return complete response
-                    return of({
-                        servers: allServers,
-                        timestamp: Date.now(),
-                        totalCount: allServers.length,
-                        fromCache: false
-                    } as ServerListResponse);
+            return this.httpClient
+                .get<string>(this.BASE_URL, {
+                    timeout: this.settingsService.settings().pingTimeout,
+                    params,
+                    responseType: 'text',
                 })
-            );
+                .pipe(
+                    map((html) => this.parseServerList(html)),
+                    tap((response) => {
+                        allServers.push(...response.servers);
+                    }),
+                    // Continue fetching if we got a full page
+                    concatMap((response: ServerListResponse) => {
+                        if (response.servers.length === this.PAGE_SIZE) {
+                            // Fetch next page
+                            return fetchPage(currentPageStart + this.PAGE_SIZE);
+                        }
+                        // All pages fetched, return complete response
+                        return of({
+                            servers: allServers,
+                            timestamp: Date.now(),
+                            totalCount: allServers.length,
+                            fromCache: false,
+                        } as ServerListResponse);
+                    }),
+                );
         };
 
         return fetchPage(start).pipe(
-            tap(response => {
+            tap((response) => {
                 this.serversSubject.next(response.servers);
                 this.loadingSubject.next(false);
 
                 // Cache the complete response
                 this.cacheService.set(this.CACHE_KEY, {
                     servers: response.servers,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
                 });
             }),
-            catchError(error => {
+            catchError((error) => {
                 this.loadingSubject.next(false);
                 this.errorSubject.next(error.message);
 
                 // Try to load from cache
-                const cached = this.cacheService.get<{ servers: Server[]; timestamp: number }>(this.CACHE_KEY);
+                const cached = this.cacheService.get<{
+                    servers: Server[];
+                    timestamp: number;
+                }>(this.CACHE_KEY);
                 if (cached) {
                     console.log('Using cached server data');
                     this.serversSubject.next(cached.servers);
@@ -110,13 +118,13 @@ export class ServerService {
                         servers: cached.servers,
                         timestamp: cached.timestamp,
                         totalCount: cached.servers.length,
-                        fromCache: true
+                        fromCache: true,
                     });
                 }
 
                 return throwError(() => error);
             }),
-            shareReplay(1)
+            shareReplay(1),
         );
     }
 
@@ -152,7 +160,8 @@ export class ServerService {
         for (const server of serverArray) {
             const mapId = server.map_id?.toString() || '';
             const mapNameFromId = mapId.split('/').pop() || '';
-            const mapName = (server.map_name?.toString() || '').trim() || mapNameFromId;
+            const mapName =
+                (server.map_name?.toString() || '').trim() || mapNameFromId;
 
             const parsedServer: Server = {
                 id: `${server.address || ''}:${server.port || 0}`,
@@ -175,7 +184,7 @@ export class ServerService {
                 steamLink: server.url?.toString() || '',
                 playerNames: this.parsePlayerList(server.player),
                 comment: server.comment?.toString() || '',
-                isReachable: true // Default to reachable if server is in the list
+                isReachable: true, // Default to reachable if server is in the list
             };
 
             servers.push(parsedServer);
@@ -185,7 +194,7 @@ export class ServerService {
             servers,
             timestamp,
             totalCount: servers.length,
-            fromCache: false
+            fromCache: false,
         };
     }
 
@@ -196,7 +205,7 @@ export class ServerService {
      * @returns Filtered server list
      */
     filterServers(servers: Server[], filter: ServerFilter): Server[] {
-        return servers.filter(server => {
+        return servers.filter((server) => {
             // Search filter
             if (filter.search) {
                 const search = filter.search.toLowerCase().trim();
@@ -218,10 +227,12 @@ export class ServerService {
                     server.steamLink,
                     server.dedicated ? 'dedicated' : 'not dedicated',
                     server.mod ? 'mod' : 'no mod',
-                    ...(server.playerNames || [])
+                    ...(server.playerNames || []),
                 ].filter(Boolean);
 
-                const matched = haystacks.some(v => v.toLowerCase().includes(search));
+                const matched = haystacks.some((v) =>
+                    v.toLowerCase().includes(search),
+                );
                 if (!matched) {
                     return false;
                 }
@@ -238,15 +249,24 @@ export class ServerService {
             }
 
             // Player count filters
-            if (filter.minPlayers !== undefined && server.currentPlayers < filter.minPlayers) {
+            if (
+                filter.minPlayers !== undefined &&
+                server.currentPlayers < filter.minPlayers
+            ) {
                 return false;
             }
-            if (filter.maxPlayers !== undefined && server.currentPlayers > filter.maxPlayers) {
+            if (
+                filter.maxPlayers !== undefined &&
+                server.currentPlayers > filter.maxPlayers
+            ) {
                 return false;
             }
 
             // Available slots filter
-            if (filter.hasAvailableSlots && server.currentPlayers >= server.maxPlayers) {
+            if (
+                filter.hasAvailableSlots &&
+                server.currentPlayers >= server.maxPlayers
+            ) {
                 return false;
             }
 
@@ -324,17 +344,25 @@ export class ServerService {
 
         // If it's already a string, split by comma
         if (typeof playerData === 'string') {
-            return playerData.split(',').map(n => n.trim()).filter(n => n);
+            return playerData
+                .split(',')
+                .map((n) => n.trim())
+                .filter((n) => n);
         }
 
         // If it's an array from XML parser
         if (Array.isArray(playerData)) {
-            return playerData.map(p => p?.toString?.() || p?.toString() || '').filter(n => n);
+            return playerData
+                .map((p) => p?.toString?.() || p?.toString() || '')
+                .filter((n) => n);
         }
 
         // If it's an object with name property or _text
         if (typeof playerData === 'object') {
-            const name = playerData.name?.toString() || playerData._text?.toString() || '';
+            const name =
+                playerData.name?.toString() ||
+                playerData._text?.toString() ||
+                '';
             return name ? [name] : [];
         }
 

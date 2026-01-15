@@ -12,7 +12,7 @@ interface CacheEntry<T> {
  * Cache service with in-memory and localStorage persistence
  */
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class CacheService {
     private cache = new Map<string, CacheEntry<any>>();
@@ -26,7 +26,7 @@ export class CacheService {
     set<T>(key: string, value: T): void {
         const entry: CacheEntry<T> = {
             data: value,
-            timestamp: Date.now()
+            timestamp: Date.now(),
         };
 
         // Store in memory
@@ -34,7 +34,10 @@ export class CacheService {
 
         // Persist to localStorage for offline support
         try {
-            localStorage.setItem(this.CACHE_PREFIX + key, JSON.stringify(entry));
+            localStorage.setItem(
+                this.CACHE_PREFIX + key,
+                JSON.stringify(entry),
+            );
         } catch (error) {
             console.warn('Failed to persist cache to localStorage:', error);
         }
@@ -111,7 +114,7 @@ export class CacheService {
 
         // Clear all cache entries from localStorage
         const keys = Object.keys(localStorage);
-        keys.forEach(key => {
+        keys.forEach((key) => {
             if (key.startsWith(this.CACHE_PREFIX)) {
                 localStorage.removeItem(key);
             }
@@ -132,6 +135,9 @@ export class CacheService {
      * @returns True if key exists
      */
     has(key: string): boolean {
-        return this.cache.has(key) || localStorage.getItem(this.CACHE_PREFIX + key) !== null;
+        return (
+            this.cache.has(key) ||
+            localStorage.getItem(this.CACHE_PREFIX + key) !== null
+        );
     }
 }

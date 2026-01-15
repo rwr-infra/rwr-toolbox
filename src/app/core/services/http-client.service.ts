@@ -1,8 +1,18 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpHeaders, HttpParams, HttpErrorResponse } from '@angular/common/http';
+import {
+    HttpHeaders,
+    HttpParams,
+    HttpErrorResponse,
+} from '@angular/common/http';
 import { invoke } from '@tauri-apps/api/core';
 import { Observable, throwError, timer, from } from 'rxjs';
-import { timeout, retryWhen, delayWhen, scan, catchError } from 'rxjs/operators';
+import {
+    timeout,
+    retryWhen,
+    delayWhen,
+    scan,
+    catchError,
+} from 'rxjs/operators';
 
 /**
  * HTTP request options
@@ -26,7 +36,7 @@ export interface HttpRequestOptions {
  * HTTP client service with timeout, retry, and cache buster support
  */
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class HttpClientService {
     private readonly DEFAULT_TIMEOUT = 10000; // 10 seconds
@@ -35,10 +45,14 @@ export class HttpClientService {
     /**
      * Tauri HTTP client wrapper to bypass browser CORS in desktop builds.
      */
-    private async getViaTauri<T>(url: string, timeoutMs: number, responseType: 'json' | 'text'): Promise<T> {
+    private async getViaTauri<T>(
+        url: string,
+        timeoutMs: number,
+        responseType: 'json' | 'text',
+    ): Promise<T> {
         const payload = await invoke<string>('proxy_fetch', {
             url,
-            timeoutMs
+            timeoutMs,
         });
         if (responseType === 'text') {
             return payload as unknown as T;
@@ -59,7 +73,7 @@ export class HttpClientService {
             headers,
             params,
             withCacheBuster = true,
-            responseType = 'json'
+            responseType = 'json',
         } = options;
 
         // Add cache buster parameter
@@ -68,30 +82,38 @@ export class HttpClientService {
             httpParams = httpParams.set('_t', Date.now().toString());
         }
 
-        const finalUrl = httpParams.keys().length ? `${url}?${httpParams.toString()}` : url;
+        const finalUrl = httpParams.keys().length
+            ? `${url}?${httpParams.toString()}`
+            : url;
         console.log('GET finalUrl:', finalUrl);
 
         // Always use Tauri HTTP to avoid browser CORS
-        const request$: Observable<T> = from(this.getViaTauri<T>(finalUrl, timeoutMs, responseType));
+        const request$: Observable<T> = from(
+            this.getViaTauri<T>(finalUrl, timeoutMs, responseType),
+        );
 
         return request$.pipe(
             timeout(timeoutMs),
-            retryWhen(errors =>
+            retryWhen((errors) =>
                 errors.pipe(
                     scan((errorCount, error) => {
                         if (errorCount >= retries) {
                             throw error;
                         }
                         // Don't retry on 4xx errors
-                        if (error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500) {
+                        if (
+                            error instanceof HttpErrorResponse &&
+                            error.status >= 400 &&
+                            error.status < 500
+                        ) {
                             throw error;
                         }
                         return errorCount + 1;
                     }, 0),
-                    delayWhen(() => timer(1000)) // Wait 1s before retry
-                )
+                    delayWhen(() => timer(1000)), // Wait 1s before retry
+                ),
             ),
-            catchError(this.handleError)
+            catchError(this.handleError),
         );
     }
 

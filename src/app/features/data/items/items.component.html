@@ -1,23 +1,23 @@
 <div class="flex flex-col sm:flex-row gap-2 mb-4">
-    <!-- Search input with class filter -->
+    <!-- Search input with type filter -->
     <div class="join flex-1 w-full">
         <input
             type="text"
-            [placeholder]="'weapons.search' | transloco"
+            [placeholder]="'items.search' | transloco"
             class="input input-bordered join-item flex-1"
             [value]="searchTerm()"
             (input)="onSearch($any($event.target).value)"
         />
         <select
             class="select select-bordered join-item"
-            (change)="onClassTagFilter($any($event.target).value)"
+            (change)="onItemTypeFilter($any($event.target).value)"
         >
             <option value="">
-                {{ 'weapons.filters.allClasses' | transloco }}
+                {{ 'items.filters.allTypes' | transloco }}
             </option>
-            @for (tag of availableClassTags(); track tag) {
-                <option [value]="tag" [selected]="selectedClassTag() === tag">
-                    {{ tag }}
+            @for (type of availableItemTypes(); track type) {
+                <option [value]="type" [selected]="selectedItemType() === type">
+                    {{ 'items.filters.' + type | transloco }}
                 </option>
             }
         </select>
@@ -45,7 +45,7 @@
             class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52"
         >
             <li class="menu-title">
-                <span>{{ 'weapons.column.selectColumns' | transloco }}</span>
+                <span>{{ 'items.column.selectColumns' | transloco }}</span>
             </li>
             @for (col of columns; track col.key) {
                 <li>
@@ -70,7 +70,7 @@
         @if (loading()) {
             <span class="loading loading-spinner"></span>
         }
-        {{ 'weapons.refresh' | transloco }}
+        {{ 'items.refresh' | transloco }}
     </button>
 </div>
 
@@ -82,127 +82,16 @@
         (change)="toggleAdvancedSearch()"
     />
     <div class="collapse-title text-lg font-medium">
-        {{ 'weapons.advancedSearch' | transloco }}
+        {{ 'items.advancedSearch' | transloco }}
     </div>
     <div class="collapse-content">
         <!-- Range Filters -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
-            <!-- Damage Range -->
-            <div class="form-control">
-                <label class="label">
-                    <span class="label-text text-xs">{{
-                        'weapons.filters.damage' | transloco
-                    }}</span>
-                </label>
-                <div class="join">
-                    <input
-                        type="number"
-                        class="input input-bordered input-xs join-item w-full"
-                        placeholder="Min"
-                        [value]="advancedFilters().damage?.min ?? ''"
-                        (input)="
-                            onRangeFilter(
-                                'damage',
-                                'min',
-                                $any($event.target).value
-                            )
-                        "
-                    />
-                    <input
-                        type="number"
-                        class="input input-bordered input-xs join-item w-full"
-                        placeholder="Max"
-                        [value]="advancedFilters().damage?.max ?? ''"
-                        (input)="
-                            onRangeFilter(
-                                'damage',
-                                'max',
-                                $any($event.target).value
-                            )
-                        "
-                    />
-                </div>
-            </div>
-
-            <!-- Fire Rate Range -->
-            <div class="form-control">
-                <label class="label">
-                    <span class="label-text text-xs">{{
-                        'weapons.filters.fireRate' | transloco
-                    }}</span>
-                </label>
-                <div class="join">
-                    <input
-                        type="number"
-                        class="input input-bordered input-xs join-item w-full"
-                        placeholder="Min"
-                        [value]="advancedFilters().fireRate?.min ?? ''"
-                        (input)="
-                            onRangeFilter(
-                                'fireRate',
-                                'min',
-                                $any($event.target).value
-                            )
-                        "
-                    />
-                    <input
-                        type="number"
-                        class="input input-bordered input-xs join-item w-full"
-                        placeholder="Max"
-                        [value]="advancedFilters().fireRate?.max ?? ''"
-                        (input)="
-                            onRangeFilter(
-                                'fireRate',
-                                'max',
-                                $any($event.target).value
-                            )
-                        "
-                    />
-                </div>
-            </div>
-
-            <!-- Magazine Size Range -->
-            <div class="form-control">
-                <label class="label">
-                    <span class="label-text text-xs">{{
-                        'weapons.filters.magazineSize' | transloco
-                    }}</span>
-                </label>
-                <div class="join">
-                    <input
-                        type="number"
-                        class="input input-bordered input-xs join-item w-full"
-                        placeholder="Min"
-                        [value]="advancedFilters().magazineSize?.min ?? ''"
-                        (input)="
-                            onRangeFilter(
-                                'magazineSize',
-                                'min',
-                                $any($event.target).value
-                            )
-                        "
-                    />
-                    <input
-                        type="number"
-                        class="input input-bordered input-xs join-item w-full"
-                        placeholder="Max"
-                        [value]="advancedFilters().magazineSize?.max ?? ''"
-                        (input)="
-                            onRangeFilter(
-                                'magazineSize',
-                                'max',
-                                $any($event.target).value
-                            )
-                        "
-                    />
-                </div>
-            </div>
-
+        <div class="grid grid-cols-2 gap-2 mb-3">
             <!-- Encumbrance Range -->
             <div class="form-control">
                 <label class="label">
                     <span class="label-text text-xs">{{
-                        'weapons.filters.encumbrance' | transloco
+                        'items.columns.encumbrance' | transloco
                     }}</span>
                 </label>
                 <div class="join">
@@ -210,7 +99,7 @@
                         type="number"
                         class="input input-bordered input-xs join-item w-full"
                         placeholder="Min"
-                        [value]="advancedFilters().encumbrance?.min ?? ''"
+                        [value]="filters().encumbrance?.min ?? ''"
                         (input)="
                             onRangeFilter(
                                 'encumbrance',
@@ -223,7 +112,7 @@
                         type="number"
                         class="input input-bordered input-xs join-item w-full"
                         placeholder="Max"
-                        [value]="advancedFilters().encumbrance?.max ?? ''"
+                        [value]="filters().encumbrance?.max ?? ''"
                         (input)="
                             onRangeFilter(
                                 'encumbrance',
@@ -239,7 +128,7 @@
             <div class="form-control">
                 <label class="label">
                     <span class="label-text text-xs">{{
-                        'weapons.filters.price' | transloco
+                        'items.columns.price' | transloco
                     }}</span>
                 </label>
                 <div class="join">
@@ -247,7 +136,7 @@
                         type="number"
                         class="input input-bordered input-xs join-item w-full"
                         placeholder="Min"
-                        [value]="advancedFilters().price?.min ?? ''"
+                        [value]="filters().price?.min ?? ''"
                         (input)="
                             onRangeFilter(
                                 'price',
@@ -260,7 +149,7 @@
                         type="number"
                         class="input input-bordered input-xs join-item w-full"
                         placeholder="Max"
-                        [value]="advancedFilters().price?.max ?? ''"
+                        [value]="filters().price?.max ?? ''"
                         (input)="
                             onRangeFilter(
                                 'price',
@@ -279,24 +168,7 @@
                 <input
                     type="checkbox"
                     class="checkbox checkbox-xs"
-                    [checked]="advancedFilters().suppressed === true"
-                    (change)="
-                        onExactFilter(
-                            'suppressed',
-                            $any($event.target).checked ? true : undefined
-                        )
-                    "
-                />
-                <span class="label-text text-xs">{{
-                    'weapons.filters.suppressed' | transloco
-                }}</span>
-            </label>
-
-            <label class="label cursor-pointer gap-2">
-                <input
-                    type="checkbox"
-                    class="checkbox checkbox-xs"
-                    [checked]="advancedFilters().canRespawnWith === true"
+                    [checked]="filters().canRespawnWith === true"
                     (change)="
                         onExactFilter(
                             'canRespawnWith',
@@ -308,11 +180,28 @@
                     'weapons.filters.canRespawnWith' | transloco
                 }}</span>
             </label>
+
+            <label class="label cursor-pointer gap-2">
+                <input
+                    type="checkbox"
+                    class="checkbox checkbox-xs"
+                    [checked]="filters().inStock === true"
+                    (change)="
+                        onExactFilter(
+                            'inStock',
+                            $any($event.target).checked ? true : undefined
+                        )
+                    "
+                />
+                <span class="label-text text-xs">{{
+                    'weapons.details.inStock' | transloco
+                }}</span>
+            </label>
         </div>
 
         <!-- Clear Filters Button -->
         <button class="btn btn-ghost btn-sm" (click)="onClearFilters()">
-            {{ 'weapons.clearFilters' | transloco }}
+            {{ 'items.clearFilters' | transloco }}
         </button>
     </div>
 </div>
@@ -341,11 +230,11 @@
 @if (loading()) {
     <div class="alert alert-info mb-4">
         <span class="loading loading-spinner"></span>
-        <span>{{ 'weapons.scanning' | transloco }}</span>
+        <span>{{ 'items.scanning' | transloco }}</span>
     </div>
 }
 
-<!-- Weapons Table -->
+<!-- Items Table -->
 <div class="overflow-x-auto">
     <table class="table table-xs">
         <thead>
@@ -355,7 +244,7 @@
                         [class.text-right]="col.alignment === 'right'"
                         class="cursor-pointer hover:bg-base-200 transition-colors"
                         [title]="
-                            'weapons.sort.' +
+                            'items.sort.' +
                                 (getColumnSortDirection(col.key) || 'unsorted')
                                 | transloco
                         "
@@ -405,20 +294,20 @@
             </tr>
         </thead>
         <tbody>
-            @if (weaponCount() === 0) {
+            @if (itemCount() === 0) {
                 <tr>
                     <td
                         [colSpan]="getVisibleColumns().length"
                         class="text-center"
                     >
-                        {{ 'weapons.noWeapons' | transloco }}
+                        {{ 'items.noItems' | transloco }}
                     </td>
                 </tr>
             } @else {
-                @for (weapon of weapons(); track weapon.key) {
+                @for (item of items(); track item.key ?? item.name) {
                     <tr
                         class="cursor-pointer hover:bg-base-200"
-                        (click)="onRowClick(weapon)"
+                        (click)="onRowClick(item)"
                     >
                         @for (col of getVisibleColumns(); track col.key) {
                             <td
@@ -429,19 +318,19 @@
                                     <div class="flex items-center gap-1">
                                         <span
                                             class="text-xs font-mono truncate flex-1"
-                                            [title]="weapon.filePath"
+                                            [title]="item.filePath"
                                         >
-                                            {{ weapon.filePath }}
+                                            {{ item.filePath }}
                                         </span>
                                         <button
                                             class="btn btn-ghost btn-xs btn-circle"
                                             [title]="
-                                                'weapons.actions.openInEditor'
+                                                'items.actions.openInEditor'
                                                     | transloco
                                             "
                                             (click)="
                                                 $event.stopPropagation();
-                                                onOpenInEditor(weapon)
+                                                onOpenInEditor(item)
                                             "
                                         >
                                             <svg
@@ -462,12 +351,12 @@
                                         <button
                                             class="btn btn-ghost btn-xs btn-circle"
                                             [title]="
-                                                'weapons.actions.copyPath'
+                                                'items.actions.copyPath'
                                                     | transloco
                                             "
                                             (click)="
                                                 $event.stopPropagation();
-                                                onCopyPath(weapon)
+                                                onCopyPath(item)
                                             "
                                         >
                                             <svg
@@ -486,20 +375,8 @@
                                             </svg>
                                         </button>
                                     </div>
-                                } @else if (
-                                    col.field === 'key' || col.field === 'name'
-                                ) {
-                                    {{ weapon[col.field] }}
-                                } @else if (col.field === 'classTag') {
-                                    {{ weapon.classTag }}
-                                } @else if (col.field === 'magazineSize') {
-                                    {{ weapon.magazineSize }}
-                                } @else if (col.field === 'killProbability') {
-                                    {{ weapon.killProbability }}
-                                } @else if (col.field === 'retriggerTime') {
-                                    {{ weapon.retriggerTime }}
                                 } @else {
-                                    {{ weapon[col.field] }}
+                                    {{ getColumnValue(item, col.key) }}
                                 }
                             </td>
                         }
@@ -509,20 +386,20 @@
         </tbody>
     </table>
     <div class="text-sm text-opacity-50 mt-2">
-        {{ 'weapons.weaponCount' | transloco: { count: weaponCount() } }}
+        {{ 'items.itemCount' | transloco: { count: itemCount() } }}
     </div>
 </div>
 
-<!-- Weapon Details Modal -->
-@if (showWeaponDetails() && selectedWeapon()) {
-    <dialog class="modal modal-open" [open]="showWeaponDetails()">
+<!-- Item Details Modal -->
+@if (showItemDetails() && selectedItem()) {
+    <dialog class="modal modal-open" [open]="showItemDetails()">
         <div class="modal-box max-w-4xl max-h-[80vh] overflow-y-auto">
             <!-- Header -->
             <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg">{{ selectedWeapon()!.name }}</h3>
+                <h3 class="font-bold text-lg">{{ selectedItem()!.name }}</h3>
                 <button
                     class="btn btn-sm btn-circle btn-ghost"
-                    (click)="closeWeaponDetails()"
+                    (click)="closeItemDetails()"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -545,26 +422,39 @@
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div>
                     <span class="text-xs opacity-70">{{
-                        'weapons.columns.key' | transloco
+                        'items.columns.key' | transloco
                     }}</span>
                     <div class="font-mono text-sm">
-                        {{ selectedWeapon()!.key || '-' }}
+                        {{ selectedItem()!.key || '-' }}
                     </div>
                 </div>
                 <div>
                     <span class="text-xs opacity-70">{{
-                        'weapons.columns.class' | transloco
+                        'items.columns.itemType' | transloco
                     }}</span>
                     <div class="text-sm">
-                        {{ selectedWeapon()!.classTag || '-' }}
+                        {{
+                            'items.filters.' + selectedItem()!.itemType
+                                | transloco
+                        }}
                     </div>
                 </div>
+                @if (getItemSlotValue()) {
+                    <div>
+                        <span class="text-xs opacity-70">{{
+                            'items.columns.slot' | transloco
+                        }}</span>
+                        <div class="text-sm">
+                            {{ getItemSlotValue() }}
+                        </div>
+                    </div>
+                }
                 <div>
                     <span class="text-xs opacity-70">{{
-                        'weapons.columns.filePath' | transloco
+                        'items.columns.filePath' | transloco
                     }}</span>
                     <div class="text-xs font-mono">
-                        {{ selectedWeapon()!.filePath }}
+                        {{ selectedItem()!.filePath }}
                     </div>
                 </div>
                 <div>
@@ -572,7 +462,7 @@
                         'weapons.details.package' | transloco
                     }}</span>
                     <div class="text-sm">
-                        {{ selectedWeapon()!.packageName }}
+                        {{ selectedItem()!.packageName }}
                     </div>
                 </div>
             </div>
@@ -584,189 +474,86 @@
             <div class="overflow-x-auto mb-4">
                 <table class="table table-xs">
                     <tbody>
-                        <tr>
-                            <td class="w-1/2">
-                                {{ 'weapons.columns.magazineSize' | transloco }}
-                            </td>
-                            <td class="w-1/2 text-right">
-                                {{ selectedWeapon()!.magazineSize }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                {{
-                                    'weapons.columns.killProbability'
-                                        | transloco
-                                }}
-                            </td>
-                            <td class="text-right">
-                                {{ selectedWeapon()!.killProbability }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                {{
-                                    'weapons.columns.retriggerTime' | transloco
-                                }}
-                            </td>
-                            <td class="text-right">
-                                {{ selectedWeapon()!.retriggerTime }}
-                            </td>
-                        </tr>
                         @if (
-                            selectedWeapon()!.projectileSpeed !== null &&
-                            selectedWeapon()!.projectileSpeed !== undefined
+                            selectedItem()!.encumbrance !== null &&
+                            selectedItem()!.encumbrance !== undefined
+                        ) {
+                            <tr>
+                                <td class="w-1/2">
+                                    {{
+                                        'items.columns.encumbrance' | transloco
+                                    }}
+                                </td>
+                                <td class="w-1/2 text-right">
+                                    {{ selectedItem()!.encumbrance }}
+                                </td>
+                            </tr>
+                        }
+                        @if (
+                            selectedItem()!.price !== null &&
+                            selectedItem()!.price !== undefined
+                        ) {
+                            <tr>
+                                <td>
+                                    {{ 'items.columns.price' | transloco }}
+                                </td>
+                                <td class="text-right">
+                                    {{ selectedItem()!.price }}
+                                </td>
+                            </tr>
+                        }
+                        @if (
+                            selectedItem()!.canRespawnWith !== null &&
+                            selectedItem()!.canRespawnWith !== undefined
                         ) {
                             <tr>
                                 <td>
                                     {{
-                                        'weapons.details.projectileSpeed'
+                                        'weapons.details.canRespawnWith'
                                             | transloco
                                     }}
                                 </td>
                                 <td class="text-right">
-                                    {{ selectedWeapon()!.projectileSpeed }}
+                                    @if (selectedItem()!.canRespawnWith) {
+                                        <span class="badge badge-success">{{
+                                            'weapons.details.yes' | transloco
+                                        }}</span>
+                                    } @else {
+                                        <span class="badge badge-ghost">{{
+                                            'weapons.details.no' | transloco
+                                        }}</span>
+                                    }
                                 </td>
                             </tr>
                         }
                         @if (
-                            selectedWeapon()!.encumbrance !== null &&
-                            selectedWeapon()!.encumbrance !== undefined
+                            selectedItem()!.inStock !== null &&
+                            selectedItem()!.inStock !== undefined
                         ) {
                             <tr>
                                 <td>
-                                    {{
-                                        'weapons.filters.encumbrance'
-                                            | transloco
-                                    }}
+                                    {{ 'weapons.details.inStock' | transloco }}
                                 </td>
                                 <td class="text-right">
-                                    {{ selectedWeapon()!.encumbrance }}
+                                    @if (selectedItem()!.inStock) {
+                                        <span class="badge badge-success">{{
+                                            'weapons.details.yes' | transloco
+                                        }}</span>
+                                    } @else {
+                                        <span class="badge badge-ghost">{{
+                                            'weapons.details.no' | transloco
+                                        }}</span>
+                                    }
                                 </td>
                             </tr>
                         }
-                        @if (
-                            selectedWeapon()!.price !== null &&
-                            selectedWeapon()!.price !== undefined
-                        ) {
-                            <tr>
-                                <td>
-                                    {{ 'weapons.filters.price' | transloco }}
-                                </td>
-                                <td class="text-right">
-                                    {{ selectedWeapon()!.price }}
-                                </td>
-                            </tr>
-                        }
-                        <tr>
-                            <td>
-                                {{ 'weapons.details.suppressed' | transloco }}
-                            </td>
-                            <td class="text-right">
-                                @if (selectedWeapon()!.suppressed) {
-                                    <span class="badge badge-success">{{
-                                        'weapons.details.yes' | transloco
-                                    }}</span>
-                                } @else {
-                                    <span class="badge badge-ghost">{{
-                                        'weapons.details.no' | transloco
-                                    }}</span>
-                                }
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                {{
-                                    'weapons.details.canRespawnWith' | transloco
-                                }}
-                            </td>
-                            <td class="text-right">
-                                @if (selectedWeapon()!.canRespawnWith) {
-                                    <span class="badge badge-success">{{
-                                        'weapons.details.yes' | transloco
-                                    }}</span>
-                                } @else {
-                                    <span class="badge badge-ghost">{{
-                                        'weapons.details.no' | transloco
-                                    }}</span>
-                                }
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>{{ 'weapons.details.inStock' | transloco }}</td>
-                            <td class="text-right">
-                                @if (selectedWeapon()!.inStock) {
-                                    <span class="badge badge-success">{{
-                                        'weapons.details.yes' | transloco
-                                    }}</span>
-                                } @else {
-                                    <span class="badge badge-ghost">{{
-                                        'weapons.details.no' | transloco
-                                    }}</span>
-                                }
-                            </td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Stance Accuracies -->
-            @if (selectedWeapon()!.stanceAccuracies.length > 0) {
-                <h4 class="font-semibold text-md mb-2">
-                    {{ 'weapons.details.stanceAccuracies' | transloco }}
-                </h4>
-                <div class="overflow-x-auto mb-4">
-                    <table class="table table-xs">
-                        <thead>
-                            <tr>
-                                <th>
-                                    {{ 'weapons.details.stance' | transloco }}
-                                </th>
-                                <th class="text-right">
-                                    {{ 'weapons.details.accuracy' | transloco }}
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (
-                                stance of selectedWeapon()!.stanceAccuracies;
-                                track stance.stance
-                            ) {
-                                <tr>
-                                    <td>
-                                        {{
-                                            'weapons.details.stances.' +
-                                                stance.stance | transloco
-                                        }}
-                                    </td>
-                                    <td class="text-right">
-                                        {{ stance.accuracy }}
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-
-            <!-- Chain Variants -->
-            @if (selectedWeapon()!.chainVariants.length > 0) {
-                <h4 class="font-semibold text-md mb-2">
-                    {{ 'weapons.details.chainVariants' | transloco }}
-                </h4>
-                <div class="flex flex-wrap gap-2 mb-4">
-                    @for (
-                        variant of selectedWeapon()!.chainVariants;
-                        track variant
-                    ) {
-                        <span class="badge badge-outline">{{ variant }}</span>
-                    }
-                </div>
-            }
-
             <!-- Footer Actions -->
             <div class="modal-action">
-                <button class="btn btn-primary" (click)="closeWeaponDetails()">
+                <button class="btn btn-primary" (click)="closeItemDetails()">
                     {{ 'weapons.details.close' | transloco }}
                 </button>
             </div>
@@ -775,7 +562,7 @@
         <form method="dialog">
             <button
                 class="modal-backdrop"
-                (click)="closeWeaponDetails()"
+                (click)="closeItemDetails()"
             ></button>
         </form>
     </dialog>

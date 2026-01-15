@@ -15,50 +15,57 @@ const CONFIG_EXAMPLE: ModBundleInfo = {
     description: 'Mod 描述',
     authors: ['Annoymous'],
     version: '0.1.0',
-    game_version: '1.95'
+    game_version: '1.95',
 };
 
 @Component({
-  selector: 'app-bundle',
-  imports: [CommonModule, FormsModule, LucideAngularModule, TranslocoDirective],
-  templateUrl: './bundle.component.html',
-  styleUrl: './bundle.component.css'
+    selector: 'app-bundle',
+    imports: [
+        CommonModule,
+        FormsModule,
+        LucideAngularModule,
+        TranslocoDirective,
+    ],
+    templateUrl: './bundle.component.html',
+    styleUrl: './bundle.component.css',
 })
 export class BundleComponent {
-  private modService = inject(ModService);
+    private modService = inject(ModService);
 
-  // Signals
-  readonly loading = toSignal(this.modService.loading$, { initialValue: false });
-  readonly error = toSignal(this.modService.error$, { initialValue: null });
-
-  // Example config for display
-  readonly configExample = CONFIG_EXAMPLE;
-
-  /**
-   * Bundle a mod folder
-   */
-  onBundle(): void {
-    this.modService.selectAndBundleFolder().subscribe({
-      next: (outputFileName) => {
-        alert(`Bundle successful: ${outputFileName}`);
-      },
-      error: (err) => {
-        console.error('Bundle failed:', err);
-      }
+    // Signals
+    readonly loading = toSignal(this.modService.loading$, {
+        initialValue: false,
     });
-  }
+    readonly error = toSignal(this.modService.error$, { initialValue: null });
 
-  /**
-   * Generate default config files
-   */
-  onGenerateConfig(): void {
-    this.modService.selectAndGenerateConfig().subscribe({
-      next: (folderPath) => {
-        alert(`Default config generated for: ${folderPath}`);
-      },
-      error: (err) => {
-        console.error('Generate config failed:', err);
-      }
-    });
-  }
+    // Example config for display
+    readonly configExample = CONFIG_EXAMPLE;
+
+    /**
+     * Bundle a mod folder
+     */
+    onBundle(): void {
+        this.modService.selectAndBundleFolder().subscribe({
+            next: (outputFileName) => {
+                alert(`Bundle successful: ${outputFileName}`);
+            },
+            error: (err) => {
+                console.error('Bundle failed:', err);
+            },
+        });
+    }
+
+    /**
+     * Generate default config files
+     */
+    onGenerateConfig(): void {
+        this.modService.selectAndGenerateConfig().subscribe({
+            next: (folderPath) => {
+                alert(`Default config generated for: ${folderPath}`);
+            },
+            error: (err) => {
+                console.error('Generate config failed:', err);
+            },
+        });
+    }
 }

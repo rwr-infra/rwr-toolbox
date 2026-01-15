@@ -9,18 +9,31 @@ import { IHotkeyConfigItem } from '../../shared/models/hotkeys.models';
 
 @Component({
     selector: 'app-hotkeys',
-    imports: [CommonModule, FormsModule, LucideAngularModule, TranslocoDirective],
+    imports: [
+        CommonModule,
+        FormsModule,
+        LucideAngularModule,
+        TranslocoDirective,
+    ],
     templateUrl: './hotkeys.component.html',
-    styleUrl: './hotkeys.component.css'
+    styleUrl: './hotkeys.component.css',
 })
 export class HotkeysComponent implements OnInit {
     private hotkeyService = inject(HotkeyService);
 
     // Signals
-    readonly loading = toSignal(this.hotkeyService.loading$, { initialValue: false });
-    readonly error = toSignal(this.hotkeyService.error$, { initialValue: null });
-    readonly profiles = toSignal(this.hotkeyService.profiles$, { initialValue: null });
-    readonly currentConfig = toSignal(this.hotkeyService.currentConfig$, { initialValue: [] });
+    readonly loading = toSignal(this.hotkeyService.loading$, {
+        initialValue: false,
+    });
+    readonly error = toSignal(this.hotkeyService.error$, {
+        initialValue: null,
+    });
+    readonly profiles = toSignal(this.hotkeyService.profiles$, {
+        initialValue: null,
+    });
+    readonly currentConfig = toSignal(this.hotkeyService.currentConfig$, {
+        initialValue: [],
+    });
 
     // UI State
     activeTab: 'read' | 'profiles' = 'read';
@@ -50,7 +63,7 @@ export class HotkeysComponent implements OnInit {
             next: () => {
                 // Preview is now automatically available via currentConfig signal
             },
-            error: (err) => console.error('Failed to read:', err)
+            error: (err) => console.error('Failed to read:', err),
         });
     }
 
@@ -64,26 +77,32 @@ export class HotkeysComponent implements OnInit {
 
         if (this.editingProfileId) {
             // Update existing profile
-            this.hotkeyService.updateProfile(this.editingProfileId, {
-                title: this.newProfileTitle,
-                config: this.newProfileConfig
-            }).subscribe({
-                next: () => {
-                    this.closeModal();
-                },
-                error: (err) => console.error('Failed to update profile:', err)
-            });
+            this.hotkeyService
+                .updateProfile(this.editingProfileId, {
+                    title: this.newProfileTitle,
+                    config: this.newProfileConfig,
+                })
+                .subscribe({
+                    next: () => {
+                        this.closeModal();
+                    },
+                    error: (err) =>
+                        console.error('Failed to update profile:', err),
+                });
         } else {
             // Create new profile
-            this.hotkeyService.createProfile({
-                title: this.newProfileTitle,
-                config: this.newProfileConfig
-            }).subscribe({
-                next: () => {
-                    this.closeModal();
-                },
-                error: (err) => console.error('Failed to create profile:', err)
-            });
+            this.hotkeyService
+                .createProfile({
+                    title: this.newProfileTitle,
+                    config: this.newProfileConfig,
+                })
+                .subscribe({
+                    next: () => {
+                        this.closeModal();
+                    },
+                    error: (err) =>
+                        console.error('Failed to create profile:', err),
+                });
         }
     }
 
@@ -111,7 +130,7 @@ export class HotkeysComponent implements OnInit {
      * Open edit modal for existing profile
      */
     openEditProfileModal(id: string): void {
-        const profile = this.profiles()?.profiles.find(p => p.id === id);
+        const profile = this.profiles()?.profiles.find((p) => p.id === id);
         if (!profile) {
             console.error('Profile not found:', id);
             return;
@@ -152,7 +171,7 @@ export class HotkeysComponent implements OnInit {
                     this.showDeleteConfirm = false;
                     this.profileToDelete = null;
                 },
-                error: (err) => console.error('Failed to delete:', err)
+                error: (err) => console.error('Failed to delete:', err),
             });
         }
     }
@@ -165,7 +184,7 @@ export class HotkeysComponent implements OnInit {
             next: () => {
                 alert('Profile applied successfully!');
             },
-            error: (err) => console.error('Failed to apply:', err)
+            error: (err) => console.error('Failed to apply:', err),
         });
     }
 
@@ -233,7 +252,7 @@ export class HotkeysComponent implements OnInit {
         try {
             await this.hotkeyService.shareProfile(id);
             this.showShareSuccessModal = true;
-            setTimeout(() => this.showShareSuccessModal = false, 2000);
+            setTimeout(() => (this.showShareSuccessModal = false), 2000);
         } catch (err) {
             this.shareError = typeof err === 'string' ? err : 'Failed to copy';
         }
@@ -258,9 +277,10 @@ export class HotkeysComponent implements OnInit {
             this.clipboardImportSuccess = true;
             this.showImportFromClipboardModal = true;
 
-            setTimeout(() => this.showImportFromClipboardModal = false, 2000);
+            setTimeout(() => (this.showImportFromClipboardModal = false), 2000);
         } catch (err) {
-            this.clipboardImportError = typeof err === 'string' ? err : 'Failed to import';
+            this.clipboardImportError =
+                typeof err === 'string' ? err : 'Failed to import';
             this.showImportFromClipboardModal = true;
         }
     }

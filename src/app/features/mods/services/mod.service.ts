@@ -3,14 +3,17 @@ import { BehaviorSubject, Observable, from, of, throwError } from 'rxjs';
 import { catchError, tap, finalize, switchMap, map } from 'rxjs/operators';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { ModReadInfo, ModInstallOptions } from '../../../shared/models/mod.models';
+import {
+    ModReadInfo,
+    ModInstallOptions,
+} from '../../../shared/models/mod.models';
 import { SettingsService } from '../../../core/services/settings.service';
 
 /**
  * Service for managing RWRMI mods
  */
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class ModService {
     private settingsService = inject(SettingsService);
@@ -33,14 +36,14 @@ export class ModService {
         this.errorSubject.next(null);
 
         return from(invoke<string>('read_info', { path: filePath })).pipe(
-            map(result => JSON.parse(result) as ModReadInfo),
-            catchError(error => {
+            map((result) => JSON.parse(result) as ModReadInfo),
+            catchError((error) => {
                 this.errorSubject.next(`Failed to read mod info: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
-            })
+            }),
         );
     }
 
@@ -52,25 +55,29 @@ export class ModService {
         this.loadingSubject.next(true);
         this.errorSubject.next(null);
 
-        return from(open({
-            filters: [{
-                name: 'RWRMI Mod',
-                extensions: ['zip']
-            }]
-        })).pipe(
-            switchMap(filePath => {
+        return from(
+            open({
+                filters: [
+                    {
+                        name: 'RWRMI Mod',
+                        extensions: ['zip'],
+                    },
+                ],
+            }),
+        ).pipe(
+            switchMap((filePath) => {
                 if (!filePath) {
                     return throwError(() => 'No file selected');
                 }
                 return this.readModInfo(filePath as string);
             }),
-            catchError(error => {
+            catchError((error) => {
                 this.errorSubject.next(`Failed to select file: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
-            })
+            }),
         );
     }
 
@@ -81,45 +88,57 @@ export class ModService {
      * @param options Install options
      * @returns Observable of void
      */
-    installMod(filePath: string, targetPath: string, options: ModInstallOptions): Observable<void> {
+    installMod(
+        filePath: string,
+        targetPath: string,
+        options: ModInstallOptions,
+    ): Observable<void> {
         this.loadingSubject.next(true);
         this.errorSubject.next(null);
 
         // If backup is enabled, create backup first
         if (options.backup) {
             return from(this.readModInfo(filePath)).pipe(
-                switchMap(modInfo => {
-                    return this.makeBackup(filePath, modInfo.file_path_list, targetPath);
+                switchMap((modInfo) => {
+                    return this.makeBackup(
+                        filePath,
+                        modInfo.file_path_list,
+                        targetPath,
+                    );
                 }),
                 switchMap(() => {
-                    return from(invoke('install_mod', {
-                        path: filePath,
-                        targetPath
-                    })).pipe(map(() => undefined));
+                    return from(
+                        invoke('install_mod', {
+                            path: filePath,
+                            targetPath,
+                        }),
+                    ).pipe(map(() => undefined));
                 }),
-                catchError(error => {
+                catchError((error) => {
                     this.errorSubject.next(`Failed to install mod: ${error}`);
                     return throwError(() => error);
                 }),
                 finalize(() => {
                     this.loadingSubject.next(false);
-                })
+                }),
             );
         }
 
         // Install without backup
-        return from(invoke('install_mod', {
-            path: filePath,
-            targetPath
-        })).pipe(
+        return from(
+            invoke('install_mod', {
+                path: filePath,
+                targetPath,
+            }),
+        ).pipe(
             map(() => undefined),
-            catchError(error => {
+            catchError((error) => {
                 this.errorSubject.next(`Failed to install mod: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
-            })
+            }),
         );
     }
 
@@ -130,16 +149,22 @@ export class ModService {
      * @param targetPath Target directory
      * @returns Observable of backup path
      */
-    makeBackup(modPath: string, fileList: string[], targetPath: string): Observable<string> {
-        return from(invoke<string>('make_backup', {
-            modPath,
-            fileList,
-            targetPath
-        })).pipe(
-            catchError(error => {
+    makeBackup(
+        modPath: string,
+        fileList: string[],
+        targetPath: string,
+    ): Observable<string> {
+        return from(
+            invoke<string>('make_backup', {
+                modPath,
+                fileList,
+                targetPath,
+            }),
+        ).pipe(
+            catchError((error) => {
                 this.errorSubject.next(`Failed to create backup: ${error}`);
                 return throwError(() => error);
-            })
+            }),
         );
     }
 
@@ -154,13 +179,13 @@ export class ModService {
 
         return from(invoke('recover_backup', { path: targetPath })).pipe(
             map(() => undefined),
-            catchError(error => {
+            catchError((error) => {
                 this.errorSubject.next(`Failed to recover backup: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
-            })
+            }),
         );
     }
 
@@ -174,13 +199,13 @@ export class ModService {
         this.errorSubject.next(null);
 
         return from(invoke<string>('bundle_mod', { path: folderPath })).pipe(
-            catchError(error => {
+            catchError((error) => {
                 this.errorSubject.next(`Failed to bundle mod: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
-            })
+            }),
         );
     }
 
@@ -192,22 +217,24 @@ export class ModService {
         this.loadingSubject.next(true);
         this.errorSubject.next(null);
 
-        return from(open({
-            directory: true
-        })).pipe(
-            switchMap(folderPath => {
+        return from(
+            open({
+                directory: true,
+            }),
+        ).pipe(
+            switchMap((folderPath) => {
                 if (!folderPath) {
                     return throwError(() => 'No folder selected');
                 }
                 return this.bundleMod(folderPath as string);
             }),
-            catchError(error => {
+            catchError((error) => {
                 this.errorSubject.next(`Failed to bundle folder: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
-            })
+            }),
         );
     }
 
@@ -220,14 +247,16 @@ export class ModService {
         this.loadingSubject.next(true);
         this.errorSubject.next(null);
 
-        return from(invoke<string>('generate_mod_config', { path: folderPath })).pipe(
-            catchError(error => {
+        return from(
+            invoke<string>('generate_mod_config', { path: folderPath }),
+        ).pipe(
+            catchError((error) => {
                 this.errorSubject.next(`Failed to generate config: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
-            })
+            }),
         );
     }
 
@@ -239,22 +268,24 @@ export class ModService {
         this.loadingSubject.next(true);
         this.errorSubject.next(null);
 
-        return from(open({
-            directory: true
-        })).pipe(
-            switchMap(folderPath => {
+        return from(
+            open({
+                directory: true,
+            }),
+        ).pipe(
+            switchMap((folderPath) => {
                 if (!folderPath) {
                     return throwError(() => 'No folder selected');
                 }
                 return this.generateModConfig(folderPath as string);
             }),
-            catchError(error => {
+            catchError((error) => {
                 this.errorSubject.next(`Failed to generate config: ${error}`);
                 return throwError(() => error);
             }),
             finalize(() => {
                 this.loadingSubject.next(false);
-            })
+            }),
         );
     }
 

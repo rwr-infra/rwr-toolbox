@@ -1,5 +1,9 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { AppSettings, ApiEndpoint, FavoriteItem } from '../../shared/models/common.models';
+import {
+    AppSettings,
+    ApiEndpoint,
+    FavoriteItem,
+} from '../../shared/models/common.models';
 import { DEFAULT_COLUMN_VISIBILITY } from '../../features/players/player-columns';
 import { DEFAULT_SERVER_COLUMN_VISIBILITY } from '../../features/servers/server-columns';
 
@@ -17,7 +21,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     playerColumnVisibility: DEFAULT_COLUMN_VISIBILITY,
     serverColumnVisibility: DEFAULT_SERVER_COLUMN_VISIBILITY,
     gamePath: '',
-    modInstallHistory: []
+    modInstallHistory: [],
 };
 
 /**
@@ -25,7 +29,7 @@ const DEFAULT_SETTINGS: AppSettings = {
  */
 const AVAILABLE_ENDPOINTS: ApiEndpoint[] = [
     { key: 'cn', label: '中国大陆', host: 'robin.kreedzt.cn' },
-    { key: 'global', label: '全球', host: 'robin.kreedzt.com' }
+    { key: 'global', label: '全球', host: 'robin.kreedzt.com' },
 ];
 
 /**
@@ -33,7 +37,7 @@ const AVAILABLE_ENDPOINTS: ApiEndpoint[] = [
  * Falls back to localStorage for web mode
  */
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class SettingsService {
     // Reactive settings using signals
@@ -52,9 +56,17 @@ export class SettingsService {
     private readonly TAURI_STORE_FILE = 'settings.json';
 
     /** Cached store instance promise */
-    private storePromise: Promise<{ get: (key: string) => Promise<any>; set: (key: string, value: any) => Promise<void>; save: () => Promise<void> } | null> | null = null;
+    private storePromise: Promise<{
+        get: (key: string) => Promise<any>;
+        set: (key: string, value: any) => Promise<void>;
+        save: () => Promise<void>;
+    } | null> | null = null;
 
-    private async getTauriStore(): Promise<{ get: (key: string) => Promise<any>; set: (key: string, value: any) => Promise<void>; save: () => Promise<void> } | null> {
+    private async getTauriStore(): Promise<{
+        get: (key: string) => Promise<any>;
+        set: (key: string, value: any) => Promise<void>;
+        save: () => Promise<void>;
+    } | null> {
         if (this.storePromise) return this.storePromise;
 
         this.storePromise = (async () => {
@@ -86,7 +98,10 @@ export class SettingsService {
                 }
                 return;
             } catch (error) {
-                console.error('Failed to load settings from Tauri Store:', error);
+                console.error(
+                    'Failed to load settings from Tauri Store:',
+                    error,
+                );
             }
         }
 
@@ -121,7 +136,10 @@ export class SettingsService {
         }
 
         try {
-            localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(newSettings));
+            localStorage.setItem(
+                this.LOCAL_STORAGE_KEY,
+                JSON.stringify(newSettings),
+            );
         } catch (error) {
             console.error('Failed to save settings to localStorage:', error);
         }
@@ -133,7 +151,7 @@ export class SettingsService {
      */
     getEndpoint(): string {
         const endpointKey = this.settingsState().apiEndpoint;
-        const endpoint = this.endpoints.find(e => e.key === endpointKey);
+        const endpoint = this.endpoints.find((e) => e.key === endpointKey);
         return endpoint?.host ?? AVAILABLE_ENDPOINTS[1].host;
     }
 
@@ -143,7 +161,10 @@ export class SettingsService {
      */
     getEndpointConfig(): ApiEndpoint {
         const endpointKey = this.settingsState().apiEndpoint;
-        return this.endpoints.find(e => e.key === endpointKey) ?? AVAILABLE_ENDPOINTS[1];
+        return (
+            this.endpoints.find((e) => e.key === endpointKey) ??
+            AVAILABLE_ENDPOINTS[1]
+        );
     }
 
     /**
@@ -152,11 +173,13 @@ export class SettingsService {
      */
     async addFavorite(item: FavoriteItem): Promise<void> {
         const currentFavorites = this.settingsState().favorites;
-        const exists = currentFavorites.some(f => f.id === item.id && f.type === item.type);
+        const exists = currentFavorites.some(
+            (f) => f.id === item.id && f.type === item.type,
+        );
 
         if (!exists) {
             await this.updateSettings({
-                favorites: [...currentFavorites, item]
+                favorites: [...currentFavorites, item],
             });
         }
     }
@@ -169,7 +192,9 @@ export class SettingsService {
     async removeFavorite(id: string, type: 'server' | 'player'): Promise<void> {
         const currentFavorites = this.settingsState().favorites;
         await this.updateSettings({
-            favorites: currentFavorites.filter(f => !(f.id === id && f.type === type))
+            favorites: currentFavorites.filter(
+                (f) => !(f.id === id && f.type === type),
+            ),
         });
     }
 
@@ -179,9 +204,9 @@ export class SettingsService {
      * @returns Array of favorite IDs
      */
     getFavorites(type: 'server' | 'player'): string[] {
-        return this.settingsState().favorites
-            .filter(f => f.type === type)
-            .map(f => f.id);
+        return this.settingsState()
+            .favorites.filter((f) => f.type === type)
+            .map((f) => f.id);
     }
 
     /**
@@ -191,7 +216,9 @@ export class SettingsService {
      * @returns True if favorited
      */
     isFavorite(id: string, type: 'server' | 'player'): boolean {
-        return this.settingsState().favorites.some(f => f.id === id && f.type === type);
+        return this.settingsState().favorites.some(
+            (f) => f.id === id && f.type === type,
+        );
     }
 
     /**
@@ -206,7 +233,7 @@ export class SettingsService {
             await this.addFavorite({
                 id,
                 type,
-                addedAt: Date.now()
+                addedAt: Date.now(),
             });
         }
     }
@@ -233,7 +260,8 @@ export class SettingsService {
      * @returns True if visible
      */
     isPlayerColumnVisible(key: string): boolean {
-        const visibility = this.settingsState().playerColumnVisibility as unknown as Record<string, boolean>;
+        const visibility = this.settingsState()
+            .playerColumnVisibility as unknown as Record<string, boolean>;
         return visibility[key] ?? false;
     }
 
@@ -242,10 +270,11 @@ export class SettingsService {
      * @param key Column key
      */
     async togglePlayerColumn(key: string): Promise<void> {
-        const current = this.settingsState().playerColumnVisibility as unknown as Record<string, boolean>;
+        const current = this.settingsState()
+            .playerColumnVisibility as unknown as Record<string, boolean>;
         const updated = {
             ...current,
-            [key]: !current[key]
+            [key]: !current[key],
         };
         await this.updateSettings({ playerColumnVisibility: updated as any });
     }
@@ -254,15 +283,21 @@ export class SettingsService {
      * Set player column visibility
      * @param visibility Complete visibility record
      */
-    async setPlayerColumnVisibility(visibility: Record<string, boolean>): Promise<void> {
-        await this.updateSettings({ playerColumnVisibility: visibility as any });
+    async setPlayerColumnVisibility(
+        visibility: Record<string, boolean>,
+    ): Promise<void> {
+        await this.updateSettings({
+            playerColumnVisibility: visibility as any,
+        });
     }
 
     /**
      * Reset player column visibility to defaults
      */
     async resetPlayerColumnVisibility(): Promise<void> {
-        await this.updateSettings({ playerColumnVisibility: DEFAULT_COLUMN_VISIBILITY });
+        await this.updateSettings({
+            playerColumnVisibility: DEFAULT_COLUMN_VISIBILITY,
+        });
     }
 
     /**
@@ -279,7 +314,8 @@ export class SettingsService {
      * @returns True if visible
      */
     isServerColumnVisible(key: string): boolean {
-        const visibility = this.settingsState().serverColumnVisibility as unknown as Record<string, boolean>;
+        const visibility = this.settingsState()
+            .serverColumnVisibility as unknown as Record<string, boolean>;
         return visibility[key] ?? false;
     }
 
@@ -288,10 +324,11 @@ export class SettingsService {
      * @param key Column key
      */
     async toggleServerColumn(key: string): Promise<void> {
-        const current = this.settingsState().serverColumnVisibility as unknown as Record<string, boolean>;
+        const current = this.settingsState()
+            .serverColumnVisibility as unknown as Record<string, boolean>;
         const updated = {
             ...current,
-            [key]: !current[key]
+            [key]: !current[key],
         };
         await this.updateSettings({ serverColumnVisibility: updated as any });
     }
@@ -300,15 +337,21 @@ export class SettingsService {
      * Set server column visibility
      * @param visibility Complete visibility record
      */
-    async setServerColumnVisibility(visibility: Record<string, boolean>): Promise<void> {
-        await this.updateSettings({ serverColumnVisibility: visibility as any });
+    async setServerColumnVisibility(
+        visibility: Record<string, boolean>,
+    ): Promise<void> {
+        await this.updateSettings({
+            serverColumnVisibility: visibility as any,
+        });
     }
 
     /**
      * Reset server column visibility to defaults
      */
     async resetServerColumnVisibility(): Promise<void> {
-        await this.updateSettings({ serverColumnVisibility: DEFAULT_SERVER_COLUMN_VISIBILITY });
+        await this.updateSettings({
+            serverColumnVisibility: DEFAULT_SERVER_COLUMN_VISIBILITY,
+        });
     }
 
     /**
