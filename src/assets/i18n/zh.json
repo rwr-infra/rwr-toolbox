@@ -296,7 +296,8 @@
       "class": "类别",
       "magazineSize": "弹匣",
       "killProbability": "伤害",
-      "retriggerTime": "射速"
+      "retriggerTime": "射速",
+      "filePath": "文件路径"
     },
     "filters": {
       "damage": "伤害",
@@ -325,11 +326,17 @@
         "over_wall": "掩体后"
       }
     },
+    "actions": {
+      "openInEditor": "在默认编辑器中打开",
+      "copyPath": "复制路径"
+    },
     "errors": {
       "noGamePath": "未配置游戏路径",
       "invalidPath": "无效的游戏目录",
       "scanFailed": "扫描武器失败",
-      "duplicateKeys": "检测到重复的武器键：{{keys}}"
+      "duplicateKeys": "检测到重复的武器键：{{keys}}",
+      "openFileFailed": "打开文件失败：{{file}}",
+      "copyPathFailed": "复制路径失败：{{file}}"
     }
   }
 }

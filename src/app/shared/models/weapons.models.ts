@@ -53,7 +53,9 @@ export interface Weapon {
     chainVariants: string[];
     /** Accuracy values per stance */
     stanceAccuracies: StanceAccuracy[];
-    /** Original XML file path */
+    /** File path relative to packages directory (e.g., 'vanilla/weapons/ak47.weapon') */
+    filePath: string;
+    /** Original absolute XML file path */
     sourceFile: string;
     /** Package name (vanilla or mod) */
     packageName: string;
@@ -120,7 +122,7 @@ export interface AdvancedFilters {
 }
 
 /**
- * Weapon column keys (6 default columns for 800x600)
+ * Weapon column keys (6 default columns for 800x600 + filePath)
  */
 export type WeaponColumnKey =
     | 'key'
@@ -128,7 +130,8 @@ export type WeaponColumnKey =
     | 'class'
     | 'magazineSize'
     | 'killProbability'
-    | 'retriggerTime';
+    | 'retriggerTime'
+    | 'filePath';
 
 /**
  * Weapon column configuration

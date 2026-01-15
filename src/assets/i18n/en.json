@@ -296,7 +296,8 @@
       "class": "Class",
       "magazineSize": "Magazine",
       "killProbability": "Damage",
-      "retriggerTime": "Fire Rate"
+      "retriggerTime": "Fire Rate",
+      "filePath": "File Path"
     },
     "filters": {
       "damage": "Damage",
@@ -325,11 +326,17 @@
         "over_wall": "Over Cover"
       }
     },
+    "actions": {
+      "openInEditor": "Open in default editor",
+      "copyPath": "Copy path"
+    },
     "errors": {
       "noGamePath": "Game path not configured",
       "invalidPath": "Invalid game directory",
       "scanFailed": "Failed to scan weapons",
-      "duplicateKeys": "Duplicate weapon keys detected: {{keys}}"
+      "duplicateKeys": "Duplicate weapon keys detected: {{keys}}",
+      "openFileFailed": "Failed to open file: {{file}}",
+      "copyPathFailed": "Failed to copy path: {{file}}"
     }
   }
 }

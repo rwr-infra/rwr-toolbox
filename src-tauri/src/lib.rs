@@ -72,7 +72,8 @@ pub fn run() {
             hotkeys::import_profile,
             hotkeys::open_hotkeys_in_editor,
             weapons::validate_game_path,
-            weapons::scan_weapons
+            weapons::scan_weapons,
+            weapons::open_file_in_editor
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -6,6 +6,7 @@ import {
   OnInit,
 } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { invoke } from '@tauri-apps/api/core';
 import { WeaponService } from './services/weapon.service';
 import { SettingsService } from '../../../core/services/settings.service';
 import { Weapon, AdvancedFilters } from '../../../shared/models/weapons.models';
@@ -114,6 +115,36 @@ export class WeaponsComponent implements OnInit {
   onRowClick(weapon: Weapon): void {
     // TODO: Open weapon detail modal
     console.log('Show weapon details:', weapon);
+  }
+
+  /** Open weapon file in default editor */
+  async onOpenInEditor(weapon: Weapon): Promise<void> {
+    try {
+      await invoke('open_file_in_editor', {
+        filePath: weapon.sourceFile,
+      });
+    } catch (error) {
+      console.error('Failed to open file:', error);
+      const errorMsg = this.transloco.translate('weapons.errors.openFileFailed', {
+        file: weapon.filePath,
+      });
+      this.weaponService['error'].set(errorMsg);
+    }
+  }
+
+  /** Copy file path to clipboard */
+  async onCopyPath(weapon: Weapon): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(weapon.sourceFile);
+      // Show success feedback (optional - could add a toast notification)
+      console.log('Copied path:', weapon.sourceFile);
+    } catch (error) {
+      console.error('Failed to copy path:', error);
+      const errorMsg = this.transloco.translate('weapons.errors.copyPathFailed', {
+        file: weapon.filePath,
+      });
+      this.weaponService['error'].set(errorMsg);
+    }
   }
 
   /** Get visible columns for display */

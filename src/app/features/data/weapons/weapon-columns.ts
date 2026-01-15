@@ -55,6 +55,14 @@ export const WEAPON_COLUMNS: WeaponColumn[] = [
     alignment: 'right',
     alwaysVisible: false,
   },
+  {
+    key: 'filePath',
+    field: 'filePath',
+    label: 'File Path',
+    i18nKey: 'weapons.columns.filePath',
+    alignment: 'left',
+    alwaysVisible: false,
+  },
 ];
 
 /**
