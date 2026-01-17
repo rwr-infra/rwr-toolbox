@@ -29,10 +29,10 @@ export interface VirtualScrollConfig {
  * Default virtual scrolling configuration
  */
 export const DEFAULT_SCROLL_CONFIG: VirtualScrollConfig = {
-    itemSize: 50,      // 50px per row
-    bufferSize: 10,     // Render 10 extra rows
-    minBufferPx: 100,   // Minimum 100px buffer
-    maxBufferPx: 1000,  // Maximum 1000px buffer
+    itemSize: 50, // 50px per row
+    bufferSize: 10, // Render 10 extra rows
+    minBufferPx: 100, // Minimum 100px buffer
+    maxBufferPx: 1000, // Maximum 1000px buffer
 };
 
 /**
@@ -73,7 +73,9 @@ export class VirtualScrollAdapter {
      * @example
      * const config = this.createConfig({ itemSize: 60 });
      */
-    createConfig(config: Partial<VirtualScrollConfig> = {}): VirtualScrollConfig {
+    createConfig(
+        config: Partial<VirtualScrollConfig> = {},
+    ): VirtualScrollConfig {
         return {
             ...DEFAULT_SCROLL_CONFIG,
             ...config,
@@ -90,7 +92,10 @@ export class VirtualScrollAdapter {
      * @example
      * const itemSize = this.calculateItemSize(true, false); // 60px for images
      */
-    calculateItemSize(hasImages: boolean, compactMode: boolean = false): number {
+    calculateItemSize(
+        hasImages: boolean,
+        compactMode: boolean = false,
+    ): number {
         const baseSize = compactMode ? 40 : 50;
         return hasImages ? baseSize + 10 : baseSize;
     }

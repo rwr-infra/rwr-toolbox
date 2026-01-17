@@ -5,9 +5,9 @@ mod ping;
 mod rwrmi;
 mod weapons;
 
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tauri_plugin_http::reqwest::{Client, Url};
-use serde::{Deserialize, Serialize};
 
 /// System theme detection result
 #[derive(Debug, Serialize, Deserialize)]

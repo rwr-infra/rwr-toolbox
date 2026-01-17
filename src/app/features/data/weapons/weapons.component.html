@@ -22,6 +22,25 @@
             }
         </select>
     </div>
+    <!-- Page Size Selector -->
+    <div class="form-control">
+        <label class="label py-1">
+            <span class="label-text text-xs">{{
+                'weapons.page_size' | transloco
+            }}</span>
+        </label>
+        <select
+            class="select select-bordered select-sm"
+            [value]="pagination().pageSize"
+            (change)="onPageSizeChange($event)"
+        >
+            @for (size of pageSizeOptions; track size) {
+                <option [value]="size">
+                    {{ 'weapons.page_size_' + size | transloco }}
+                </option>
+            }
+        </select>
+    </div>
     <!-- Column Toggle Dropdown -->
     <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-outline">
@@ -430,7 +449,7 @@
                     </td>
                 </tr>
             } @else {
-                @for (weapon of weapons(); track weapon.key) {
+                @for (weapon of paginatedWeapons(); track weapon.key) {
                     <tr
                         class="cursor-pointer hover:bg-base-200"
                         (click)="onRowClick(weapon)"
@@ -549,6 +568,50 @@
             }
         </tbody>
     </table>
+
+    <!-- T060: Pagination Controls -->
+    @if (weaponCount() > 0) {
+        <div
+            class="flex flex-col sm:flex-row justify-between items-center mt-4 gap-3 px-1"
+        >
+            <!-- Display Stats -->
+            <div class="text-[10px] text-base-content/50 order-2 sm:order-1">
+                {{
+                    'weapons.pagination_info'
+                        | transloco
+                            : {
+                                  start: getDisplayRange().start,
+                                  end: getDisplayRange().end,
+                                  total: totalItems(),
+                              }
+                }}
+            </div>
+
+            <!-- Page Navigation -->
+            <div class="join order-1 sm:order-2">
+                @for (page of getPageNumbers(); track page) {
+                    @if (page === -1) {
+                        <button
+                            class="btn btn-xs join-item pointer-events-none opacity-50"
+                        >
+                            ...
+                        </button>
+                    } @else {
+                        <button
+                            class="btn btn-xs join-item"
+                            [class.btn-active]="
+                                page === pagination().currentPage
+                            "
+                            (click)="onPageChange(page)"
+                        >
+                            {{ page }}
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+    }
+
     <div class="text-sm text-opacity-50 mt-2">
         {{ 'weapons.weaponCount' | transloco: { count: weaponCount() } }}
     </div>

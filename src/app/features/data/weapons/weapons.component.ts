@@ -7,6 +7,7 @@ import { DirectoryService } from '../../settings/services/directory.service';
 import { Weapon, AdvancedFilters } from '../../../shared/models/weapons.models';
 import { WEAPON_COLUMNS } from './weapon-columns';
 import { ScrollingModeService } from '../../shared/services/scrolling-mode.service';
+import type { PaginationState } from '../../../shared/models/common.models';
 
 /**
  * Weapons table component with search, filters, and column visibility
@@ -40,8 +41,19 @@ export class WeaponsComponent implements OnInit {
     readonly selectedWeapon = signal<Weapon | null>(null);
     readonly showWeaponDetails = signal<boolean>(false);
 
+    // T056: Pagination state signal (100 items per page)
+    readonly pagination = signal<
+        Pick<PaginationState, 'currentPage' | 'pageSize'>
+    >({
+        currentPage: 1,
+        pageSize: 100,
+    });
+
     // Table columns
     readonly columns = WEAPON_COLUMNS;
+
+    // Page size options
+    readonly pageSizeOptions = [25, 50, 100, 200];
 
     // Computed signals
     readonly weaponCount = computed(() => this.weapons().length);
@@ -58,11 +70,41 @@ export class WeaponsComponent implements OnInit {
         this.scrollingModeService.isTableOnlyMode(),
     );
 
+    // T057: Pagination computed signals
+    readonly totalItems = computed(() => this.weapons().length);
+    readonly totalPages = computed(
+        () => Math.ceil(this.totalItems() / this.pagination().pageSize) || 1,
+    );
+
+    // T058: Paginated weapons signal (only render current page)
+    readonly paginatedWeapons = computed(() => {
+        const filtered = this.weapons();
+        const { currentPage, pageSize } = this.pagination();
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        return filtered.slice(start, end);
+    });
+
     constructor() {
         // Load column visibility from localStorage on init
         this.weaponService.setColumnVisibility(
             this.weaponService.getColumnVisibility(),
         );
+
+        // Load page size from localStorage
+        const savedPageSize = localStorage.getItem('weapons-page-size');
+        if (savedPageSize) {
+            const parsedSize = parseInt(savedPageSize, 10);
+            if (
+                !isNaN(parsedSize) &&
+                this.pageSizeOptions.includes(parsedSize)
+            ) {
+                this.pagination.set({
+                    currentPage: 1,
+                    pageSize: parsedSize,
+                });
+            }
+        }
     }
 
     toggleScrollingMode(): void {
@@ -91,18 +133,25 @@ export class WeaponsComponent implements OnInit {
             return;
         }
 
-        await this.weaponService.scanWeapons(firstValidDirectory.path);
+        await this.weaponService.scanWeapons(
+            firstValidDirectory.path,
+            firstValidDirectory.path,
+        );
     }
 
     /** Handle search input */
     onSearch(term: string): void {
         this.searchTerm.set(term);
         this.weaponService.setSearchTerm(term);
+        // T066: Reset pagination to page 1 on search
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
     }
 
     /** Handle classTag filter change */
     onClassTagFilter(classTag: string): void {
         this.selectedClassTag.set(classTag || undefined);
+        // T067: Reset pagination to page 1 on filter change
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
         this.updateAdvancedFilters();
     }
 
@@ -114,6 +163,8 @@ export class WeaponsComponent implements OnInit {
         };
         this.advancedFilters.set(filters); // Also update local signal
         this.weaponService.setAdvancedFilters(filters);
+        // T067: Reset pagination to page 1 on filter change
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
     }
 
     /** Toggle advanced search panel */
@@ -125,6 +176,8 @@ export class WeaponsComponent implements OnInit {
     onAdvancedFiltersChange(filters: AdvancedFilters): void {
         this.advancedFilters.set(filters);
         this.weaponService.setAdvancedFilters(filters);
+        // T067: Reset pagination to page 1 on filter change
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
     }
 
     /** Handle range filter input change */
@@ -211,6 +264,8 @@ export class WeaponsComponent implements OnInit {
             columnKey: newDirection ? columnKey : null,
             direction: newDirection,
         });
+        // T068: Reset pagination to page 1 on sort change
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
     }
 
     /** Get sort direction for a column */
@@ -235,7 +290,22 @@ export class WeaponsComponent implements OnInit {
             return;
         }
 
-        await this.weaponService.refreshWeapons(firstValidDirectory.path);
+        await this.weaponService.refreshWeapons(
+            firstValidDirectory.path,
+            firstValidDirectory.path,
+        );
+    }
+
+    /** Handle page size dropdown change */
+    onPageSizeChange(event: Event): void {
+        const value = (event.target as HTMLSelectElement).value;
+        const newSize = parseInt(value, 10);
+        this.pagination.update((p) => ({
+            ...p,
+            pageSize: newSize,
+            currentPage: 1, // Reset to page 1
+        }));
+        localStorage.setItem('weapons-page-size', String(newSize));
     }
 
     /** Handle weapon row click - show details */
@@ -278,7 +348,6 @@ export class WeaponsComponent implements OnInit {
         try {
             await navigator.clipboard.writeText(weapon.sourceFile);
             // Show success feedback (optional - could add a toast notification)
-            console.log('Copied path:', weapon.sourceFile);
         } catch (error) {
             console.error('Failed to copy path:', error);
             const errorMsg = this.transloco.translate(
@@ -316,5 +385,65 @@ export class WeaponsComponent implements OnInit {
         ).length;
         const isCurrentlyVisible = this.isColumnVisible(columnKey);
         return visibleCount <= 1 && isCurrentlyVisible;
+    }
+
+    /** T063: Handle page changes */
+    onPageChange(page: number): void {
+        this.pagination.update((p) => ({ ...p, currentPage: page }));
+    }
+
+    /** T064: Get page numbers for pagination */
+    getPageNumbers(): number[] {
+        const totalPages = this.totalPages();
+        const currentPage = this.pagination().currentPage;
+        const pages: number[] = [];
+
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Always show first page
+            pages.push(1);
+
+            if (currentPage > 3) {
+                pages.push(-1); // Ellipsis
+            }
+
+            const start = this.max(2, currentPage - 1);
+            const end = this.min(totalPages - 1, currentPage + 1);
+
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+
+            if (currentPage < totalPages - 2) {
+                pages.push(-1); // Ellipsis
+            }
+
+            // Always show last page
+            if (totalPages > 1) {
+                pages.push(totalPages);
+            }
+        }
+
+        return pages;
+    }
+
+    /** T065: Get display range for pagination stats */
+    getDisplayRange(): { start: number; end: number } {
+        const { currentPage, pageSize } = this.pagination();
+        const totalItems = this.totalItems();
+        const start = (currentPage - 1) * pageSize + 1;
+        const end = this.min(currentPage * pageSize, totalItems);
+        return { start, end };
+    }
+
+    private min(a: number, b: number): number {
+        return a < b ? a : b;
+    }
+
+    private max(a: number, b: number): number {
+        return a > b ? a : b;
     }
 }

@@ -1,11 +1,12 @@
 import { Component, inject, computed, signal, OnInit } from '@angular/core';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { LucideAngularModule } from 'lucide-angular';
 import { ItemService, ItemFilters } from './services/item.service';
 import { DirectoryService } from '../../settings/services/directory.service';
 import { GenericItem, getItemSlot } from '../../../shared/models/items.models';
 import { ITEM_COLUMNS } from './item-columns';
 import { ScrollingModeService } from '../../shared/services/scrolling-mode.service';
+import type { PaginationState } from '../../../shared/models/common.models';
 
 /**
  * Items table component with search, filters, column visibility, and sorting
@@ -22,6 +23,7 @@ import { ScrollingModeService } from '../../shared/services/scrolling-mode.servi
 export class ItemsComponent implements OnInit {
     private itemService = inject(ItemService);
     private directoryService = inject(DirectoryService);
+    private transloco = inject(TranslocoService);
     private scrollingModeService = inject(ScrollingModeService);
 
     // Readonly signals from service
@@ -39,8 +41,19 @@ export class ItemsComponent implements OnInit {
     readonly selectedItem = signal<GenericItem | null>(null);
     readonly showItemDetails = signal<boolean>(false);
 
+    // T071: Pagination state signal (100 items per page)
+    readonly pagination = signal<
+        Pick<PaginationState, 'currentPage' | 'pageSize'>
+    >({
+        currentPage: 1,
+        pageSize: 100,
+    });
+
     // Table columns
     readonly columns = ITEM_COLUMNS;
+
+    // Page size options
+    readonly pageSizeOptions = [25, 50, 100, 200];
 
     // Computed signals
     readonly itemCount = computed(() => this.items().length);
@@ -57,11 +70,41 @@ export class ItemsComponent implements OnInit {
         this.scrollingModeService.isTableOnlyMode(),
     );
 
+    // T072: Pagination computed signals
+    readonly totalItems = computed(() => this.items().length);
+    readonly totalPages = computed(
+        () => Math.ceil(this.totalItems() / this.pagination().pageSize) || 1,
+    );
+
+    // T073: Paginated items signal (only render current page)
+    readonly paginatedItems = computed(() => {
+        const filtered = this.items();
+        const { currentPage, pageSize } = this.pagination();
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        return filtered.slice(start, end);
+    });
+
     constructor() {
         // Load column visibility from localStorage on init
         this.itemService.setColumnVisibility(
             this.itemService.getColumnVisibility(),
         );
+
+        // Load page size from localStorage
+        const savedPageSize = localStorage.getItem('items-page-size');
+        if (savedPageSize) {
+            const parsedSize = parseInt(savedPageSize, 10);
+            if (
+                !isNaN(parsedSize) &&
+                this.pageSizeOptions.includes(parsedSize)
+            ) {
+                this.pagination.set({
+                    currentPage: 1,
+                    pageSize: parsedSize,
+                });
+            }
+        }
     }
 
     toggleScrollingMode(): void {
@@ -83,22 +126,32 @@ export class ItemsComponent implements OnInit {
         );
 
         if (!firstValidDirectory) {
-            this.itemService['error'].set('items.errors.noGamePath');
+            const errorMsg = this.transloco.translate(
+                'items.errors.noGamePath',
+            );
+            this.itemService['error'].set(errorMsg);
             return;
         }
 
-        await this.itemService.scanItems(firstValidDirectory.path);
+        await this.itemService.scanItems(
+            firstValidDirectory.path,
+            firstValidDirectory.path,
+        );
     }
 
     /** Handle search input */
     onSearch(term: string): void {
         this.searchTerm.set(term);
         this.itemService.setSearchTerm(term);
+        // T077: Reset pagination to page 1 on search
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
     }
 
     /** Handle itemType filter change */
     onItemTypeFilter(itemType: string): void {
         this.selectedItemType.set(itemType || undefined);
+        // T077: Reset pagination to page 1 on filter change
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
         this.updateFilters();
     }
 
@@ -114,6 +167,8 @@ export class ItemsComponent implements OnInit {
         };
         this.filters.set(updated);
         this.itemService.setFilters(updated);
+        // T077: Reset pagination to page 1 on filter change
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
     }
 
     /** Toggle advanced search panel */
@@ -125,6 +180,8 @@ export class ItemsComponent implements OnInit {
     onFiltersChange(filters: ItemFilters): void {
         this.filters.set(filters);
         this.itemService.setFilters(filters);
+        // T077: Reset pagination to page 1 on filter change
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
     }
 
     /** Handle range filter input change */
@@ -207,6 +264,8 @@ export class ItemsComponent implements OnInit {
             columnKey: newDirection ? columnKey : null,
             direction: newDirection,
         });
+        // T078: Reset pagination to page 1 on sort change
+        this.pagination.update((p) => ({ ...p, currentPage: 1 }));
     }
 
     /** Get sort direction for a column */
@@ -251,11 +310,29 @@ export class ItemsComponent implements OnInit {
         );
 
         if (!firstValidDirectory) {
-            this.itemService['error'].set('items.errors.noGamePath');
+            const errorMsg = this.transloco.translate(
+                'items.errors.noGamePath',
+            );
+            this.itemService['error'].set(errorMsg);
             return;
         }
 
-        await this.itemService.refreshItems(firstValidDirectory.path);
+        await this.itemService.refreshItems(
+            firstValidDirectory.path,
+            firstValidDirectory.path,
+        );
+    }
+
+    /** Handle page size dropdown change */
+    onPageSizeChange(event: Event): void {
+        const value = (event.target as HTMLSelectElement).value;
+        const newSize = parseInt(value, 10);
+        this.pagination.update((p) => ({
+            ...p,
+            pageSize: newSize,
+            currentPage: 1, // Reset to page 1
+        }));
+        localStorage.setItem('items-page-size', String(newSize));
     }
 
     /** Get column value safely for display */
@@ -307,16 +384,74 @@ export class ItemsComponent implements OnInit {
     /** Open item file in default editor */
     async onOpenInEditor(item: GenericItem): Promise<void> {
         // Will be implemented with Tauri command
-        console.log('Open in editor:', item.sourceFile);
     }
 
     /** Copy file path to clipboard */
     async onCopyPath(item: GenericItem): Promise<void> {
         try {
             await navigator.clipboard.writeText(item.sourceFile);
-            console.log('Copied path:', item.sourceFile);
         } catch (error) {
             console.error('Failed to copy path:', error);
         }
+    }
+
+    /** T079: Handle page changes */
+    onPageChange(page: number): void {
+        this.pagination.update((p) => ({ ...p, currentPage: page }));
+    }
+
+    /** T079: Get page numbers for pagination */
+    getPageNumbers(): number[] {
+        const totalPages = this.totalPages();
+        const currentPage = this.pagination().currentPage;
+        const pages: number[] = [];
+
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Always show first page
+            pages.push(1);
+
+            if (currentPage > 3) {
+                pages.push(-1); // Ellipsis
+            }
+
+            const start = this.max(2, currentPage - 1);
+            const end = this.min(totalPages - 1, currentPage + 1);
+
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+
+            if (currentPage < totalPages - 2) {
+                pages.push(-1); // Ellipsis
+            }
+
+            // Always show last page
+            if (totalPages > 1) {
+                pages.push(totalPages);
+            }
+        }
+
+        return pages;
+    }
+
+    /** T079: Get display range for pagination stats */
+    getDisplayRange(): { start: number; end: number } {
+        const { currentPage, pageSize } = this.pagination();
+        const totalItems = this.totalItems();
+        const start = (currentPage - 1) * pageSize + 1;
+        const end = this.min(currentPage * pageSize, totalItems);
+        return { start, end };
+    }
+
+    private min(a: number, b: number): number {
+        return a < b ? a : b;
+    }
+
+    private max(a: number, b: number): number {
+        return a > b ? a : b;
     }
 }

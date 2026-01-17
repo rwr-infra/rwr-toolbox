@@ -22,6 +22,25 @@
             }
         </select>
     </div>
+    <!-- Page Size Selector -->
+    <div class="form-control">
+        <label class="label py-1">
+            <span class="label-text text-xs">{{
+                'items.page_size' | transloco
+            }}</span>
+        </label>
+        <select
+            class="select select-bordered select-sm"
+            [value]="pagination().pageSize"
+            (change)="onPageSizeChange($event)"
+        >
+            @for (size of pageSizeOptions; track size) {
+                <option [value]="size">
+                    {{ 'items.page_size_' + size | transloco }}
+                </option>
+            }
+        </select>
+    </div>
     <!-- Column Toggle Dropdown -->
     <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-outline">
@@ -319,7 +338,7 @@
                     </td>
                 </tr>
             } @else {
-                @for (item of items(); track item.key ?? item.name) {
+                @for (item of paginatedItems(); track item.key ?? item.name) {
                     <tr
                         class="cursor-pointer hover:bg-base-200"
                         (click)="onRowClick(item)"
@@ -426,9 +445,49 @@
             }
         </tbody>
     </table>
-    <div class="text-sm text-opacity-50 mt-2">
-        {{ 'items.itemCount' | transloco: { count: itemCount() } }}
-    </div>
+
+    <!-- T075: Pagination controls -->
+    @if (itemCount() > 0) {
+        <div
+            class="flex flex-col sm:flex-row justify-between items-center mt-4 gap-3 px-1"
+        >
+            <!-- Display Stats -->
+            <div class="text-[10px] text-base-content/50 order-2 sm:order-1">
+                {{
+                    'items.pagination_info'
+                        | transloco
+                            : {
+                                  start: getDisplayRange().start,
+                                  end: getDisplayRange().end,
+                                  total: totalItems(),
+                              }
+                }}
+            </div>
+
+            <!-- Page Navigation -->
+            <div class="join order-1 sm:order-2">
+                @for (page of getPageNumbers(); track page) {
+                    @if (page === -1) {
+                        <button
+                            class="btn btn-xs join-item pointer-events-none opacity-50"
+                        >
+                            ...
+                        </button>
+                    } @else {
+                        <button
+                            class="btn btn-xs join-item"
+                            [class.btn-active]="
+                                page === pagination().currentPage
+                            "
+                            (click)="onPageChange(page)"
+                        >
+                            {{ page }}
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+    }
 </div>
 
 <!-- Item Details Modal -->

@@ -102,8 +102,6 @@ export class WeaponService {
                 this.error.set(errorMsg);
             }
 
-            console.log('Touch weapons', weaponsWithSource);
-
             return weaponsWithSource;
         } catch (e) {
             const errorMsg = this.transloco.translate('weapons.scanError', {
@@ -208,11 +206,11 @@ export class WeaponService {
     private matchesSearch(weapon: Weapon, term: string): boolean {
         if (!term) return true;
         const lowerTerm = term.toLowerCase();
-        return (
+        const matches =
             weapon.name.toLowerCase().includes(lowerTerm) ||
-            weapon.key?.toLowerCase().includes(lowerTerm) ||
-            weapon.classTag.toLowerCase().includes(lowerTerm)
-        );
+            (weapon.key?.toLowerCase().includes(lowerTerm) ?? false) ||
+            (weapon.classTag?.toLowerCase().includes(lowerTerm) ?? false);
+        return matches;
     }
 
     /** Check if weapon matches advanced filters */

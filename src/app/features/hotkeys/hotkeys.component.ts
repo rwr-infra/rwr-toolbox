@@ -224,7 +224,8 @@ export class HotkeysComponent implements OnInit {
      * Get game path (first valid scan directory)
      */
     get gamePath(): string | undefined {
-        const directories = this.hotkeyService['settingsService'].getScanDirectories();
+        const directories =
+            this.hotkeyService['settingsService'].getScanDirectories();
         const firstValid = directories.find((d) => d.status === 'valid');
         return firstValid?.path;
     }
