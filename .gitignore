@@ -57,6 +57,15 @@ Thumbs.db
 /.claude
 /.gemini
 /.specify
-# /specs  # Uncommented to allow specs for version control
 /.opencode
 /.cursor
+
+# spec-kit runtime / cache
+.speckit/
+.cache/
+.logs/
+
+# generated / transient
+.generated/
+implement-output/
+drafts/

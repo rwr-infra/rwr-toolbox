@@ -356,6 +356,15 @@ fn parse_carry_item(path: &Path, input_path: &Path) -> Result<Item, String> {
         })
         .collect();
 
+    // Calculate relative file path from packages directory
+    // e.g., "vanilla/items/vest2.carry_item"
+    let file_path = path
+        .strip_prefix(input_path)
+        .unwrap_or(path)
+        .to_string_lossy()
+        .trim_start_matches('/')
+        .to_string();
+
     Ok(Item {
         key: raw.key.clone().or_else(|| Some(file_name.clone())),
         name: raw.name.clone().unwrap_or_default(),
@@ -370,7 +379,7 @@ fn parse_carry_item(path: &Path, input_path: &Path) -> Result<Item, String> {
             .commonness
             .as_ref()
             .and_then(|c| c.in_stock.as_ref().and_then(|s| s.parse().ok())),
-        file_path: format!("{}/{}", package_name, file_name),
+        file_path,
         source_file: path.display().to_string(),
         package_name,
         slot: raw.slot.clone(),
@@ -413,6 +422,15 @@ fn parse_visual_item(path: &Path, input_path: &Path) -> Result<Item, String> {
         .filter_map(|m| m.mesh_filename.clone())
         .collect();
 
+    // Calculate relative file path from packages directory
+    // e.g., "vanilla/items/mesh_name.visual_item"
+    let file_path = path
+        .strip_prefix(input_path)
+        .unwrap_or(path)
+        .to_string_lossy()
+        .trim_start_matches('/')
+        .to_string();
+
     Ok(Item {
         key: Some(file_name.clone()),
         name: file_name.clone(),
@@ -421,7 +439,7 @@ fn parse_visual_item(path: &Path, input_path: &Path) -> Result<Item, String> {
         price: None,
         can_respawn_with: None,
         in_stock: None,
-        file_path: format!("{}/{}", package_name, file_name),
+        file_path,
         source_file: path.display().to_string(),
         package_name,
         slot: None,
