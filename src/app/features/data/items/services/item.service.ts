@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { TranslocoService } from '@jsverse/transloco';
 import {
     GenericItem,
@@ -182,8 +182,7 @@ export class ItemService {
     }
 
     /**
-     * Get icon URL for an item using base64 data URL
-     * This bypasses asset:// protocol encoding issues
+     * Get icon URL for an item using Tauri's convertFileSrc
      * @param item Item with hudIcon property
      * @returns Icon URL for use in <img> src attribute, or empty string if no icon
      */
@@ -194,11 +193,11 @@ export class ItemService {
         }
 
         try {
-            const dataUrl = await invoke<string>('get_item_icon_base64', {
+            const iconPath = await invoke<string>('get_item_texture_path', {
                 itemFilePath: item.sourceFile,
                 iconFilename: item.hudIcon,
             });
-            return dataUrl;
+            return convertFileSrc(iconPath);
         } catch (error) {
             console.error('Failed to resolve icon path:', error);
             return '';

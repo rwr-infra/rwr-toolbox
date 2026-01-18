@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { TranslocoService } from '@jsverse/transloco';
 import {
     Weapon,
@@ -186,14 +186,15 @@ export class WeaponService {
             return '';
         }
 
-        // Use the get_weapon_icon_base64 Tauri command to get icon as data URL
-        // This bypasses asset:// protocol encoding issues
+        // Use the get_texture_path Tauri command to resolve the icon path
+        // The command navigates from weapon file to textures/ folder and returns absolute path
         try {
-            const dataUrl = await invoke<string>('get_weapon_icon_base64', {
+            const iconPath = await invoke<string>('get_texture_path', {
                 weaponFilePath: weapon.sourceFile,
                 iconFilename: weapon.hudIcon,
             });
-            return dataUrl;
+            // Convert absolute path to Tauri asset URL
+            return convertFileSrc(iconPath);
         } catch (error) {
             console.error('Failed to resolve icon path:', error);
             return '';
