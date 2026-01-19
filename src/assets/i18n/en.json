@@ -451,6 +451,12 @@
             "slot": "Slot",
             "encumbrance": "Weight",
             "price": "Price",
+            "capacityValue": "Capacity",
+            "capacitySource": "Source",
+            "commonnessValue": "Spawn Rate",
+            "inStock": "In Stock",
+            "canRespawnWith": "Respawn",
+            "modifiers": "Modifiers",
             "filePath": "File Path"
         },
         "filters": {
@@ -474,6 +480,9 @@
             "toggle": "Toggle Columns",
             "selectColumns": "Select columns to display",
             "mustKeepOne": "At least one column must be visible"
+        },
+        "sort": {
+            "unsorted": "Unsorted"
         }
     }
 }

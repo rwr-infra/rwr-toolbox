@@ -53,6 +53,11 @@ pub struct Item {
     #[serde(rename = "effectRef")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub effect_ref: Option<String>,
+    // Extended attributes (capacity, commonness)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub capacity: Option<ItemCapacity>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub commonness: Option<ItemCommonness>,
 }
 
 /// Item modifier
@@ -73,13 +78,28 @@ pub struct ItemModifier {
     pub consumes_item: Option<bool>,
 }
 
-/// Item capacity requirement
+/// Item capacity/spawn requirements
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ItemCapacity {
-    pub value: f64,
-    pub source: String,
-    #[serde(rename = "sourceValue")]
-    pub source_value: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(rename = "sourceValue", skip_serializing_if = "Option::is_none")]
+    pub source_value: Option<f64>,
+}
+
+/// Item spawn frequency settings
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemCommonness {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<f64>,
+    #[serde(rename = "inStock", skip_serializing_if = "Option::is_none")]
+    pub in_stock: Option<bool>,
+    #[serde(rename = "canRespawnWith", skip_serializing_if = "Option::is_none")]
+    pub can_respawn_with: Option<bool>,
 }
 
 /// Error during item scanning
@@ -245,15 +265,17 @@ pub async fn scan_items(
             if let Ok(path) = entry {
                 if path.is_file() {
                     match parse_carry_item(&path, &input_path) {
-                        Ok(item) => {
-                            if let Some(ref key) = item.key {
-                                if seen_keys.contains(key) {
-                                    duplicate_keys.push(key.clone());
-                                } else {
-                                    seen_keys.insert(key.clone());
+                        Ok(items_from_file) => {
+                            for item in items_from_file {
+                                if let Some(ref key) = item.key {
+                                    if seen_keys.contains(key) {
+                                        duplicate_keys.push(key.clone());
+                                    } else {
+                                        seen_keys.insert(key.clone());
+                                    }
                                 }
+                                items.push(item);
                             }
-                            items.push(item);
                         }
                         Err(e) => {
                             errors.push(ScanError {
@@ -307,20 +329,14 @@ pub async fn scan_items(
     })
 }
 
-/// Parse a carry_item XML file
-fn parse_carry_item(path: &Path, input_path: &Path) -> Result<Item, String> {
+/// Parse a carry_item XML file (may contain multiple carry_item elements)
+fn parse_carry_item(path: &Path, input_path: &Path) -> Result<Vec<Item>, String> {
     let content =
         std::fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))?;
 
     // Parse as <carry_items> root with multiple <carry_item> children
     let raw_root: RawCarryItemsRoot =
         from_str(&content).map_err(|e| format!("XML parse error: {}", e))?;
-
-    // Use the first carry_item from the root
-    let raw = raw_root
-        .items
-        .first()
-        .ok_or_else(|| format!("No carry_item found in file"))?;
 
     let file_name = path
         .file_stem()
@@ -338,24 +354,6 @@ fn parse_carry_item(path: &Path, input_path: &Path) -> Result<Item, String> {
         .unwrap_or("unknown")
         .to_string();
 
-    let modifiers = raw
-        .modifiers
-        .iter()
-        .filter_map(|m| {
-            if let Some(class) = &m.class {
-                Some(ItemModifier {
-                    modifier_class: class.clone(),
-                    value: m.value,
-                    input_character_state: m.input_character_state.clone(),
-                    output_character_state: m.output_character_state.clone(),
-                    consumes_item: m.consumes_item.as_ref().and_then(|s| s.parse().ok()),
-                })
-            } else {
-                None
-            }
-        })
-        .collect();
-
     // Calculate relative file path from packages directory
     // e.g., "vanilla/items/vest2.carry_item"
     let file_path = path
@@ -365,32 +363,69 @@ fn parse_carry_item(path: &Path, input_path: &Path) -> Result<Item, String> {
         .trim_start_matches('/')
         .to_string();
 
-    Ok(Item {
-        key: raw.key.clone().or_else(|| Some(file_name.clone())),
-        name: raw.name.clone().unwrap_or_default(),
-        item_type: "carry_item".to_string(),
-        encumbrance: raw.inventory.as_ref().and_then(|i| i.encumbrance),
-        price: raw.inventory.as_ref().and_then(|i| i.price),
-        can_respawn_with: raw
-            .commonness
-            .as_ref()
-            .and_then(|c| c.can_respawn_with.as_ref().and_then(|s| s.parse().ok())),
-        in_stock: raw
-            .commonness
-            .as_ref()
-            .and_then(|c| c.in_stock.as_ref().and_then(|s| s.parse().ok())),
-        file_path,
-        source_file: path.display().to_string(),
-        package_name,
-        slot: raw.slot.clone(),
-        transform_on_consume: raw.transform_on_consume.clone(),
-        time_to_live: raw.time_to_live,
-        modifiers: Some(modifiers),
-        hud_icon: raw.hud_icon.as_ref().and_then(|h| h.filename.clone()),
-        model_filename: raw.model.as_ref().and_then(|m| m.mesh_filename.clone()),
-        mesh_filenames: None,
-        effect_ref: None,
-    })
+    // Parse ALL carry_item elements from the file
+    let mut items = Vec::new();
+    for (index, raw) in raw_root.items.iter().enumerate() {
+        let modifiers = raw
+            .modifiers
+            .iter()
+            .map(|m| ItemModifier {
+                modifier_class: m.class.clone().unwrap_or_default(),
+                value: m.value,
+                input_character_state: m.input_character_state.clone(),
+                output_character_state: m.output_character_state.clone(),
+                consumes_item: m.consumes_item.as_ref().and_then(|s| s.parse().ok()),
+            })
+            .collect();
+
+        // Ensure unique key: use raw.key if present, otherwise generate unique key from filename + index
+        let item_key = if raw.key.is_some() {
+            raw.key.clone()
+        } else {
+            // Generate unique key: "filename_index" format to avoid duplicates in multi-item files
+            Some(format!("{}_{}", file_name, index))
+        };
+
+        let item = Item {
+            key: item_key,
+            name: raw.name.clone().unwrap_or_default(),
+            item_type: "carry_item".to_string(),
+            encumbrance: raw.inventory.as_ref().and_then(|i| i.encumbrance),
+            price: raw.inventory.as_ref().and_then(|i| i.price),
+            can_respawn_with: raw
+                .commonness
+                .as_ref()
+                .and_then(|c| c.can_respawn_with.as_ref().and_then(|s| s.parse().ok())),
+            in_stock: raw
+                .commonness
+                .as_ref()
+                .and_then(|c| c.in_stock.as_ref().and_then(|s| s.parse().ok())),
+            file_path: file_path.clone(),
+            source_file: path.display().to_string(),
+            package_name: package_name.clone(),
+            slot: raw.slot.clone(),
+            transform_on_consume: raw.transform_on_consume.clone(),
+            time_to_live: raw.time_to_live,
+            modifiers: Some(modifiers),
+            hud_icon: raw.hud_icon.as_ref().and_then(|h| h.filename.clone()),
+            model_filename: raw.model.as_ref().and_then(|m| m.mesh_filename.clone()),
+            mesh_filenames: None,
+            effect_ref: None,
+            capacity: raw.capacities.first().map(|rc| ItemCapacity {
+                value: rc.value,
+                source: rc.source.clone(),
+                source_value: rc.source_value,
+            }),
+            commonness: raw.commonness.as_ref().map(|rc| ItemCommonness {
+                value: rc.value,
+                in_stock: rc.in_stock.as_ref().and_then(|s| s.parse().ok()),
+                can_respawn_with: rc.can_respawn_with.as_ref().and_then(|s| s.parse().ok()),
+            }),
+        };
+        items.push(item);
+    }
+
+    Ok(items)
 }
 
 /// Parse a visual_item XML file
@@ -450,6 +485,8 @@ fn parse_visual_item(path: &Path, input_path: &Path) -> Result<Item, String> {
         model_filename: None,
         mesh_filenames: Some(mesh_filenames),
         effect_ref: raw.effect.and_then(|e| e.effect_ref),
+        capacity: None,
+        commonness: None,
     })
 }
 
@@ -504,9 +541,9 @@ pub async fn get_item_icon_base64(
     item_file_path: String,
     icon_filename: String,
 ) -> Result<String, String> {
+    use base64::Engine;
     use std::fs;
     use std::path::PathBuf;
-    use base64::Engine;
 
     let item_path = PathBuf::from(&item_file_path);
     let item_dir = item_path
@@ -530,8 +567,8 @@ pub async fn get_item_icon_base64(
     }
 
     // Read image file
-    let image_data = fs::read(&icon_path)
-        .map_err(|e| format!("Failed to read icon file: {}", e))?;
+    let image_data =
+        fs::read(&icon_path).map_err(|e| format!("Failed to read icon file: {}", e))?;
 
     // Detect MIME type from extension
     let mime_type = match icon_path.extension().and_then(|e| e.to_str()) {

@@ -358,8 +358,8 @@ export class ItemsComponent implements OnInit {
                     return newMap;
                 });
             }
-        } catch (error) {
-            console.error('Failed to load icon for', item.key, error);
+        } catch {
+            // Icon loading failed - silently skip
         }
     }
 
@@ -370,9 +370,8 @@ export class ItemsComponent implements OnInit {
     }
 
     /** Handle image load error */
-    onItemImageError(event: Event, item: GenericItem): void {
-        console.warn('Failed to load image for item:', item.key);
-        // Optionally remove from cache for retry
+    onItemImageError(): void {
+        // Image loading failed - silently ignore
     }
 
     /** Get column value safely for display */
@@ -485,6 +484,92 @@ export class ItemsComponent implements OnInit {
         const start = (currentPage - 1) * pageSize + 1;
         const end = this.min(currentPage * pageSize, totalItems);
         return { start, end };
+    }
+
+    /** Helper to get nested property value safely */
+    getExtendedValue(item: GenericItem, path: string): string {
+        const parts = path.split('.');
+        let value: any = item;
+        for (const part of parts) {
+            value = value?.[part];
+        }
+        if (value === null || value === undefined) return '-';
+        if (typeof value === 'number' && path.includes('commonness.value')) {
+            return value.toFixed(2);
+        }
+        return String(value);
+    }
+
+    /** Helper to get boolean value for badge display */
+    getBooleanBadge(item: GenericItem, path: string): 'true' | 'false' | null {
+        const parts = path.split('.');
+        let value: any = item;
+        for (const part of parts) {
+            value = value?.[part];
+        }
+        if (value === true) return 'true';
+        if (value === false) return 'false';
+        return null;
+    }
+
+    /** Format modifiers for compact display (count + class list with values) */
+    formatModifiers(modifiers: any[] | undefined): string {
+        if (!modifiers || modifiers.length === 0) return '-';
+
+        const count = modifiers.length;
+        const entries = modifiers.slice(0, 3).map((m: any) => {
+            let text = m.modifierClass || '(no class)';
+            if (m.value !== undefined && m.value !== null) {
+                text += `(${m.value})`;
+            }
+            return text;
+        }).join(', ');
+        const more = modifiers.length > 3 ? ` +${modifiers.length - 3} more` : '';
+
+        return `${count} × (${entries}${more})`;
+    }
+
+    /** Generate detailed tooltip text from ItemModifier array */
+    getModifierTooltip(modifiers: any[] | undefined): string {
+        if (!modifiers || modifiers.length === 0) return '';
+
+        return modifiers.map((m: any) => {
+            let text = m.modifierClass || '(no class)';
+            if (m.value !== undefined) text += `: ${m.value}`;
+            if (m.inputCharacterState) text += ` (${m.inputCharacterState} → ${m.outputCharacterState || '?'})`;
+            if (m.consumesItem) text += ' [consumes item]';
+            return text;
+        }).join('\n');
+    }
+
+    /** Helper to safely check if item has capacity */
+    hasCapacity(item: GenericItem): boolean {
+        return item.capacity !== null && item.capacity !== undefined;
+    }
+
+    /** Helper to safely check if item has commonness */
+    hasCommonness(item: GenericItem): boolean {
+        return item.commonness !== null && item.commonness !== undefined;
+    }
+
+    /** Helper to safely check if item has modifiers */
+    hasModifiers(item: GenericItem): boolean {
+        return item.modifiers !== null && item.modifiers !== undefined && item.modifiers.length > 0;
+    }
+
+    /** Helper to safely get capacity */
+    getCapacity(item: GenericItem): any {
+        return item.capacity;
+    }
+
+    /** Helper to safely get commonness */
+    getCommonness(item: GenericItem): any {
+        return item.commonness;
+    }
+
+    /** Helper to safely get modifiers */
+    getModifiers(item: GenericItem): any[] {
+        return item.modifiers || [];
     }
 
     private min(a: number, b: number): number {

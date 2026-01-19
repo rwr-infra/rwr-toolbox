@@ -59,9 +59,7 @@ async fn get_system_theme() -> Result<SystemTheme, String> {
 
 /// Get the user's saved theme preference from the store
 #[tauri::command]
-async fn get_theme_preference(
-    app: tauri::AppHandle,
-) -> Result<Option<ThemePreference>, String> {
+async fn get_theme_preference(app: tauri::AppHandle) -> Result<Option<ThemePreference>, String> {
     use std::fs;
     use std::io::Read;
 
@@ -76,8 +74,8 @@ async fn get_theme_preference(
         return Ok(None);
     }
 
-    let mut file = fs::File::open(&theme_file)
-        .map_err(|e| format!("Failed to open theme file: {}", e))?;
+    let mut file =
+        fs::File::open(&theme_file).map_err(|e| format!("Failed to open theme file: {}", e))?;
 
     let mut contents = String::new();
     file.read_to_string(&mut contents)
@@ -103,16 +101,14 @@ async fn set_theme_preference(
         .map_err(|e| format!("Failed to get config dir: {}", e))?;
 
     // Create config directory if it doesn't exist
-    fs::create_dir_all(&config_dir)
-        .map_err(|e| format!("Failed to create config dir: {}", e))?;
+    fs::create_dir_all(&config_dir).map_err(|e| format!("Failed to create config dir: {}", e))?;
 
     let theme_file = config_dir.join("theme-preference.json");
 
     let json = serde_json::to_string_pretty(&preference)
         .map_err(|e| format!("Failed to serialize preference: {}", e))?;
 
-    fs::write(&theme_file, json)
-        .map_err(|e| format!("Failed to write theme file: {}", e))?;
+    fs::write(&theme_file, json).map_err(|e| format!("Failed to write theme file: {}", e))?;
 
     Ok(())
 }

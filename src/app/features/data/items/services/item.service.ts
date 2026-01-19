@@ -87,10 +87,15 @@ export class ItemService {
                 directory: directory || null,
             });
 
-            // Tag items with source directory for multi-directory support
+            // Tag items with source directory for multi-directory support and generate unique IDs
             const itemsWithSource = result.items.map((i) => ({
                 ...i,
                 sourceDirectory: directory || gamePath,
+                _id: crypto.randomUUID(),
+                modifiers: i.modifiers?.map((m) => ({
+                    ...m,
+                    _id: crypto.randomUUID(),
+                })),
             }));
 
             if (append) {
@@ -198,8 +203,8 @@ export class ItemService {
                 iconFilename: item.hudIcon,
             });
             return convertFileSrc(iconPath);
-        } catch (error) {
-            console.error('Failed to resolve icon path:', error);
+        } catch {
+            // Icon not found - silently return empty string
             return '';
         }
     }

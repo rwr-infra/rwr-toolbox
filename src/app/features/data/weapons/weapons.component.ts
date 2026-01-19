@@ -390,8 +390,8 @@ export class WeaponsComponent implements OnInit {
                     return newMap;
                 });
             }
-        } catch (error) {
-            console.error('Failed to load icon for', weapon.key, error);
+        } catch {
+            // Icon loading failed - silently skip
         }
     }
 
@@ -402,9 +402,8 @@ export class WeaponsComponent implements OnInit {
     }
 
     /** T004: Handle image load error */
-    onWeaponImageError(event: Event, weapon: Weapon): void {
-        console.warn('Failed to load image for weapon:', weapon.key);
-        // Optionally remove from cache to retry later
+    onWeaponImageError(): void {
+        // Image loading failed - silently ignore
     }
 
     /** Get visible columns for display */

@@ -685,8 +685,8 @@ pub async fn get_weapon_icon_base64(
     weapon_file_path: String,
     icon_filename: String,
 ) -> Result<String, String> {
-    use std::fs;
     use base64::Engine;
+    use std::fs;
 
     // Navigate from weapon file to textures folder
     let weapon_path = PathBuf::from(&weapon_file_path);
@@ -711,8 +711,8 @@ pub async fn get_weapon_icon_base64(
     }
 
     // Read image file
-    let image_data = fs::read(&icon_path)
-        .map_err(|e| format!("Failed to read icon file: {}", e))?;
+    let image_data =
+        fs::read(&icon_path).map_err(|e| format!("Failed to read icon file: {}", e))?;
 
     // Detect MIME type from extension
     let mime_type = match icon_path.extension().and_then(|e| e.to_str()) {

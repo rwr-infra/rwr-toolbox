@@ -1,6 +1,7 @@
 /**
  * Column definitions for Items table
  * Feature: 002-table-enhancements
+ * Extended: 006-carry-items-full-parsing (capacity, commonness, modifiers)
  */
 
 import { ColumnConfig } from '../../../shared/models/column.models';
@@ -73,6 +74,61 @@ export const ITEM_COLUMNS: ColumnConfig[] = [
         alignment: 'right',
         alwaysVisible: false,
         dataType: 'number',
+    },
+    // Extended attributes (Feature 006)
+    {
+        key: 'capacityValue',
+        field: 'capacity.value',
+        label: 'Capacity',
+        i18nKey: 'items.columns.capacityValue',
+        alignment: 'right',
+        alwaysVisible: false,
+        dataType: 'number',
+    },
+    {
+        key: 'capacitySource',
+        field: 'capacity.source',
+        label: 'Source',
+        i18nKey: 'items.columns.capacitySource',
+        alignment: 'left',
+        alwaysVisible: false,
+        dataType: 'string',
+    },
+    {
+        key: 'commonnessValue',
+        field: 'commonness.value',
+        label: 'Spawn Rate',
+        i18nKey: 'items.columns.commonnessValue',
+        alignment: 'right',
+        alwaysVisible: false,
+        dataType: 'number',
+    },
+    {
+        key: 'inStock',
+        field: 'commonness.inStock',
+        label: 'In Stock',
+        i18nKey: 'items.columns.inStock',
+        alignment: 'center',
+        alwaysVisible: false,
+        dataType: 'boolean',
+    },
+    {
+        key: 'canRespawnWith',
+        field: 'commonness.canRespawnWith',
+        label: 'Respawn',
+        i18nKey: 'items.columns.canRespawnWith',
+        alignment: 'center',
+        alwaysVisible: false,
+        dataType: 'boolean',
+    },
+    {
+        key: 'modifiers',
+        field: 'modifiers',
+        label: 'Modifiers',
+        i18nKey: 'items.columns.modifiers',
+        alignment: 'left',
+        alwaysVisible: false,
+        dataType: 'string',
     },
     {
         key: 'filePath',

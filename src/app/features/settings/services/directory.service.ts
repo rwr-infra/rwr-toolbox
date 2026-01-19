@@ -1,5 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
+import { Store } from '@tauri-apps/plugin-store';
 import {
     ScanDirectory,
     DirectoryStatus,
@@ -11,6 +12,8 @@ import {
 import { SettingsService } from '../../../core/services/settings.service';
 import { WeaponService } from '../../data/weapons/services/weapon.service';
 import { ItemService } from '../../data/items/services/item.service';
+
+const SCAN_DIRECTORIES_KEY = 'scan_directories';
 
 /**
  * Default scan directories (empty for multi-directory support)
@@ -31,6 +34,7 @@ export class DirectoryService {
     private settingsService: SettingsService = inject(SettingsService);
     private weaponService = inject(WeaponService);
     private itemService = inject(ItemService);
+    private store: Store | null = null;
 
     // T016: Private writable signals
     private directoriesState = signal<ScanDirectory[]>(
@@ -390,18 +394,23 @@ export class DirectoryService {
      */
     async loadDirectories(): Promise<void> {
         try {
-            const dirs = await invoke<string[]>('get_scan_directories');
-            const scanDirs: ScanDirectory[] = dirs.map((path) => ({
-                id: this.generateId(),
-                path,
-                status: 'pending',
-                displayName: this.extractDisplayName(path),
-                addedAt: Date.now(),
-                lastScannedAt: 0,
-                itemCount: 0,
-                weaponCount: 0,
-            }));
-            this.directoriesState.set(scanDirs);
+            if (!this.store) {
+                this.store = await Store.load('settings.json');
+            }
+            const dirs = await this.store.get<string[]>(SCAN_DIRECTORIES_KEY);
+            if (dirs) {
+                const scanDirs: ScanDirectory[] = dirs.map((path) => ({
+                    id: this.generateId(),
+                    path,
+                    status: 'pending',
+                    displayName: this.extractDisplayName(path),
+                    addedAt: Date.now(),
+                    lastScannedAt: 0,
+                    itemCount: 0,
+                    weaponCount: 0,
+                }));
+                this.directoriesState.set(scanDirs);
+            }
         } catch (error) {
             console.error('Failed to load scan directories:', error);
         }
@@ -414,8 +423,12 @@ export class DirectoryService {
      */
     async saveScanDirs(directories: ScanDirectory[]): Promise<void> {
         try {
+            if (!this.store) {
+                this.store = await Store.load('settings.json');
+            }
             const paths = directories.map((d) => d.path);
-            await invoke('save_scan_directories', { directories: paths });
+            await this.store.set(SCAN_DIRECTORIES_KEY, paths);
+            await this.store.save();
             await this.settingsService.updateScanDirectories(directories);
         } catch (error) {
             console.error('Failed to save scan directories:', error);

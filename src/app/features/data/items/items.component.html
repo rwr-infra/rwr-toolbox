@@ -338,7 +338,7 @@
                     </td>
                 </tr>
             } @else {
-                @for (item of paginatedItems(); track item.key ?? item.name) {
+                @for (item of paginatedItems(); track item._id) {
                     <tr
                         class="cursor-pointer hover:bg-base-200"
                         (click)="onRowClick(item)"
@@ -356,7 +356,7 @@
                                             [alt]="item.name"
                                             class="w-12 h-12 object-contain"
                                             loading="lazy"
-                                            (error)="onItemImageError($event, item)"
+                                            (error)="onItemImageError()"
                                         />
                                     } @else {
                                         <div
@@ -428,6 +428,43 @@
                                                 />
                                             </svg>
                                         </button>
+                                    </div>
+                                } @else if (col.field === 'capacity.value') {
+                                    {{ getExtendedValue(item, 'capacity.value') }}
+                                } @else if (col.field === 'capacity.source') {
+                                    {{ getExtendedValue(item, 'capacity.source') }}
+                                } @else if (col.field === 'commonness.value') {
+                                    {{ getExtendedValue(item, 'commonness.value') }}
+                                } @else if (col.field === 'commonness.inStock') {
+                                    @if (getBooleanBadge(item, 'commonness.inStock') === 'true') {
+                                        <span class="badge badge-success">{{
+                                            'common.yes' | transloco
+                                        }}</span>
+                                    } @else if (getBooleanBadge(item, 'commonness.inStock') === 'false') {
+                                        <span class="badge badge-error">{{
+                                            'common.no' | transloco
+                                        }}</span>
+                                    } @else {
+                                        -
+                                    }
+                                } @else if (col.field === 'commonness.canRespawnWith') {
+                                    @if (getBooleanBadge(item, 'commonness.canRespawnWith') === 'true') {
+                                        <span class="badge badge-success">{{
+                                            'common.yes' | transloco
+                                        }}</span>
+                                    } @else if (getBooleanBadge(item, 'commonness.canRespawnWith') === 'false') {
+                                        <span class="badge badge-error">{{
+                                            'common.no' | transloco
+                                        }}</span>
+                                    } @else {
+                                        -
+                                    }
+                                } @else if (col.field === 'modifiers') {
+                                    <div
+                                        class="tooltip tooltip-bottom"
+                                        [attr.data-tip]="getModifierTooltip(item.modifiers)"
+                                    >
+                                        {{ formatModifiers(item.modifiers) }}
                                     </div>
                                 } @else {
                                     {{ getColumnValue(item, col.key) }}
@@ -644,6 +681,138 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Extended Attributes (Feature 006) -->
+            @if (
+                hasCapacity(selectedItem()!) ||
+                hasCommonness(selectedItem()!) ||
+                hasModifiers(selectedItem()!)
+            ) {
+                <h4 class="font-semibold text-md mb-2">
+                    Extended Attributes
+                </h4>
+                <div class="overflow-x-auto mb-4">
+                    <table class="table table-xs">
+                        <tbody>
+                            <!-- Capacity -->
+                            @if (hasCapacity(selectedItem()!)) {
+                                @for (field of ['value', 'source']; track field) {
+                                    <tr>
+                                        <td class="w-1/2">
+                                            {{ field === 'value' ? 'items.columns.capacityValue' : 'items.columns.capacitySource' | transloco }}
+                                        </td>
+                                        <td class="w-1/2 text-right">
+                                            {{ getExtendedValue(selectedItem()!, 'capacity.' + field) }}
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            <!-- Commonness -->
+                            @if (hasCommonness(selectedItem()!)) {
+                                @if (getCommonness(selectedItem()!).value !== null && getCommonness(selectedItem()!).value !== undefined) {
+                                    <tr>
+                                        <td class="w-1/2">
+                                            {{ 'items.columns.commonnessValue' | transloco }}
+                                        </td>
+                                        <td class="w-1/2 text-right">
+                                            {{ getExtendedValue(selectedItem()!, 'commonness.value') }}
+                                        </td>
+                                    </tr>
+                                }
+                                @if (getCommonness(selectedItem()!).inStock !== null && getCommonness(selectedItem()!).inStock !== undefined) {
+                                    <tr>
+                                        <td class="w-1/2">
+                                            {{ 'items.columns.inStock' | transloco }}
+                                        </td>
+                                        <td class="w-1/2 text-right">
+                                            @if (getCommonness(selectedItem()!).inStock) {
+                                                <span class="badge badge-success">{{
+                                                    'common.yes' | transloco
+                                                }}</span>
+                                            } @else {
+                                                <span class="badge badge-ghost">{{
+                                                    'common.no' | transloco
+                                                }}</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                @if (getCommonness(selectedItem()!).canRespawnWith !== null && getCommonness(selectedItem()!).canRespawnWith !== undefined) {
+                                    <tr>
+                                        <td class="w-1/2">
+                                            {{ 'items.columns.canRespawnWith' | transloco }}
+                                        </td>
+                                        <td class="w-1/2 text-right">
+                                            @if (getCommonness(selectedItem()!).canRespawnWith) {
+                                                <span class="badge badge-success">{{
+                                                    'common.yes' | transloco
+                                                }}</span>
+                                            } @else {
+                                                <span class="badge badge-ghost">{{
+                                                    'common.no' | transloco
+                                                }}</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <!-- Modifiers (Feature 006) -->
+            @if (hasModifiers(selectedItem()!)) {
+                <h4 class="font-semibold text-md mb-2">
+                    {{ 'items.columns.modifiers' | transloco }}
+                </h4>
+                <div class="overflow-x-auto mb-4">
+                    <table class="table table-xs">
+                        <thead>
+                            <tr>
+                                <th>Class</th>
+                                <th>Value</th>
+                                <th>State Transition</th>
+                                <th>Consumes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (modifier of getModifiers(selectedItem()!); track modifier._id) {
+                                <tr>
+                                    <td>
+                                        <span class="font-mono text-xs">{{ modifier.modifierClass || '(no class)' }}</span>
+                                    </td>
+                                    <td>
+                                        @if (modifier.value !== undefined && modifier.value !== null) {
+                                            <span class="badge badge-outline">{{ modifier.value }}</span>
+                                        } @else {
+                                            -
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (modifier.inputCharacterState || modifier.outputCharacterState) {
+                                            <span class="text-xs">
+                                                {{ modifier.inputCharacterState || '?' }}
+                                                &rarr;
+                                                {{ modifier.outputCharacterState || '?' }}
+                                            </span>
+                                        } @else {
+                                            -
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (modifier.consumesItem) {
+                                            <span class="badge badge-warning badge-xs">Yes</span>
+                                        } @else {
+                                            <span class="badge badge-ghost badge-xs">No</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
 
             <!-- Footer Actions -->
             <div class="modal-action">

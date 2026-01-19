@@ -81,10 +81,11 @@ export class WeaponService {
                 directory: directory || null,
             });
 
-            // Tag weapons with source directory for multi-directory support
+            // Tag weapons with source directory for multi-directory support and generate unique IDs
             const weaponsWithSource = result.weapons.map((w) => ({
                 ...w,
                 sourceDirectory: directory || gamePath,
+                _id: crypto.randomUUID(),
             }));
 
             if (append) {
@@ -195,8 +196,8 @@ export class WeaponService {
             });
             // Convert absolute path to Tauri asset URL
             return convertFileSrc(iconPath);
-        } catch (error) {
-            console.error('Failed to resolve icon path:', error);
+        } catch {
+            // Icon not found - silently return empty string
             return '';
         }
     }

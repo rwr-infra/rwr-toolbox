@@ -451,6 +451,12 @@
             "slot": "槽位",
             "encumbrance": "重量",
             "price": "价格",
+            "capacityValue": "容量要求",
+            "capacitySource": "来源",
+            "commonnessValue": "生成概率",
+            "inStock": "有库存",
+            "canRespawnWith": "可重生",
+            "modifiers": "修饰器",
             "filePath": "文件路径"
         },
         "filters": {
@@ -474,6 +480,9 @@
             "toggle": "切换列显示",
             "selectColumns": "选择要显示的列",
             "mustKeepOne": "至少需要保留一列"
+        },
+        "sort": {
+            "unsorted": "未排序"
         }
     }
 }

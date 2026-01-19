@@ -56,6 +56,7 @@ import {
     Edit2,
     Maximize2,
     ArrowDownToLine,
+    ImageOff,
 } from 'lucide-angular';
 
 /**
@@ -120,4 +121,5 @@ export const APP_ICONS = {
     Edit2,
     Maximize2,
     ArrowDownToLine,
+    ImageOff,
 };

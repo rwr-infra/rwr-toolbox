@@ -7,6 +7,8 @@
  * Generic item structure (all item types)
  */
 export interface GameItem {
+    /** Unique identifier for tracking (generated frontend) - not persisted */
+    _id?: string;
     key?: string;
     name: string;
     itemType: string;
@@ -19,6 +21,10 @@ export interface GameItem {
     packageName: string;
     /** Directory path where this item was scanned from (multi-directory support) */
     sourceDirectory: string;
+    /** Extended attributes (Feature 006) - typically only for carry_item */
+    capacity?: ItemCapacity;
+    commonness?: ItemCommonness;
+    modifiers?: ItemModifier[];
 }
 
 /**
@@ -32,6 +38,8 @@ export interface CarryItem extends GameItem {
     modifiers?: ItemModifier[];
     hudIcon?: string;
     modelFilename?: string;
+    capacity?: ItemCapacity;
+    commonness?: ItemCommonness;
 }
 
 /**
@@ -73,11 +81,31 @@ export function getItemSlot(item: GenericItem): string | undefined {
  * Item modifier
  */
 export interface ItemModifier {
+    /** Unique identifier for tracking (generated frontend) */
+    _id?: string;
     modifierClass: string;
     value?: number;
     inputCharacterState?: string;
     outputCharacterState?: string;
     consumesItem?: boolean;
+}
+
+/**
+ * Item capacity/spawn requirements
+ */
+export interface ItemCapacity {
+    value?: number;
+    source?: string;
+    sourceValue?: number;
+}
+
+/**
+ * Item spawn frequency settings
+ */
+export interface ItemCommonness {
+    value?: number;
+    inStock?: boolean;
+    canRespawnWith?: boolean;
 }
 
 /**

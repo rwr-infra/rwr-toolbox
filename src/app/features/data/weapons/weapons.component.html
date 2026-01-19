@@ -449,7 +449,7 @@
                     </td>
                 </tr>
             } @else {
-                @for (weapon of paginatedWeapons(); track weapon.key) {
+                @for (weapon of paginatedWeapons(); track weapon._id) {
                     <tr
                         class="cursor-pointer hover:bg-base-200"
                         (click)="onRowClick(weapon)"
@@ -467,7 +467,7 @@
                                             [alt]="weapon.name"
                                             class="w-12 h-12 object-contain"
                                             loading="lazy"
-                                            (error)="onWeaponImageError($event, weapon)"
+                                            (error)="onWeaponImageError()"
                                         />
                                     } @else {
                                         <div
