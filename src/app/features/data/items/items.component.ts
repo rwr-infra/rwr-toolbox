@@ -3,7 +3,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { LucideAngularModule } from 'lucide-angular';
 import { ItemService, ItemFilters } from './services/item.service';
 import { DirectoryService } from '../../settings/services/directory.service';
-import { GenericItem, getItemSlot } from '../../../shared/models/items.models';
+import { GenericItem, getItemSlot, isCarryItem } from '../../../shared/models/items.models';
 import { ITEM_COLUMNS } from './item-columns';
 import { ScrollingModeService } from '../../shared/services/scrolling-mode.service';
 import type { PaginationState } from '../../../shared/models/common.models';
@@ -85,6 +85,7 @@ export class ItemsComponent implements OnInit {
         const { currentPage, pageSize } = this.pagination();
         const start = (currentPage - 1) * pageSize;
         const end = start + pageSize;
+        console.log('filtered paginatedItems', filtered);
         return filtered.slice(start, end);
     });
 
@@ -512,36 +513,6 @@ export class ItemsComponent implements OnInit {
         return null;
     }
 
-    /** Format modifiers for compact display (count + class list with values) */
-    formatModifiers(modifiers: any[] | undefined): string {
-        if (!modifiers || modifiers.length === 0) return '-';
-
-        const count = modifiers.length;
-        const entries = modifiers.slice(0, 3).map((m: any) => {
-            let text = m.modifierClass || '(no class)';
-            if (m.value !== undefined && m.value !== null) {
-                text += `(${m.value})`;
-            }
-            return text;
-        }).join(', ');
-        const more = modifiers.length > 3 ? ` +${modifiers.length - 3} more` : '';
-
-        return `${count} × (${entries}${more})`;
-    }
-
-    /** Generate detailed tooltip text from ItemModifier array */
-    getModifierTooltip(modifiers: any[] | undefined): string {
-        if (!modifiers || modifiers.length === 0) return '';
-
-        return modifiers.map((m: any) => {
-            let text = m.modifierClass || '(no class)';
-            if (m.value !== undefined) text += `: ${m.value}`;
-            if (m.inputCharacterState) text += ` (${m.inputCharacterState} → ${m.outputCharacterState || '?'})`;
-            if (m.consumesItem) text += ' [consumes item]';
-            return text;
-        }).join('\n');
-    }
-
     /** Helper to safely check if item has capacity */
     hasCapacity(item: GenericItem): boolean {
         return item.capacity !== null && item.capacity !== undefined;
@@ -571,6 +542,24 @@ export class ItemsComponent implements OnInit {
     getModifiers(item: GenericItem): any[] {
         return item.modifiers || [];
     }
+
+    /** Helper to safely get transformOnConsume from CarryItem */
+    getTransformOnConsume(item: GenericItem): string | undefined {
+        return isCarryItem(item) ? item.transformOnConsume : undefined;
+    }
+
+    /** Helper to safely get timeToLive from CarryItem */
+    getTimeToLive(item: GenericItem): number | undefined {
+        return isCarryItem(item) ? item.timeToLive : undefined;
+    }
+
+    /** Helper to safely get draggable from CarryItem */
+    getDraggable(item: GenericItem): boolean | undefined {
+        return isCarryItem(item) ? item.draggable : undefined;
+    }
+
+    /** Type guard to check if item is a CarryItem (exposed for template) */
+    readonly isCarryItem = isCarryItem;
 
     private min(a: number, b: number): number {
         return a < b ? a : b;

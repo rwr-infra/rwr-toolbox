@@ -48,7 +48,9 @@
         "players_online": "在线玩家",
         "recent_activity": "最近活动",
         "last_update": "最后更新：刚刚",
-        "close": "关闭"
+        "close": "关闭",
+        "yes": "是",
+        "no": "否"
     },
     "scrolling": {
         "tableOnly": "表格滚动",
@@ -456,6 +458,9 @@
             "commonnessValue": "生成概率",
             "inStock": "有库存",
             "canRespawnWith": "可重生",
+            "transformOnConsume": "消耗后转化",
+            "timeToLive": "存活时间",
+            "draggable": "可拖拽",
             "modifiers": "修饰器",
             "filePath": "文件路径"
         },
@@ -482,7 +487,9 @@
             "mustKeepOne": "至少需要保留一列"
         },
         "sort": {
-            "unsorted": "未排序"
+            "unsorted": "未排序",
+            "ascending": "点击升序排列",
+            "descending": "点击降序排列"
         }
     }
 }

@@ -40,6 +40,8 @@ pub struct Item {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub time_to_live: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub draggable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub modifiers: Option<Vec<ItemModifier>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hud_icon: Option<String>,
@@ -96,9 +98,9 @@ pub struct ItemCapacity {
 pub struct ItemCommonness {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<f64>,
-    #[serde(rename = "inStock", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "inStock")]
     pub in_stock: Option<bool>,
-    #[serde(rename = "canRespawnWith", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "canRespawnWith")]
     pub can_respawn_with: Option<bool>,
 }
 
@@ -134,6 +136,8 @@ struct RawCarryItem {
     transform_on_consume: Option<String>,
     #[serde(rename = "@time_to_live_out_in_the_open", default)]
     time_to_live: Option<f64>,
+    #[serde(rename = "@draggable", default)]
+    draggable: Option<String>,
     #[serde(rename = "@player_death_drop_owner_lock_time", default)]
     player_death_drop_owner_lock_time: Option<f64>,
     #[serde(rename = "hud_icon", default)]
@@ -395,17 +399,34 @@ fn parse_carry_item(path: &Path, input_path: &Path) -> Result<Vec<Item>, String>
             can_respawn_with: raw
                 .commonness
                 .as_ref()
-                .and_then(|c| c.can_respawn_with.as_ref().and_then(|s| s.parse().ok())),
+                .and_then(|c| c.can_respawn_with.as_ref().and_then(|s| {
+                    match s.trim() {
+                        "1" => Some(true),
+                        "0" => Some(false),
+                        _ => None,
+                    }
+                })),
             in_stock: raw
                 .commonness
                 .as_ref()
-                .and_then(|c| c.in_stock.as_ref().and_then(|s| s.parse().ok())),
+                .and_then(|c| c.in_stock.as_ref().and_then(|s| {
+                    match s.trim() {
+                        "1" => Some(true),
+                        "0" => Some(false),
+                        _ => None,
+                    }
+                })),
             file_path: file_path.clone(),
             source_file: path.display().to_string(),
             package_name: package_name.clone(),
             slot: raw.slot.clone(),
             transform_on_consume: raw.transform_on_consume.clone(),
             time_to_live: raw.time_to_live,
+            draggable: raw
+                .draggable
+                .as_ref()
+                .and_then(|s| s.parse::<u8>().ok())
+                .map(|v| v == 1),
             modifiers: Some(modifiers),
             hud_icon: raw.hud_icon.as_ref().and_then(|h| h.filename.clone()),
             model_filename: raw.model.as_ref().and_then(|m| m.mesh_filename.clone()),
@@ -418,8 +439,20 @@ fn parse_carry_item(path: &Path, input_path: &Path) -> Result<Vec<Item>, String>
             }),
             commonness: raw.commonness.as_ref().map(|rc| ItemCommonness {
                 value: rc.value,
-                in_stock: rc.in_stock.as_ref().and_then(|s| s.parse().ok()),
-                can_respawn_with: rc.can_respawn_with.as_ref().and_then(|s| s.parse().ok()),
+                in_stock: rc.in_stock.as_ref().and_then(|s| {
+                    match s.trim() {
+                        "1" => Some(true),
+                        "0" => Some(false),
+                        _ => None,
+                    }
+                }),
+                can_respawn_with: rc.can_respawn_with.as_ref().and_then(|s| {
+                    match s.trim() {
+                        "1" => Some(true),
+                        "0" => Some(false),
+                        _ => None,
+                    }
+                }),
             }),
         };
         items.push(item);
@@ -480,6 +513,7 @@ fn parse_visual_item(path: &Path, input_path: &Path) -> Result<Item, String> {
         slot: None,
         transform_on_consume: None,
         time_to_live: None,
+        draggable: None,
         modifiers: None,
         hud_icon: None,
         model_filename: None,

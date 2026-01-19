@@ -48,7 +48,9 @@
         "players_online": "Players Online",
         "recent_activity": "Recent Activity",
         "last_update": "Last update: Just now",
-        "close": "Close"
+        "close": "Close",
+        "yes": "Yes",
+        "no": "No"
     },
     "scrolling": {
         "tableOnly": "Table Scroll",
@@ -456,6 +458,9 @@
             "commonnessValue": "Spawn Rate",
             "inStock": "In Stock",
             "canRespawnWith": "Respawn",
+            "transformOnConsume": "Transform On Consume",
+            "timeToLive": "Time To Live",
+            "draggable": "Draggable",
             "modifiers": "Modifiers",
             "filePath": "File Path"
         },
@@ -482,7 +487,9 @@
             "mustKeepOne": "At least one column must be visible"
         },
         "sort": {
-            "unsorted": "Unsorted"
+            "unsorted": "Unsorted",
+            "ascending": "Click to sort ascending",
+            "descending": "Click to sort descending"
         }
     }
 }

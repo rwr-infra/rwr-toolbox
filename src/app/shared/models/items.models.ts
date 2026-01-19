@@ -35,6 +35,7 @@ export interface CarryItem extends GameItem {
     slot?: string;
     transformOnConsume?: string;
     timeToLive?: number;
+    draggable?: boolean;
     modifiers?: ItemModifier[];
     hudIcon?: string;
     modelFilename?: string;

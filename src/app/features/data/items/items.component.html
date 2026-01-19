@@ -459,13 +459,22 @@
                                     } @else {
                                         -
                                     }
-                                } @else if (col.field === 'modifiers') {
-                                    <div
-                                        class="tooltip tooltip-bottom"
-                                        [attr.data-tip]="getModifierTooltip(item.modifiers)"
-                                    >
-                                        {{ formatModifiers(item.modifiers) }}
-                                    </div>
+                                } @else if (col.field === 'transformOnConsume') {
+                                    {{ getExtendedValue(item, 'transformOnConsume') }}
+                                } @else if (col.field === 'timeToLive') {
+                                    {{ getExtendedValue(item, 'timeToLive') }}
+                                } @else if (col.field === 'draggable') {
+                                    @if (getBooleanBadge(item, 'draggable') === 'true') {
+                                        <span class="badge badge-success">{{
+                                            'common.yes' | transloco
+                                        }}</span>
+                                    } @else if (getBooleanBadge(item, 'draggable') === 'false') {
+                                        <span class="badge badge-ghost">{{
+                                            'common.no' | transloco
+                                        }}</span>
+                                    } @else {
+                                        -
+                                    }
                                 } @else {
                                     {{ getColumnValue(item, col.key) }}
                                 }
@@ -678,6 +687,50 @@
                                 </td>
                             </tr>
                         }
+                        @if (getTransformOnConsume(selectedItem()!)) {
+                            <tr>
+                                <td>
+                                    {{ 'items.columns.transformOnConsume' | transloco }}
+                                </td>
+                                <td class="text-right">
+                                    {{ getTransformOnConsume(selectedItem()!) }}
+                                </td>
+                            </tr>
+                        }
+                        @if (
+                            getTimeToLive(selectedItem()!) !== null &&
+                            getTimeToLive(selectedItem()!) !== undefined
+                        ) {
+                            <tr>
+                                <td>
+                                    {{ 'items.columns.timeToLive' | transloco }}
+                                </td>
+                                <td class="text-right">
+                                    {{ getTimeToLive(selectedItem()!) }}
+                                </td>
+                            </tr>
+                        }
+                        @if (
+                            getDraggable(selectedItem()!) !== null &&
+                            getDraggable(selectedItem()!) !== undefined
+                        ) {
+                            <tr>
+                                <td>
+                                    {{ 'items.columns.draggable' | transloco }}
+                                </td>
+                                <td class="text-right">
+                                    @if (getDraggable(selectedItem()!)) {
+                                        <span class="badge badge-success">{{
+                                            'common.yes' | transloco
+                                        }}</span>
+                                    } @else {
+                                        <span class="badge badge-ghost">{{
+                                            'common.no' | transloco
+                                        }}</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -780,7 +833,7 @@
                             @for (modifier of getModifiers(selectedItem()!); track modifier._id) {
                                 <tr>
                                     <td>
-                                        <span class="font-mono text-xs">{{ modifier.modifierClass || '(no class)' }}</span>
+                                        <span class="font-mono text-xs">{{ modifier.class || '(no class)' }}</span>
                                     </td>
                                     <td>
                                         @if (modifier.value !== undefined && modifier.value !== null) {
