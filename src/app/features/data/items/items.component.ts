@@ -184,17 +184,30 @@ export class ItemsComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        // Load items on component init
+        // Load items on component init (only if not already loaded)
         this.loadItems();
     }
 
     /** Load items from game directory */
     async loadItems(): Promise<void> {
+        // Bug fix: Skip loading if items are already loaded
+        // Only load on first visit or when directories change
+        if (this.items().length > 0) {
+            console.log('[ItemsComponent] Items already loaded, skipping...');
+            return;
+        }
+
         // T004: Use selected directory or fall back to first valid directory
         const directory = this.directoryService.getSelectedDirectory() ||
             this.directoryService.getFirstValidDirectory();
 
         if (!directory) {
+            // Bug fix: Don't set error if directories are still being validated
+            const isAnyValidating = this.directoryService.isAnyValidatingSig();
+            if (isAnyValidating) {
+                console.log('[ItemsComponent] Directories being validated, waiting...');
+                return;
+            }
             const errorMsg = this.transloco.translate(
                 'items.errors.noGamePath',
             );

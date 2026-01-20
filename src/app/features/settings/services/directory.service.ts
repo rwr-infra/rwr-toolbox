@@ -405,6 +405,7 @@ export class DirectoryService {
      * Converts stored string[] paths to ScanDirectory[] objects
      */
     async loadDirectories(): Promise<void> {
+        this.loadingState.set(true);
         try {
             if (!this.store) {
                 this.store = await Store.load('settings.json');
@@ -430,6 +431,8 @@ export class DirectoryService {
             console.error('Failed to load scan directories:', error);
             // Graceful fallback - use empty array on corrupted settings
             this.directoriesState.set(DEFAULT_SCAN_DIRECTORIES);
+        } finally {
+            this.loadingState.set(false);
         }
     }
 

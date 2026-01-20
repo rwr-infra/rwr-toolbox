@@ -60,8 +60,11 @@ export class SettingsComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        // Load scan directories from Tauri store
-        this.directoryService.loadDirectories();
+        // Bug fix: Load scan directories from Tauri store and revalidate
+        // Previously: this.directoryService.loadDirectories(); was not awaited
+        this.directoryService.loadDirectories().then(() => {
+            this.directoryService.revalidateAll();
+        });
     }
 
     /**

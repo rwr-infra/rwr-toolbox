@@ -183,17 +183,30 @@ export class WeaponsComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        // Load weapons on component init
+        // Load weapons on component init (only if not already loaded)
         this.loadWeapons();
     }
 
     /** Load weapons from game directory */
     async loadWeapons(): Promise<void> {
+        // Bug fix: Skip loading if weapons are already loaded
+        // Only load on first visit or when directories change
+        if (this.weapons().length > 0) {
+            console.log('[WeaponsComponent] Weapons already loaded, skipping...');
+            return;
+        }
+
         // T004: Use selected directory or fall back to first valid directory
         const directory = this.directoryService.getSelectedDirectory() ||
             this.directoryService.getFirstValidDirectory();
 
         if (!directory) {
+            // Bug fix: Don't set error if directories are still being validated
+            const isAnyValidating = this.directoryService.isAnyValidatingSig();
+            if (isAnyValidating) {
+                console.log('[WeaponsComponent] Directories being validated, waiting...');
+                return;
+            }
             const errorMsg = this.transloco.translate(
                 'weapons.errors.noGamePath',
             );
