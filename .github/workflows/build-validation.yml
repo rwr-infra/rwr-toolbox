@@ -44,6 +44,9 @@ jobs:
         with:
           node-version: lts/*
 
+      - name: Enable pnpm
+        run: corepack enable
+
       # Setup Rust toolchain
       # macOS runners need both ARM64 and x86_64 targets for cross-compilation
       - name: Install Rust stable
@@ -66,7 +69,7 @@ jobs:
       # Using tauri-action without release parameters = build validation only
       # --debug flag builds faster for validation purposes
       - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0
         with:
           # No release parameters = build validation only, no GitHub release created
           args: --debug ${{ matrix.args }}

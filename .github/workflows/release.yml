@@ -19,12 +19,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS ARM64 (Apple Silicon)
+          # macOS Universal
           - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          # macOS x86_64 (Intel)
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
+            args: '--target universal-apple-darwin'
           # Linux (Ubuntu-based)
           - platform: 'ubuntu-22.04'
             args: ''
@@ -44,6 +41,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
+
+      - name: Enable pnpm
+        run: corepack enable
 
       # Setup Rust toolchain
       # macOS runners need both ARM64 and x86_64 targets for cross-compilation
@@ -66,7 +66,7 @@ jobs:
       # Build and publish the application
       # Creates GitHub release with all platform-specific artifacts
       - name: Build and publish Tauri app
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0
         env:
           # GITHUB_TOKEN is automatically provided by GitHub Actions
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
