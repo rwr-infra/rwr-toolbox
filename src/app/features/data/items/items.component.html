@@ -341,7 +341,11 @@
                 @for (item of paginatedItems(); track item._id) {
                     <tr
                         class="cursor-pointer hover:bg-base-200"
-                        (click)="onRowClick(item)"
+                        [class.active]="selectedItem()?.key === item.key"
+                        (click)="selectItem(item)"
+                        (keydown.arrowDown)="selectNext()"
+                        (keydown.arrowUp)="selectPrevious()"
+                        (keydown.escape)="closeDetailPanel()"
                     >
                         @for (col of getVisibleColumns(); track col.key) {
                             <td
@@ -530,356 +534,201 @@
     }
 </div>
 
-<!-- Item Details Modal -->
-@if (showItemDetails() && selectedItem()) {
-    <dialog class="modal modal-open" [open]="showItemDetails()">
-        <div class="modal-box max-w-4xl max-h-[80vh] overflow-y-auto">
-            <!-- Header -->
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg">{{ selectedItem()!.name }}</h3>
-                <button
-                    class="btn btn-sm btn-circle btn-ghost"
-                    (click)="closeItemDetails()"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"
-                        />
-                    </svg>
-                </button>
-            </div>
+<!-- Detail Side Panel -->
+@if (isDetailPanelOpen() && selectedItem()) {
+    <aside @slideIn class="fixed top-0 right-0 w-[75%] min-w-[400px] h-screen bg-base-200 border-l border-base-300 shadow-lg z-50 flex flex-col">
+        <!-- Feature 007: Image/Icon Display Section (top of panel, centered, 192px for visual cue) -->
+        <div class="flex justify-center py-6 border-b border-base-300">
+            @if (getItemIconUrl(selectedItem()!)) {
+                <!-- Display actual game image if available -->
+                <img
+                    [src]="getItemIconUrl(selectedItem()!)"
+                    [alt]="selectedItem()!.name"
+                    class="w-48 h-48 object-contain bg-base-300 rounded-lg shadow-md p-4"
+                    (error)="onItemImageError()"
+                />
+            } @else {
+                <!-- Fallback to Lucide icon if no image available -->
+                <lucide-icon
+                    [name]="getIconForItemType(selectedItem()!.itemType || '')"
+                    class="w-48 h-48 p-8 bg-base-300 rounded-lg text-primary shadow-md"
+                    [attr.aria-label]="'Item type: ' + selectedItem()!.itemType">
+                </lucide-icon>
+            }
+        </div>
 
+        <!-- Header -->
+        <div class="flex justify-between items-center p-4 border-b border-base-300">
+            <h3 class="font-bold text-lg">{{ selectedItem()!.name }}</h3>
+            <button class="btn btn-sm btn-circle btn-ghost" (click)="closeDetailPanel()">
+                <lucide-icon name="X"></lucide-icon>
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 p-4 overflow-y-auto">
             <!-- Basic Info -->
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                    <span class="text-xs opacity-70">{{
-                        'items.columns.key' | transloco
-                    }}</span>
-                    <div class="font-mono text-sm">
-                        {{ selectedItem()!.key || '-' }}
-                    </div>
+            <div class="mb-4">
+                <div class="mb-2">
+                    <span class="text-xs opacity-70">{{ 'items.columns.key' | transloco }}</span>
+                    <div class="font-mono text-sm">{{ selectedItem()!.key || '-' }}</div>
                 </div>
-                <div>
-                    <span class="text-xs opacity-70">{{
-                        'items.columns.itemType' | transloco
-                    }}</span>
-                    <div class="text-sm">
-                        {{
-                            'items.filters.' + selectedItem()!.itemType
-                                | transloco
-                        }}
-                    </div>
+                <div class="mb-2">
+                    <span class="text-xs opacity-70">{{ 'items.columns.itemType' | transloco }}</span>
+                    <div class="text-sm">{{ 'items.filters.' + selectedItem()!.itemType | transloco }}</div>
                 </div>
                 @if (getItemSlotValue()) {
-                    <div>
-                        <span class="text-xs opacity-70">{{
-                            'items.columns.slot' | transloco
-                        }}</span>
-                        <div class="text-sm">
-                            {{ getItemSlotValue() }}
-                        </div>
+                    <div class="mb-2">
+                        <span class="text-xs opacity-70">{{ 'items.columns.slot' | transloco }}</span>
+                        <div class="text-sm">{{ getItemSlotValue() }}</div>
                     </div>
                 }
-                <div>
-                    <span class="text-xs opacity-70">{{
-                        'items.columns.filePath' | transloco
-                    }}</span>
-                    <div class="text-xs font-mono">
-                        {{ selectedItem()!.filePath }}
-                    </div>
+                <div class="mb-2">
+                    <span class="text-xs opacity-70">{{ 'items.columns.filePath' | transloco }}</span>
+                    <div class="file-path-cell">{{ selectedItem()!.filePath }}</div>
                 </div>
-                <div>
-                    <span class="text-xs opacity-70">{{
-                        'weapons.details.package' | transloco
-                    }}</span>
-                    <div class="text-sm">
-                        {{ selectedItem()!.packageName }}
-                    </div>
+                <div class="mb-2">
+                    <span class="text-xs opacity-70">{{ 'weapons.details.package' | transloco }}</span>
+                    <div class="text-sm">{{ selectedItem()!.packageName }}</div>
                 </div>
             </div>
 
             <!-- Specifications -->
-            <h4 class="font-semibold text-md mb-2">
-                {{ 'weapons.details.specifications' | transloco }}
-            </h4>
-            <div class="overflow-x-auto mb-4">
-                <table class="table table-xs">
+            <h4 class="font-semibold text-md mb-2">{{ 'weapons.details.specifications' | transloco }}</h4>
+            <table class="table table-sm mb-4">
+                <tbody>
+                    @if (selectedItem()!.encumbrance !== null && selectedItem()!.encumbrance !== undefined) {
+                        <tr>
+                            <td>{{ 'items.columns.encumbrance' | transloco }}</td>
+                            <td class="text-right font-mono text-xs">{{ selectedItem()!.encumbrance }}</td>
+                        </tr>
+                    }
+                    @if (selectedItem()!.price !== null && selectedItem()!.price !== undefined) {
+                        <tr>
+                            <td>{{ 'items.columns.price' | transloco }}</td>
+                            <td class="text-right font-mono text-xs">{{ selectedItem()!.price }}</td>
+                        </tr>
+                    }
+                    @if (selectedItem()!.canRespawnWith !== null && selectedItem()!.canRespawnWith !== undefined) {
+                        <tr>
+                            <td>{{ 'weapons.details.canRespawnWith' | transloco }}</td>
+                            <td class="text-right">
+                                @if (selectedItem()!.canRespawnWith) {
+                                    <span class="badge badge-success">{{ 'weapons.details.yes' | transloco }}</span>
+                                } @else {
+                                    <span class="badge badge-ghost">{{ 'weapons.details.no' | transloco }}</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (selectedItem()!.inStock !== null && selectedItem()!.inStock !== undefined) {
+                        <tr>
+                            <td>{{ 'weapons.details.inStock' | transloco }}</td>
+                            <td class="text-right">
+                                @if (selectedItem()!.inStock) {
+                                    <span class="badge badge-success">{{ 'weapons.details.yes' | transloco }}</span>
+                                } @else {
+                                    <span class="badge badge-ghost">{{ 'weapons.details.no' | transloco }}</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (getTransformOnConsume(selectedItem()!)) {
+                        <tr>
+                            <td>{{ 'items.columns.transformOnConsume' | transloco }}</td>
+                            <td class="text-right font-mono text-xs">{{ getTransformOnConsume(selectedItem()!) }}</td>
+                        </tr>
+                    }
+                    @if (getTimeToLive(selectedItem()!) !== null && getTimeToLive(selectedItem()!) !== undefined) {
+                        <tr>
+                            <td>{{ 'items.columns.timeToLive' | transloco }}</td>
+                            <td class="text-right font-mono text-xs">{{ getTimeToLive(selectedItem()!) }}</td>
+                        </tr>
+                    }
+                    @if (getDraggable(selectedItem()!) !== null && getDraggable(selectedItem()!) !== undefined) {
+                        <tr>
+                            <td>{{ 'items.columns.draggable' | transloco }}</td>
+                            <td class="text-right">
+                                @if (getDraggable(selectedItem()!)) {
+                                    <span class="badge badge-success">{{ 'common.yes' | transloco }}</span>
+                                } @else {
+                                    <span class="badge badge-ghost">{{ 'common.no' | transloco }}</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- Extended Attributes -->
+            @if (hasCapacity(selectedItem()!) || hasCommonness(selectedItem()!) || hasModifiers(selectedItem()!)) {
+                <h4 class="font-semibold text-md mb-2">Extended Attributes</h4>
+                <table class="table table-sm mb-4">
                     <tbody>
-                        @if (
-                            selectedItem()!.encumbrance !== null &&
-                            selectedItem()!.encumbrance !== undefined
-                        ) {
-                            <tr>
-                                <td class="w-1/2">
-                                    {{
-                                        'items.columns.encumbrance' | transloco
-                                    }}
-                                </td>
-                                <td class="w-1/2 text-right">
-                                    {{ selectedItem()!.encumbrance }}
-                                </td>
-                            </tr>
+                        @if (hasCapacity(selectedItem()!)) {
+                            @for (field of ['value', 'source']; track field) {
+                                <tr>
+                                    <td>{{ field === 'value' ? 'items.columns.capacityValue' : 'items.columns.capacitySource' | transloco }}</td>
+                                    <td class="text-right font-mono text-xs">{{ getExtendedValue(selectedItem()!, 'capacity.' + field) }}</td>
+                                </tr>
+                            }
                         }
-                        @if (
-                            selectedItem()!.price !== null &&
-                            selectedItem()!.price !== undefined
-                        ) {
-                            <tr>
-                                <td>
-                                    {{ 'items.columns.price' | transloco }}
-                                </td>
-                                <td class="text-right">
-                                    {{ selectedItem()!.price }}
-                                </td>
-                            </tr>
+                        @if (hasCommonness(selectedItem()!)) {
+                            @if (getCommonness(selectedItem()!).value !== null && getCommonness(selectedItem()!).value !== undefined) {
+                                <tr>
+                                    <td>{{ 'items.columns.commonnessValue' | transloco }}</td>
+                                    <td class="text-right font-mono text-xs">{{ getExtendedValue(selectedItem()!, 'commonness.value') }}</td>
+                                </tr>
+                            }
                         }
-                        @if (
-                            selectedItem()!.canRespawnWith !== null &&
-                            selectedItem()!.canRespawnWith !== undefined
-                        ) {
+                    </tbody>
+                </table>
+            }
+
+            <!-- Modifiers -->
+            @if (hasModifiers(selectedItem()!)) {
+                <h4 class="font-semibold text-md mb-2">{{ 'items.columns.modifiers' | transloco }}</h4>
+                <table class="table table-sm mb-4">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Value</th>
+                            <th>State Transition</th>
+                            <th>Consumes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (modifier of getModifiers(selectedItem()!); track modifier._id) {
                             <tr>
+                                <td><span class="font-mono text-xs">{{ modifier.class || '(no class)' }}</span></td>
                                 <td>
-                                    {{
-                                        'weapons.details.canRespawnWith'
-                                            | transloco
-                                    }}
-                                </td>
-                                <td class="text-right">
-                                    @if (selectedItem()!.canRespawnWith) {
-                                        <span class="badge badge-success">{{
-                                            'weapons.details.yes' | transloco
-                                        }}</span>
+                                    @if (modifier.value !== undefined && modifier.value !== null) {
+                                        <span class="badge badge-outline">{{ modifier.value }}</span>
                                     } @else {
-                                        <span class="badge badge-ghost">{{
-                                            'weapons.details.no' | transloco
-                                        }}</span>
+                                        -
                                     }
                                 </td>
-                            </tr>
-                        }
-                        @if (
-                            selectedItem()!.inStock !== null &&
-                            selectedItem()!.inStock !== undefined
-                        ) {
-                            <tr>
                                 <td>
-                                    {{ 'weapons.details.inStock' | transloco }}
-                                </td>
-                                <td class="text-right">
-                                    @if (selectedItem()!.inStock) {
-                                        <span class="badge badge-success">{{
-                                            'weapons.details.yes' | transloco
-                                        }}</span>
+                                    @if (modifier.inputCharacterState || modifier.outputCharacterState) {
+                                        <span class="text-xs">
+                                            {{ modifier.inputCharacterState || '?' }} &rarr; {{ modifier.outputCharacterState || '?' }}
+                                        </span>
                                     } @else {
-                                        <span class="badge badge-ghost">{{
-                                            'weapons.details.no' | transloco
-                                        }}</span>
+                                        -
                                     }
                                 </td>
-                            </tr>
-                        }
-                        @if (getTransformOnConsume(selectedItem()!)) {
-                            <tr>
                                 <td>
-                                    {{ 'items.columns.transformOnConsume' | transloco }}
-                                </td>
-                                <td class="text-right">
-                                    {{ getTransformOnConsume(selectedItem()!) }}
-                                </td>
-                            </tr>
-                        }
-                        @if (
-                            getTimeToLive(selectedItem()!) !== null &&
-                            getTimeToLive(selectedItem()!) !== undefined
-                        ) {
-                            <tr>
-                                <td>
-                                    {{ 'items.columns.timeToLive' | transloco }}
-                                </td>
-                                <td class="text-right">
-                                    {{ getTimeToLive(selectedItem()!) }}
-                                </td>
-                            </tr>
-                        }
-                        @if (
-                            getDraggable(selectedItem()!) !== null &&
-                            getDraggable(selectedItem()!) !== undefined
-                        ) {
-                            <tr>
-                                <td>
-                                    {{ 'items.columns.draggable' | transloco }}
-                                </td>
-                                <td class="text-right">
-                                    @if (getDraggable(selectedItem()!)) {
-                                        <span class="badge badge-success">{{
-                                            'common.yes' | transloco
-                                        }}</span>
+                                    @if (modifier.consumesItem) {
+                                        <span class="badge badge-warning badge-xs">Yes</span>
                                     } @else {
-                                        <span class="badge badge-ghost">{{
-                                            'common.no' | transloco
-                                        }}</span>
+                                        <span class="badge badge-ghost badge-xs">No</span>
                                     }
                                 </td>
                             </tr>
                         }
                     </tbody>
                 </table>
-            </div>
-
-            <!-- Extended Attributes (Feature 006) -->
-            @if (
-                hasCapacity(selectedItem()!) ||
-                hasCommonness(selectedItem()!) ||
-                hasModifiers(selectedItem()!)
-            ) {
-                <h4 class="font-semibold text-md mb-2">
-                    Extended Attributes
-                </h4>
-                <div class="overflow-x-auto mb-4">
-                    <table class="table table-xs">
-                        <tbody>
-                            <!-- Capacity -->
-                            @if (hasCapacity(selectedItem()!)) {
-                                @for (field of ['value', 'source']; track field) {
-                                    <tr>
-                                        <td class="w-1/2">
-                                            {{ field === 'value' ? 'items.columns.capacityValue' : 'items.columns.capacitySource' | transloco }}
-                                        </td>
-                                        <td class="w-1/2 text-right">
-                                            {{ getExtendedValue(selectedItem()!, 'capacity.' + field) }}
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                            <!-- Commonness -->
-                            @if (hasCommonness(selectedItem()!)) {
-                                @if (getCommonness(selectedItem()!).value !== null && getCommonness(selectedItem()!).value !== undefined) {
-                                    <tr>
-                                        <td class="w-1/2">
-                                            {{ 'items.columns.commonnessValue' | transloco }}
-                                        </td>
-                                        <td class="w-1/2 text-right">
-                                            {{ getExtendedValue(selectedItem()!, 'commonness.value') }}
-                                        </td>
-                                    </tr>
-                                }
-                                @if (getCommonness(selectedItem()!).inStock !== null && getCommonness(selectedItem()!).inStock !== undefined) {
-                                    <tr>
-                                        <td class="w-1/2">
-                                            {{ 'items.columns.inStock' | transloco }}
-                                        </td>
-                                        <td class="w-1/2 text-right">
-                                            @if (getCommonness(selectedItem()!).inStock) {
-                                                <span class="badge badge-success">{{
-                                                    'common.yes' | transloco
-                                                }}</span>
-                                            } @else {
-                                                <span class="badge badge-ghost">{{
-                                                    'common.no' | transloco
-                                                }}</span>
-                                            }
-                                        </td>
-                                    </tr>
-                                }
-                                @if (getCommonness(selectedItem()!).canRespawnWith !== null && getCommonness(selectedItem()!).canRespawnWith !== undefined) {
-                                    <tr>
-                                        <td class="w-1/2">
-                                            {{ 'items.columns.canRespawnWith' | transloco }}
-                                        </td>
-                                        <td class="w-1/2 text-right">
-                                            @if (getCommonness(selectedItem()!).canRespawnWith) {
-                                                <span class="badge badge-success">{{
-                                                    'common.yes' | transloco
-                                                }}</span>
-                                            } @else {
-                                                <span class="badge badge-ghost">{{
-                                                    'common.no' | transloco
-                                                }}</span>
-                                            }
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                        </tbody>
-                    </table>
-                </div>
             }
-
-            <!-- Modifiers (Feature 006) -->
-            @if (hasModifiers(selectedItem()!)) {
-                <h4 class="font-semibold text-md mb-2">
-                    {{ 'items.columns.modifiers' | transloco }}
-                </h4>
-                <div class="overflow-x-auto mb-4">
-                    <table class="table table-xs">
-                        <thead>
-                            <tr>
-                                <th>Class</th>
-                                <th>Value</th>
-                                <th>State Transition</th>
-                                <th>Consumes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (modifier of getModifiers(selectedItem()!); track modifier._id) {
-                                <tr>
-                                    <td>
-                                        <span class="font-mono text-xs">{{ modifier.class || '(no class)' }}</span>
-                                    </td>
-                                    <td>
-                                        @if (modifier.value !== undefined && modifier.value !== null) {
-                                            <span class="badge badge-outline">{{ modifier.value }}</span>
-                                        } @else {
-                                            -
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (modifier.inputCharacterState || modifier.outputCharacterState) {
-                                            <span class="text-xs">
-                                                {{ modifier.inputCharacterState || '?' }}
-                                                &rarr;
-                                                {{ modifier.outputCharacterState || '?' }}
-                                            </span>
-                                        } @else {
-                                            -
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (modifier.consumesItem) {
-                                            <span class="badge badge-warning badge-xs">Yes</span>
-                                        } @else {
-                                            <span class="badge badge-ghost badge-xs">No</span>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-
-            <!-- Footer Actions -->
-            <div class="modal-action">
-                <button class="btn btn-primary" (click)="closeItemDetails()">
-                    {{ 'weapons.details.close' | transloco }}
-                </button>
-            </div>
         </div>
-        <!-- Click outside to close -->
-        <form method="dialog">
-            <button
-                class="modal-backdrop"
-                (click)="closeItemDetails()"
-            ></button>
-        </form>
-    </dialog>
+    </aside>
 }

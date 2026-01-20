@@ -7,6 +7,12 @@ import { GenericItem, getItemSlot, isCarryItem } from '../../../shared/models/it
 import { ITEM_COLUMNS } from './item-columns';
 import { ScrollingModeService } from '../../shared/services/scrolling-mode.service';
 import type { PaginationState } from '../../../shared/models/common.models';
+import {
+    animate,
+    style,
+    transition,
+    trigger,
+} from '@angular/animations';
 
 /**
  * Items table component with search, filters, column visibility, and sorting
@@ -19,6 +25,17 @@ import type { PaginationState } from '../../../shared/models/common.models';
     imports: [TranslocoPipe, LucideAngularModule],
     templateUrl: './items.component.html',
     styleUrl: './items.component.scss',
+    animations: [
+        trigger('slideIn', [
+            transition(':enter', [
+                style({ transform: 'translateX(100%)' }),
+                animate('300ms ease-out', style({ transform: 'translateX(0)' })),
+            ]),
+            transition(':leave', [
+                animate('250ms ease-in', style({ transform: 'translateX(100%)' })),
+            ]),
+        ]),
+    ],
 })
 export class ItemsComponent implements OnInit {
     private itemService = inject(ItemService);
@@ -41,6 +58,10 @@ export class ItemsComponent implements OnInit {
     readonly selectedItem = signal<GenericItem | null>(null);
     readonly showItemDetails = signal<boolean>(false);
 
+    // NEW: Detail view side panel state
+    readonly isDetailPanelOpen = signal<boolean>(false);
+    readonly detailPanelPosition = signal<'side' | 'overlay'>('side');
+
     // T071: Pagination state signal (100 items per page)
     readonly pagination = signal<
         Pick<PaginationState, 'currentPage' | 'pageSize'>
@@ -54,6 +75,44 @@ export class ItemsComponent implements OnInit {
 
     // Page size options
     readonly pageSizeOptions = [25, 50, 100, 200];
+
+    // Feature 007: Icon mapping for item types
+    readonly ITEM_ICONS: Record<string, string> = {
+        // Medical items
+        'medkit': 'heart',
+        'bandage': 'heart',
+        'first_aid': 'heart',
+        'health': 'heart',
+
+        // Protection
+        'armor': 'shield',
+        'helmet': 'shield',
+        'vest': 'shield',
+        'body_armor': 'shield',
+
+        // Food/Consumables
+        'food': 'coffee',
+        'ration': 'coffee',
+        'drink': 'coffee',
+        'consumable': 'coffee',
+
+        // Ammunition
+        'ammunition': 'package',
+        'ammo': 'package',
+        'magazine': 'package',
+        'bullet': 'package',
+
+        // Explosives
+        'grenade': 'sparkles',
+        'explosive': 'sparkles',
+        'c4': 'sparkles',
+        'rocket': 'sparkles',
+
+        // Equipment/Tools
+        'tool': 'wrench',
+        'radio': 'radio',
+        'equipment': 'wrench',
+    };
 
     // Image URL cache: item.key -> image URL
     readonly itemIconUrls = signal<Map<string, string>>(new Map());
@@ -419,6 +478,52 @@ export class ItemsComponent implements OnInit {
                 this.selectedItem.set(null);
             }
         }, 300);
+    }
+
+    /** NEW: Select item and show side panel */
+    selectItem(item: GenericItem): void {
+        this.selectedItem.set(item);
+        this.isDetailPanelOpen.set(true);
+    }
+
+    /** NEW: Close detail side panel */
+    closeDetailPanel(): void {
+        this.isDetailPanelOpen.set(false);
+        this.selectedItem.set(null);
+    }
+
+    /** NEW: Select next item for keyboard navigation */
+    selectNext(): void {
+        const current = this.selectedItem();
+        if (!current) return;
+
+        const items = this.paginatedItems();
+        const index = items.findIndex(i => i.key === current.key);
+        if (index < items.length - 1) {
+            this.selectItem(items[index + 1]);
+        }
+    }
+
+    /** NEW: Select previous item for keyboard navigation */
+    selectPrevious(): void {
+        const current = this.selectedItem();
+        if (!current) return;
+
+        const items = this.paginatedItems();
+        const index = items.findIndex(i => i.key === current.key);
+        if (index > 0) {
+            this.selectItem(items[index - 1]);
+        }
+    }
+
+    /** Feature 007: Get icon name for item type (for detail panel display) */
+    getIconForItemType(itemType: string): string {
+        const icon = this.ITEM_ICONS[itemType];
+        if (!icon) {
+            console.warn(`[ItemsComponent] No icon mapping for item type: "${itemType}". Using fallback "box" icon.`);
+            return 'box';
+        }
+        return icon;
     }
 
     /** Open item file in default editor */

@@ -57,6 +57,16 @@ import {
     Maximize2,
     ArrowDownToLine,
     ImageOff,
+    // Feature 007: Image display icons for weapons/items detail panels
+    // Note: Using Crosshair for firearms since Gun is not available in lucide-angular
+    Zap,
+    Crosshair,
+    Shield,
+    Heart,
+    Coffee,
+    Sparkles,
+    Wrench,
+    Radio,
 } from 'lucide-angular';
 
 /**
@@ -122,4 +132,13 @@ export const APP_ICONS = {
     Maximize2,
     ArrowDownToLine,
     ImageOff,
+    // Feature 007: Image display icons
+    Zap,
+    Crosshair,
+    Shield,
+    Heart,
+    Coffee,
+    Sparkles,
+    Wrench,
+    Radio,
 };

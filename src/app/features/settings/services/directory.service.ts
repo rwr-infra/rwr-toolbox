@@ -88,14 +88,26 @@ export class DirectoryService {
     });
 
     /**
-     * T026: Initialize service by loading scanDirectories from SettingsService
+     * T026: Initialize service by loading scanDirectories from plugin-store
      */
     async initialize(): Promise<void> {
-        const directories = this.settingsService.getScanDirectories();
-        this.directoriesState.set(directories);
+        // Load from plugin-store first (persisted settings)
+        await this.loadDirectories();
+
+        // Check if we have any directories configured (status will be 'pending' until revalidated)
+        const hasAnyDirectories = this.directoriesState().length > 0;
 
         // T065: Initial revalidation of all directories to detect external changes
-        this.revalidateAll();
+        await this.revalidateAll();
+
+        // Auto-scan if we have any directories (triggers data loading on startup)
+        // After revalidation, directories will be marked as 'valid' or 'invalid'
+        if (hasAnyDirectories) {
+            // Run scan in background without blocking initialization
+            this.scanAllDirectories().catch((e) =>
+                console.error('Auto-scan failed on startup:', e),
+            );
+        }
     }
 
     /**
@@ -152,8 +164,8 @@ export class DirectoryService {
             const updated = [...this.directoriesState(), newDirectory];
             this.directoriesState.set(updated);
 
-            // Persist to settings
-            await this.settingsService.updateScanDirectories(updated);
+            // Persist to plugin-store
+            await this.saveScanDirs(updated);
         } finally {
             this.loadingState.set(false);
         }
@@ -168,7 +180,7 @@ export class DirectoryService {
             (d) => d.id !== directoryId,
         );
         this.directoriesState.set(updated);
-        await this.settingsService.updateScanDirectories(updated);
+        await this.saveScanDirs(updated);
     }
 
     /**
@@ -410,9 +422,14 @@ export class DirectoryService {
                     weaponCount: 0,
                 }));
                 this.directoriesState.set(scanDirs);
+            } else {
+                // No persisted settings found, use default (empty array)
+                this.directoriesState.set(DEFAULT_SCAN_DIRECTORIES);
             }
         } catch (error) {
             console.error('Failed to load scan directories:', error);
+            // Graceful fallback - use empty array on corrupted settings
+            this.directoriesState.set(DEFAULT_SCAN_DIRECTORIES);
         }
     }
 

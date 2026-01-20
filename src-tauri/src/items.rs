@@ -396,26 +396,20 @@ fn parse_carry_item(path: &Path, input_path: &Path) -> Result<Vec<Item>, String>
             item_type: "carry_item".to_string(),
             encumbrance: raw.inventory.as_ref().and_then(|i| i.encumbrance),
             price: raw.inventory.as_ref().and_then(|i| i.price),
-            can_respawn_with: raw
-                .commonness
-                .as_ref()
-                .and_then(|c| c.can_respawn_with.as_ref().and_then(|s| {
-                    match s.trim() {
-                        "1" => Some(true),
-                        "0" => Some(false),
-                        _ => None,
-                    }
-                })),
-            in_stock: raw
-                .commonness
-                .as_ref()
-                .and_then(|c| c.in_stock.as_ref().and_then(|s| {
-                    match s.trim() {
-                        "1" => Some(true),
-                        "0" => Some(false),
-                        _ => None,
-                    }
-                })),
+            can_respawn_with: raw.commonness.as_ref().and_then(|c| {
+                c.can_respawn_with.as_ref().and_then(|s| match s.trim() {
+                    "1" => Some(true),
+                    "0" => Some(false),
+                    _ => None,
+                })
+            }),
+            in_stock: raw.commonness.as_ref().and_then(|c| {
+                c.in_stock.as_ref().and_then(|s| match s.trim() {
+                    "1" => Some(true),
+                    "0" => Some(false),
+                    _ => None,
+                })
+            }),
             file_path: file_path.clone(),
             source_file: path.display().to_string(),
             package_name: package_name.clone(),
@@ -439,19 +433,15 @@ fn parse_carry_item(path: &Path, input_path: &Path) -> Result<Vec<Item>, String>
             }),
             commonness: raw.commonness.as_ref().map(|rc| ItemCommonness {
                 value: rc.value,
-                in_stock: rc.in_stock.as_ref().and_then(|s| {
-                    match s.trim() {
-                        "1" => Some(true),
-                        "0" => Some(false),
-                        _ => None,
-                    }
+                in_stock: rc.in_stock.as_ref().and_then(|s| match s.trim() {
+                    "1" => Some(true),
+                    "0" => Some(false),
+                    _ => None,
                 }),
-                can_respawn_with: rc.can_respawn_with.as_ref().and_then(|s| {
-                    match s.trim() {
-                        "1" => Some(true),
-                        "0" => Some(false),
-                        _ => None,
-                    }
+                can_respawn_with: rc.can_respawn_with.as_ref().and_then(|s| match s.trim() {
+                    "1" => Some(true),
+                    "0" => Some(false),
+                    _ => None,
                 }),
             }),
         };

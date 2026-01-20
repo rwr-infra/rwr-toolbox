@@ -8,6 +8,12 @@ import { Weapon, AdvancedFilters } from '../../../shared/models/weapons.models';
 import { WEAPON_COLUMNS } from './weapon-columns';
 import { ScrollingModeService } from '../../shared/services/scrolling-mode.service';
 import type { PaginationState } from '../../../shared/models/common.models';
+import {
+    animate,
+    style,
+    transition,
+    trigger,
+} from '@angular/animations';
 
 /**
  * Weapons table component with search, filters, and column visibility
@@ -19,6 +25,17 @@ import type { PaginationState } from '../../../shared/models/common.models';
     imports: [TranslocoPipe, LucideAngularModule],
     templateUrl: './weapons.component.html',
     styleUrl: './weapons.component.scss',
+    animations: [
+        trigger('slideIn', [
+            transition(':enter', [
+                style({ transform: 'translateX(100%)' }),
+                animate('300ms ease-out', style({ transform: 'translateX(0)' })),
+            ]),
+            transition(':leave', [
+                animate('250ms ease-in', style({ transform: 'translateX(100%)' })),
+            ]),
+        ]),
+    ],
 })
 export class WeaponsComponent implements OnInit {
     private weaponService = inject(WeaponService);
@@ -41,6 +58,10 @@ export class WeaponsComponent implements OnInit {
     readonly selectedWeapon = signal<Weapon | null>(null);
     readonly showWeaponDetails = signal<boolean>(false);
 
+    // NEW: Detail view side panel state
+    readonly isDetailPanelOpen = signal<boolean>(false);
+    readonly detailPanelPosition = signal<'side' | 'overlay'>('side');
+
     // T056: Pagination state signal (100 items per page)
     readonly pagination = signal<
         Pick<PaginationState, 'currentPage' | 'pageSize'>
@@ -54,6 +75,39 @@ export class WeaponsComponent implements OnInit {
 
     // Page size options
     readonly pageSizeOptions = [25, 50, 100, 200];
+
+    // Feature 007: Icon mapping for weapon types
+    readonly WEAPON_ICONS: Record<string, string> = {
+        // Assault rifles
+        'assault_rifle': 'crosshair',
+        'rifle_assault': 'crosshair',
+        'm4': 'crosshair',
+        'ak47': 'crosshair',
+
+        // SMGs
+        'smg': 'crosshair',
+        'submachine_gun': 'crosshair',
+        'mp5': 'crosshair',
+
+        // Pistols
+        'pistol': 'crosshair',
+        'sidearm': 'crosshair',
+
+        // Sniper rifles
+        'sniper': 'crosshair',
+        'sniper_rifle': 'crosshair',
+
+        // LMGs
+        'lmg': 'zap',
+        'machine_gun': 'zap',
+
+        // Shotguns
+        'shotgun': 'crosshair',
+
+        // Heavy weapons
+        'rpg': 'zap',
+        'rocket_launcher': 'zap',
+    };
 
     // T004: Image URL cache: weapon.key -> image URL
     readonly weaponIconUrls = signal<Map<string, string>>(new Map());
@@ -338,6 +392,52 @@ export class WeaponsComponent implements OnInit {
                 this.selectedWeapon.set(null);
             }
         }, 300);
+    }
+
+    /** NEW: Select weapon and show side panel */
+    selectWeapon(weapon: Weapon): void {
+        this.selectedWeapon.set(weapon);
+        this.isDetailPanelOpen.set(true);
+    }
+
+    /** NEW: Close detail side panel */
+    closeDetailPanel(): void {
+        this.isDetailPanelOpen.set(false);
+        this.selectedWeapon.set(null);
+    }
+
+    /** NEW: Select next weapon for keyboard navigation */
+    selectNext(): void {
+        const current = this.selectedWeapon();
+        if (!current) return;
+
+        const weapons = this.paginatedWeapons();
+        const index = weapons.findIndex(w => w.key === current.key);
+        if (index < weapons.length - 1) {
+            this.selectWeapon(weapons[index + 1]);
+        }
+    }
+
+    /** NEW: Select previous weapon for keyboard navigation */
+    selectPrevious(): void {
+        const current = this.selectedWeapon();
+        if (!current) return;
+
+        const weapons = this.paginatedWeapons();
+        const index = weapons.findIndex(w => w.key === current.key);
+        if (index > 0) {
+            this.selectWeapon(weapons[index - 1]);
+        }
+    }
+
+    /** Feature 007: Get icon name for weapon type (for detail panel display) */
+    getIconForWeaponType(weaponType: string): string {
+        const icon = this.WEAPON_ICONS[weaponType];
+        if (!icon) {
+            console.warn(`[WeaponsComponent] No icon mapping for weapon type: "${weaponType}". Using fallback "box" icon.`);
+            return 'box';
+        }
+        return icon;
     }
 
     /** Open weapon file in default editor */

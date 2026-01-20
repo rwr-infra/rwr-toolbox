@@ -1,5 +1,22 @@
 /**
  * Items component styles
- * Feature: 002-table-enhancements
- * Mirrors weapons component styles for consistency
+ * Feature: 007-settings-persistence-detail-ux
  */
+
+table {
+    tr.hover {
+        cursor: pointer;
+    }
+
+    // Highlight selected row
+    tr.active {
+        background-color: hsl(var(--p) / 0.1);
+    }
+}
+
+// Detail Side Panel overlay variant (Tailwind: bg-base-200 used in template)
+.detail-panel.overlay {
+    width: 100%;
+    max-width: 60%;
+    border-left: none;
+}

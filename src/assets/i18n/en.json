@@ -283,6 +283,7 @@
         }
     },
     "hotkeys": {
+        "game_path": "Game Path",
         "no_game_path": "Game Path Not Configured",
         "no_game_path_desc": "Please set the game path in Settings first.",
         "tab_read": "Read",

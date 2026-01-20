@@ -10,6 +10,7 @@ import {
     withInterceptorsFromDi,
 } from '@angular/common/http';
 import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { routes } from './app.routes';
 import { APP_ICONS } from './shared/icons';
@@ -24,6 +25,7 @@ export const appConfig: ApplicationConfig = {
         }),
         provideRouter(routes),
         provideHttpClient(withInterceptorsFromDi()),
+        provideAnimations(),
         {
             provide: LUCIDE_ICONS,
             multi: true,
