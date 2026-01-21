@@ -626,6 +626,17 @@
             </button>
         </div>
 
+        <!-- Template Error Warning -->
+        @if (selectedWeapon()!.templateError) {
+            <div class="alert alert-warning mx-4 mt-4">
+                <lucide-icon name="alert-triangle" class="h-5 w-5 shrink-0"></lucide-icon>
+                <div>
+                    <h4 class="font-bold text-sm">{{ 'weapons.details.title' | transloco }} - Template Error</h4>
+                    <span class="text-xs">{{ selectedWeapon()!.templateError }}</span>
+                </div>
+            </div>
+        }
+
             <!-- Content -->
             <div class="flex-1 p-4 overflow-y-auto">
                 <!-- First row: Image + Basic Info -->
@@ -665,10 +676,26 @@
                     </div>
                 </div>
 
-                <!-- File Path (full width) -->
+                <!-- File Path (full width) with action buttons -->
                 <div class="mb-4">
                     <span class="text-xs opacity-70">{{ 'weapons.columns.filePath' | transloco }}</span>
-                    <div class="text-xs font-mono break-all">{{ selectedWeapon()!.filePath }}</div>
+                    <div class="flex items-center gap-2">
+                        <div class="text-xs font-mono break-all flex-1">{{ selectedWeapon()!.filePath }}</div>
+                        <button
+                            class="btn btn-ghost btn-xs btn-circle flex-shrink-0"
+                            [title]="'weapons.actions.openInEditor' | transloco"
+                            (click)="onOpenInEditor(selectedWeapon()!)"
+                        >
+                            <lucide-icon name="square-pen" class="h-4 w-4"></lucide-icon>
+                        </button>
+                        <button
+                            class="btn btn-ghost btn-xs btn-circle flex-shrink-0"
+                            [title]="'weapons.actions.copyPath' | transloco"
+                            (click)="onCopyPath(selectedWeapon()!)"
+                        >
+                            <lucide-icon name="copy" class="h-4 w-4"></lucide-icon>
+                        </button>
+                    </div>
                 </div>
 
             <!-- Specifications -->

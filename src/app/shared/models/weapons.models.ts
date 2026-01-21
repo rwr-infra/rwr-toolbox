@@ -67,6 +67,8 @@ export interface Weapon {
     packageName: string;
     /** Directory path where this weapon was scanned from (multi-directory support) */
     sourceDirectory: string;
+    /** Error message if template resolution failed (optional) */
+    templateError?: string;
 }
 
 /**

@@ -35,6 +35,7 @@ export class DirectoryService {
     private weaponService = inject(WeaponService);
     private itemService = inject(ItemService);
     private store: Store | null = null;
+    private initPromise: Promise<void> | null = null;
 
     // T016: Private writable signals
     private directoriesState = signal<ScanDirectory[]>(
@@ -50,6 +51,7 @@ export class DirectoryService {
     });
     private loadingState = signal<boolean>(false);
     private errorState = signal<string | null>(null);
+    private initializedState = signal<boolean>(false);
 
     // T017: Public readonly signals
     readonly directoriesSig = this.directoriesState.asReadonly();
@@ -57,6 +59,29 @@ export class DirectoryService {
     readonly scanProgressSig = this.scanProgressState.asReadonly();
     readonly loadingSig = this.loadingState.asReadonly();
     readonly errorSig = this.errorState.asReadonly();
+    readonly initializedSig = this.initializedState.asReadonly();
+
+    constructor() {
+        // Kick off initialization on first injection so pages like Weapons/Items work even
+        // if the user never visits Settings (where directories were previously loaded).
+        this.ensureInitialized().catch((e) =>
+            console.error('[DirectoryService] Initialization failed:', e),
+        );
+    }
+
+    /**
+     * Ensure initialization runs at most once.
+     * Safe to call from any component that depends on directories being loaded.
+     */
+    ensureInitialized(): Promise<void> {
+        if (this.initializedState()) {
+            return Promise.resolve();
+        }
+        if (!this.initPromise) {
+            this.initPromise = this.initialize();
+        }
+        return this.initPromise;
+    }
 
     /**
      * T004: Computed signal: Get selected directory object from SettingsService
@@ -88,25 +113,50 @@ export class DirectoryService {
     });
 
     /**
+     * Computed signal: Get all active directories (for reactive access)
+     * Filters by active state only, regardless of validation status
+     */
+    readonly activeDirectoriesSig = computed(() => {
+        return this.directoriesState().filter((d) => d.active ?? true);
+    });
+
+    /**
+     * Computed signal: Count of valid directories (reactive)
+     * Used by components to detect when directories become available for scanning
+     */
+    readonly validDirectoryCountSig = computed(() => {
+        return this.directoriesState().filter((d) => d.status === 'valid' && (d.active ?? true)).length;
+    });
+
+    /**
      * T026: Initialize service by loading scanDirectories from plugin-store
      */
     async initialize(): Promise<void> {
-        // Load from plugin-store first (persisted settings)
-        await this.loadDirectories();
+        try {
+            // Load from plugin-store first (persisted settings)
+            await this.loadDirectories();
 
-        // Check if we have any directories configured (status will be 'pending' until revalidated)
-        const hasAnyDirectories = this.directoriesState().length > 0;
+            // Check if we have any directories configured (status will be 'pending' until revalidated)
+            const hasAnyDirectories = this.directoriesState().length > 0;
 
-        // T065: Initial revalidation of all directories to detect external changes
-        await this.revalidateAll();
+            // T065: Initial revalidation of all directories to detect external changes
+            // Must be awaited so we don't attempt an auto-scan while directories are still "pending".
+            await this.revalidateAll();
 
-        // Auto-scan if we have any directories (triggers data loading on startup)
-        // After revalidation, directories will be marked as 'valid' or 'invalid'
-        if (hasAnyDirectories) {
-            // Run scan in background without blocking initialization
-            this.scanAllDirectories().catch((e) =>
-                console.error('Auto-scan failed on startup:', e),
-            );
+            // Auto-scan if we have any directories (triggers data loading on startup)
+            // After revalidation, directories will be marked as 'valid' or 'invalid'
+            if (hasAnyDirectories) {
+                // Only auto-scan if there is at least one valid active directory after revalidation.
+                if (this.getValidDirectories().length > 0) {
+                    // Run scan in background without blocking initialization
+                    this.scanAllDirectories().catch((e) =>
+                        console.error('Auto-scan failed on startup:', e),
+                    );
+                }
+            }
+        } finally {
+            // Mark service as initialized regardless of errors
+            this.initializedState.set(true);
         }
     }
 
@@ -115,12 +165,13 @@ export class DirectoryService {
      */
     async revalidateAll(): Promise<void> {
         const directories = this.directoriesState();
-        for (const dir of directories) {
-            // Run revalidation in background, don't await all to not block initialization
-            this.revalidateDirectory(dir.id).catch((e) =>
-                console.error(`Failed to revalidate ${dir.path}:`, e),
-            );
-        }
+        await Promise.all(
+            directories.map((dir) =>
+                this.revalidateDirectory(dir.id).catch((e) => {
+                    console.error(`Failed to revalidate ${dir.path}:`, e);
+                }),
+            ),
+        );
     }
 
     /**
@@ -159,6 +210,7 @@ export class DirectoryService {
                 itemCount: 0,
                 weaponCount: 0,
                 active: true, // Default to active for new directories
+                packageCount: result.packageCount,
             };
 
             // Update state
@@ -213,6 +265,7 @@ export class DirectoryService {
                 errorCode: result.errorCode || null,
                 message: result.message,
                 details: result.details || undefined,
+                packageCount: result.packageCount,
             };
         } catch (e) {
             return {
@@ -247,6 +300,7 @@ export class DirectoryService {
                               ? 'valid'
                               : 'invalid') as DirectoryStatus,
                           lastError: result.valid ? undefined : result,
+                          packageCount: result.packageCount,
                       }
                     : d,
             );
@@ -398,6 +452,14 @@ export class DirectoryService {
 
     getValidDirectories(): ScanDirectory[] {
         return this.directoriesState().filter((d) => d.status === 'valid' && (d.active ?? true));
+    }
+
+    /**
+     * Get all active directories (non-reactive access)
+     * Filters by active state only, regardless of validation status
+     */
+    getActiveDirectories(): ScanDirectory[] {
+        return this.directoriesState().filter((d) => d.active ?? true);
     }
 
     getTotalItemCount(): number {

@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, computed, signal, effect } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { invoke } from '@tauri-apps/api/core';
 import { LucideAngularModule } from 'lucide-angular';
@@ -37,7 +37,7 @@ import {
         ]),
     ],
 })
-export class WeaponsComponent implements OnInit {
+export class WeaponsComponent {
     private weaponService = inject(WeaponService);
     private directoryService = inject(DirectoryService);
     private transloco = inject(TranslocoService);
@@ -112,6 +112,9 @@ export class WeaponsComponent implements OnInit {
     // T004: Image URL cache: weapon.key -> image URL
     readonly weaponIconUrls = signal<Map<string, string>>(new Map());
 
+    // Bug fix: Track if we've already attempted loading to avoid duplicate load attempts
+    private hasAttemptedLoad = signal<boolean>(false);
+
     // Computed signals
     readonly weaponCount = computed(() => this.weapons().length);
     readonly hasError = computed(() => this.error() !== null);
@@ -175,16 +178,41 @@ export class WeaponsComponent implements OnInit {
                 this.loadWeaponIcon(weapon);
             }
         });
+
+        // Bug fix: Auto-load weapons when valid directories become available after initialization
+        effect(() => {
+            // Ensure DirectoryService initialization is kicked off (it is idempotent).
+            void this.directoryService.ensureInitialized();
+
+            const initialized = this.directoryService.initializedSig();
+            const validDirCount = this.directoryService.validDirectoryCountSig();
+            const scanState = this.directoryService.scanProgressSig().state;
+            const hasAttempted = this.hasAttemptedLoad();
+            const hasWeapons = this.weapons().length > 0;
+
+            // Only trigger load when:
+            // 1. Service is initialized
+            // 2. Valid directories are available
+            // 3. Not currently running a multi-directory scan (avoid races/duplicate scans)
+            // 3. Haven't attempted loading yet
+            // 4. No weapons loaded yet
+            if (
+                initialized &&
+                validDirCount > 0 &&
+                scanState !== 'scanning' &&
+                !hasAttempted &&
+                !hasWeapons
+            ) {
+                console.log('[WeaponsComponent] Auto-loading weapons on component mount...');
+                this.hasAttemptedLoad.set(true);
+                this.loadWeapons();
+            }
+        });
     }
 
     toggleScrollingMode(): void {
         const newMode = this.isTableOnlyMode() ? 'full-page' : 'table-only';
         this.scrollingModeService.setMode(newMode);
-    }
-
-    ngOnInit(): void {
-        // Load weapons on component init (only if not already loaded)
-        this.loadWeapons();
     }
 
     /** Load weapons from game directory */
@@ -201,10 +229,11 @@ export class WeaponsComponent implements OnInit {
             this.directoryService.getFirstValidDirectory();
 
         if (!directory) {
-            // Bug fix: Don't set error if directories are still being validated
+            // Bug fix: Don't set error if directories are still being validated or if service is not initialized yet
             const isAnyValidating = this.directoryService.isAnyValidatingSig();
-            if (isAnyValidating) {
-                console.log('[WeaponsComponent] Directories being validated, waiting...');
+            const initialized = this.directoryService.initializedSig();
+            if (isAnyValidating || !initialized) {
+                console.log('[WeaponsComponent] Waiting for valid directories to become available...');
                 return;
             }
             const errorMsg = this.transloco.translate(

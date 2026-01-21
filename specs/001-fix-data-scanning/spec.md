@@ -19,6 +19,16 @@ severity: "error"
 6. 根据最新的 UI 规范优化 'data' 内页面的 UI
 7. weapon 和 item 的单项抽屉详情现在图片很大, 所以不要独立显示在上面, 应该显示在标题下(也就是内容区域)第一行"
 
+## Clarifications
+
+### Session 2025-01-21
+
+- **Q**: How should items/weapons with missing template files be handled in the UI list vs detail view?
+  **A**: Items/weapons with missing templates MUST still be displayed in the list/table (not hidden or filtered out). In the detail drawer, show a warning/indicator that the template could not be resolved, but still display the available data.
+
+- **Q**: Should the detail view have action buttons matching the list view?
+  **A**: Yes, the detail drawer MUST include "Copy Path" and "Open in Editor" buttons for both weapons and items, matching the actions available in the list/table view.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Fix Template File Resolution (Priority: P1)

@@ -31,8 +31,9 @@ export class LocalComponent {
     hasNoDirectories(): boolean {
         const dirs = this.directoryService.directoriesSig();
         const progress = this.directoryService.scanProgressSig();
-        // Only show empty state if truly no directories AND not currently scanning
-        return dirs.length === 0 && progress.state === 'idle';
+        const initialized = this.directoryService.initializedSig();
+        // Only show empty state if service is initialized AND truly no directories AND not currently scanning
+        return initialized && dirs.length === 0 && progress.state === 'idle';
     }
 
     /**

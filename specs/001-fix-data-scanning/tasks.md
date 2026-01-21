@@ -37,14 +37,14 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Add active field to ScanDirectory interface in src/app/shared/models/directory.models.ts
-- [ ] T004 Add packageCount field to ScanDirectory interface in src/app/shared/models/directory.models.ts
-- [ ] T005 Add packageCount field to ValidationResult interface in src/app/shared/models/directory.models.ts
-- [ ] T006 [P] Add package_count field to ValidationResult struct in src-tauri/src/directories.rs
-- [ ] T007 [P] Add error_code field to ValidationResult struct in src-tauri/src/directories.rs
-- [ ] T008 [P] Add message field to ValidationResult struct in src-tauri/src/directories.rs
-- [ ] T009 Update validate_game_path command to count package subdirectories and return package_count in src-tauri/src/directories.rs
-- [ ] T010 [P] Register ToggleLeft icon in src/app/shared/icons/index.ts for active state toggle
+- [X] T003 Add active field to ScanDirectory interface in src/app/shared/models/directory.models.ts
+- [X] T004 Add packageCount field to ScanDirectory interface in src/app/shared/models/directory.models.ts
+- [X] T005 Add packageCount field to ValidationResult interface in src/app/shared/models/directory.models.ts
+- [X] T006 [P] Add package_count field to ValidationResult struct in src-tauri/src/directories.rs
+- [X] T007 [P] Add error_code field to ValidationResult struct in src-tauri/src/directories.rs
+- [X] T008 [P] Add message field to ValidationResult struct in src-tauri/src/directories.rs
+- [X] T009 Update validate_game_path command to count package subdirectories and return package_count in src-tauri/src/directories.rs
+- [X] T010 [P] Register ToggleLeft icon in src/app/shared/icons/index.ts for active state toggle
 
 **Checkpoint**: Data models updated, backend ready to return package counts
 
@@ -58,19 +58,26 @@
 
 ### Implementation for User Story 1
 
-- [ ] T011 [P] [US1] Modify resolve_template function signature to accept base_dir parameter in src-tauri/src/weapons.rs
-- [ ] T012 [US1] Update parse_weapon_file to pass weapon file parent directory to resolve_template in src-tauri/src/weapons.rs
-- [ ] T013 [US1] Update all resolve_template call sites in weapons.rs to pass base_dir parameter in src-tauri/src/weapons.rs
-- [ ] T014 [P] [US1] Modify resolve_template function signature to accept base_dir parameter in src-tauri/src/items.rs
-- [ ] T015 [US1] Update parse_carry_item to pass item file parent directory to template resolution in src-tauri/src/items.rs
-- [ ] T016 [US1] Update template resolution call sites for items to pass base_dir parameter in src-tauri/src/items.rs
-- [ ] T017 [P] [US1] Add use rayon::prelude statement in src-tauri/src/weapons.rs
-- [ ] T018 [US1] Convert discover_weapons to use par_bridge for parallel iteration in src-tauri/src/weapons.rs
-- [ ] T019 [US1] Update scan_weapons to use parallel file collection with partition_result in src-tauri/src/weapons.rs
-- [ ] T020 [P] [US1] Add use rayon::prelude statement in src-tauri/src/items.rs
-- [ ] T021 [US1] Convert item file discovery to use par_bridge for parallel iteration in src-tauri/src/items.rs
-- [ ] T022 [US1] Update scan_items to use parallel file collection in src-tauri/src/items.rs
-- [ ] T023 [US1] Run cargo clippy to verify no warnings from parallel scanning changes
+- [X] T011 [P] [US1] Modify resolve_template function signature to accept base_dir parameter in src-tauri/src/weapons.rs
+- [X] T012 [US1] Update parse_weapon_file to pass weapon file parent directory to resolve_template in src-tauri/src/weapons.rs
+- [X] T013 [US1] Update all resolve_template call sites in weapons.rs to pass base_dir parameter in src-tauri/src/weapons.rs
+- [X] T011a [P] [US1] Add template_error field to Weapon struct in src-tauri/src/weapons.rs
+- [X] T011b [P] [US1] Add templateError field to Weapon interface in src/app/shared/models/weapons.models.ts
+- [X] T011c [US1] Modify parse_weapon_file to catch template errors and continue parsing with partial data in src-tauri/src/weapons.rs
+- [X] T011d [P] [US1] Add template error warning alert in weapons detail drawer in src/app/features/data/weapons/weapons.component.html
+- [X] T011e [P] [US1] Register Copy icon in src/app/shared/icons/index.ts
+- [X] T011f [P] [US1] Add "Copy Path" and "Open in Editor" buttons to weapons detail drawer in src/app/features/data/weapons/weapons.component.html
+- [X] T011g [P] [US1] Add "Copy Path" and "Open in Editor" buttons to items detail drawer in src/app/features/data/items/items.component.html
+- [X] T014 [P] [US1] N/A - Items do not use template references (confirmed in research.md)
+- [X] T015 [US1] N/A - Items do not use template references (confirmed in research.md)
+- [X] T016 [US1] N/A - Items do not use template references (confirmed in research.md)
+- [X] T017 [P] [US1] Add use rayon::prelude statement in src-tauri/src/weapons.rs
+- [X] T018 [US1] Convert discover_weapons to use par_bridge for parallel iteration in src-tauri/src/weapons.rs
+- [X] T019 [US1] Update scan_weapons to use parallel file collection with partition_result in src-tauri/src/weapons.rs
+- [X] T020 [P] [US1] Add use rayon::prelude statement in src-tauri/src/items.rs
+- [X] T021 [US1] Convert item file discovery to use par_bridge for parallel iteration in src-tauri/src/items.rs
+- [X] T022 [US1] Update scan_items to use parallel file collection in src-tauri/src/items.rs
+- [X] T023 [US1] Run cargo clippy to verify no warnings from parallel scanning changes
 
 **Checkpoint**: Template resolution fixed, parallel scanning working, weapons/items with template references parse successfully
 
@@ -84,8 +91,13 @@
 
 ### Implementation for User Story 2
 
-- [ ] T024 [US2] Update hasNoDirectories method to check scan progress state in addition to directory count in src/app/features/data/local/local.component.ts
-- [ ] T025 [US2] Test that data page shows tabs when directories exist and scan is in progress or completed
+- [X] T024 [US2] Update hasNoDirectories method to check scan progress state and initialization state in src/app/features/data/local/local.component.ts
+- [X] T024a [US2] Add initializedSig signal to DirectoryService to track service initialization state in src/app/features/settings/services/directory.service.ts
+- [X] T024b [US2] Add initialized check to WeaponsComponent.loadWeapons() in src/app/features/data/weapons/weapons.component.ts
+- [X] T024c [US2] Add initialized check to ItemsComponent.loadItems() in src/app/features/data/items/items.component.ts
+- [X] T024d [US2] Add effect to WeaponsComponent to auto-load when initialization completes in src/app/features/data/weapons/weapons.component.ts
+- [X] T024e [US2] Add effect to ItemsComponent to auto-load when initialization completes in src/app/features/data/items/items.component.ts
+- [ ] T025 [US2] Test that data page shows tabs when directories exist and scan is in progress or completed (manual test)
 
 **Checkpoint**: Auto-scan displays data correctly on first navigation, no confusing empty state
 
@@ -99,18 +111,18 @@
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Add toggleActive method to DirectoryService in src/app/features/settings/services/directory.service.ts
-- [ ] T027 [US3] Add getActiveDirectories computed signal to DirectoryService in src/app/features/settings/services/directory.service.ts
-- [ ] T028 [US3] Update scanAllDirectories to use getActiveDirectories instead of getValidDirectories in src/app/features/settings/services/directory.service.ts
-- [ ] T029 [US3] Add persistActiveState method to DirectoryService to save active states to plugin-store in src/app/features/settings/services/directory.service.ts
-- [ ] T030 [US3] Update loadDirectories to set active=true as default when loading persisted directories in src/app/features/settings/services/directory.service.ts
-- [ ] T031 [P] [US3] Add active toggle switch UI element to directory item in src/app/features/settings/settings.component.html
-- [ ] T032 [US3] Wire toggle change event to toggleActive method in src/app/features/settings/settings.component.ts
-- [ ] T033 [US3] Add visual styling (opacity) to indicate inactive directory state in src/app/features/settings/settings.component.html
-- [ ] T034 [P] [US3] Add i18n key settings.activeDirectory to src/assets/i18n/en.json
-- [ ] T035 [P] [US3] Add i18n key settings.inactiveDirectory to src/assets/i18n/en.json
-- [ ] T036 [P] [US3] Add Chinese translation for settings.activeDirectory to src/assets/i18n/zh.json
-- [ ] T037 [P] [US3] Add Chinese translation for settings.inactiveDirectory to src/assets/i18n/zh.json
+- [X] T026 [P] [US3] Add toggleActive method to DirectoryService in src/app/features/settings/services/directory.service.ts
+- [X] T027 [US3] Add getActiveDirectories computed signal to DirectoryService in src/app/features/settings/services/directory.service.ts
+- [X] T028 [US3] Update scanAllDirectories to use getActiveDirectories instead of getValidDirectories in src/app/features/settings/services/directory.service.ts
+- [X] T029 [US3] Add persistActiveState method to DirectoryService to save active states to plugin-store in src/app/features/settings/services/directory.service.ts
+- [X] T030 [US3] Update loadDirectories to set active=true as default when loading persisted directories in src/app/features/settings/services/directory.service.ts
+- [X] T031 [P] [US3] Add active toggle switch UI element to directory item in src/app/features/settings/settings.component.html
+- [X] T032 [US3] Wire toggle change event to toggleActive method in src/app/features/settings/settings.component.ts
+- [X] T033 [US3] Add visual styling (opacity) to indicate inactive directory state in src/app/features/settings/settings.component.html
+- [X] T034 [P] [US3] Add i18n key settings.activeDirectory to src/assets/i18n/en.json
+- [X] T035 [P] [US3] Add i18n key settings.inactiveDirectory to src/assets/i18n/en.json
+- [X] T036 [P] [US3] Add Chinese translation for settings.activeDirectory to src/assets/i18n/zh.json
+- [X] T037 [P] [US3] Add Chinese translation for settings.inactiveDirectory to src/assets/i18n/zh.json
 
 **Checkpoint**: Users can toggle directories active/inactive, scans only include active directories, state persists across restarts
 
@@ -124,13 +136,13 @@
 
 ### Implementation for User Story 4
 
-- [ ] T038 [P] [US4] Add i18n key settings.packageCount to src/assets/i18n/en.json with "{count} packages" format
-- [ ] T039 [P] [US4] Add i18n key settings.packageCount_one to src/assets/i18n/en.json for singular form
-- [ ] T040 [P] [US4] Add Chinese translation for settings.packageCount to src/assets/i18n/zh.json
-- [ ] T041 [P] [US4] Add Chinese translation for settings.packageCount_one to src/assets/i18n/zh.json
-- [ ] T042 [US4] Replace itemCount display with packageCount display in settings component template in src/app/features/settings/settings.component.html
-- [ ] T043 [US4] Update DirectoryService to map packageCount from ValidationResult during validation in src/app/features/settings/services/directory.service.ts
-- [ ] T044 [US4] Ensure packageCount displays for inactive directories as well as active ones in src/app/features/settings/settings.component.html
+- [X] T038 [P] [US4] Add i18n key settings.packageCount to src/assets/i18n/en.json with "{count} packages" format
+- [X] T039 [P] [US4] Add i18n key settings.packageCount_one to src/assets/i18n/en.json for singular form
+- [X] T040 [P] [US4] Add Chinese translation for settings.packageCount to src/assets/i18n/zh.json
+- [X] T041 [P] [US4] Add Chinese translation for settings.packageCount_one to src/assets/i18n/zh.json
+- [X] T042 [US4] Replace itemCount display with packageCount display in settings component template in src/app/features/settings/settings.component.html
+- [X] T043 [US4] Update DirectoryService to map packageCount from ValidationResult during validation in src/app/features/settings/services/directory.service.ts
+- [X] T044 [US4] Ensure packageCount displays for inactive directories as well as active ones in src/app/features/settings/settings.component.html
 
 **Checkpoint**: Settings displays accurate package counts, no more "0 items" display
 
@@ -144,14 +156,14 @@
 
 ### Implementation for User Story 5
 
-- [ ] T045 [P] [US5] Remove standalone image section from top of drawer panel in src/app/features/data/weapons/weapons.component.html
-- [ ] T046 [P] [US5] Remove standalone image section from top of drawer panel in src/app/features/data/items/items.component.html
-- [ ] T047 [US5] Add image to first row of content area inline with basic info in weapons drawer in src/app/features/data/weapons/weapons.component.html
-- [ ] T048 [US5] Add image to first row of content area inline with basic info in items drawer in src/app/features/data/items/items.component.html
-- [ ] T049 [US5] Reduce image size from w-48 h-48 to w-24 h-24 for inline display in src/app/features/data/weapons/weapons.component.html
-- [ ] T050 [US5] Reduce image size from w-48 h-48 to w-24 h-24 for inline display in src/app/features/data/items/items.component.html
-- [ ] T051 [US5] Add conditional rendering to not display broken image placeholders in src/app/features/data/weapons/weapons.component.html
-- [ ] T052 [US5] Add conditional rendering to not display broken image placeholders in src/app/features/data/items/items.component.html
+- [X] T045 [P] [US5] Remove standalone image section from top of drawer panel in src/app/features/data/weapons/weapons.component.html
+- [X] T046 [P] [US5] Remove standalone image section from top of drawer panel in src/app/features/data/items/items.component.html
+- [X] T047 [US5] Add image to first row of content area inline with basic info in weapons drawer in src/app/features/data/weapons/weapons.component.html
+- [X] T048 [US5] Add image to first row of content area inline with basic info in items drawer in src/app/features/data/items/items.component.html
+- [X] T049 [US5] Reduce image size from w-48 h-48 to w-24 h-24 for inline display in src/app/features/data/weapons/weapons.component.html
+- [X] T050 [US5] Reduce image size from w-48 h-48 to w-24 h-24 for inline display in src/app/features/data/items/items.component.html
+- [X] T051 [US5] Add conditional rendering to not display broken image placeholders in src/app/features/data/weapons/weapons.component.html
+- [X] T052 [US5] Add conditional rendering to not display broken image placeholders in src/app/features/data/items/items.component.html
 
 **Checkpoint**: Drawer images render inline with content, no layout shift, graceful handling of missing icons
 
@@ -161,14 +173,14 @@
 
 **Purpose**: Final validation, documentation updates, and cross-cutting improvements
 
-- [ ] T053 Run cargo test and cargo clippy to verify backend code quality
-- [ ] T054 Run pnpm build to verify frontend compiles without errors
-- [ ] T055 Run pnpm tauri dev and test all user stories with real RWR game data
-- [ ] T056 Verify template resolution fix by scanning directory with ../templates/ references
-- [ ] T057 Verify parallel scanning performance improvement with 1000+ weapon files
-- [ ] T058 Verify active directory toggling works and persists across restarts
-- [ ] T059 Verify package count displays correctly for directories
-- [ ] T060 Verify drawer image layout is correct for both weapons and items
+- [X] T053 Run cargo test and cargo clippy to verify backend code quality
+- [X] T054 Run pnpm build to verify frontend compiles without errors
+- [ ] T055 Run pnpm tauri dev and test all user stories with real RWR game data (manual test)
+- [X] T056 Verify template resolution fix by scanning directory with ../templates/ references
+- [ ] T057 Verify parallel scanning performance improvement with 1000+ weapon files (manual test)
+- [ ] T058 Verify active directory toggling works and persists across restarts (manual test)
+- [ ] T059 Verify package count displays correctly for directories (manual test)
+- [ ] T060 Verify drawer image layout is correct for both weapons and items (manual test)
 - [ ] T061 Update docs/STATUS.md with feature completion status
 
 ---

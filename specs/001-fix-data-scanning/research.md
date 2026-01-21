@@ -224,3 +224,131 @@ quick-xml = "0.37"  # XML parsing - confirmed working
 walkdir = "2.5"     # Directory traversal - confirmed working
 serde = "1"         # Serialization - confirmed working
 ```
+
+---
+
+## Clarifications Research (Session 2025-01-21)
+
+### 6. Template Error Handling Strategy
+
+**Question**: How should items/weapons with missing template files be handled?
+
+**Clarification**: Items/weapons with missing templates MUST still be displayed in the list/table (not hidden or filtered out). In the detail drawer, show a warning/indicator that the template could not be resolved.
+
+**Decision**: Modify `parse_weapon_file()` to catch template resolution errors and continue parsing with partial data:
+
+```rust
+let mut template_error: Option<String> = None;
+if let Some(template_file) = &raw_weapon.template_file {
+    match resolve_template(weapon_parent, template_file, &mut HashSet::new()) {
+        Ok(resolved) => {
+            raw_weapon = merge_attributes(resolved, raw_weapon);
+        }
+        Err(e) => {
+            template_error = Some(format!("Template resolution failed: {}", e));
+        }
+    }
+}
+// Continue parsing with available data...
+```
+
+**Data Model Extension**:
+```rust
+pub struct Weapon {
+    // ... existing fields ...
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "templateError")]
+    pub template_error: Option<String>,
+}
+```
+
+**UI Implementation**: DaisyUI `alert-warning` component in detail drawer:
+```html
+@if (selectedWeapon()!.templateError) {
+    <div class="alert alert-warning mx-4 mt-4">
+        <lucide-icon name="alert-triangle" class="h-5 w-5"></lucide-icon>
+        <div>
+            <h4 class="font-bold text-sm">Template Error</h4>
+            <span class="text-xs">{{ selectedWeapon()!.templateError }}</span>
+        </div>
+    </div>
+}
+```
+
+---
+
+### 7. Detail Drawer Action Buttons
+
+**Question**: Should the detail view have action buttons matching the list view?
+
+**Clarification**: Yes, the detail drawer MUST include "Copy Path" and "Open in Editor" buttons for both weapons and items.
+
+**Current State**: Action buttons exist in table view but missing in detail drawer.
+
+**Decision**: Add action buttons to detail drawer's file path section using lucide-angular icons.
+
+**Icon Registration** (`src/app/shared/icons/index.ts`):
+```typescript
+import {
+    // ... existing icons
+    SquarePen,  // For "Open in Editor"
+    Copy,        // For "Copy Path"
+} from 'lucide-angular';
+
+export const APP_ICONS = {
+    // ... existing exports
+    SquarePen,
+    Copy,
+};
+```
+
+**Implementation Pattern**:
+```html
+<div class="flex items-center gap-2">
+    <div class="text-xs font-mono break-all flex-1">{{ filePath }}</div>
+    <button class="btn btn-ghost btn-xs btn-circle" (click)="onOpenInEditor(item)">
+        <lucide-icon name="square-pen" class="h-4 w-4"></lucide-icon>
+    </button>
+    <button class="btn btn-ghost btn-xs btn-circle" (click)="onCopyPath(item)">
+        <lucide-icon name="copy" class="h-4 w-4"></lucide-icon>
+    </button>
+</div>
+```
+
+---
+
+### 8. Items Template Handling
+
+**Question**: Do items use template references like weapons?
+
+**Analysis**: Review of `items.rs` module shows that items are parsed directly from XML without template resolution:
+- `carry_item` files: Parsed directly with `from_str()`
+- `visual_item` files: Parsed directly with `from_str()`
+- No `@file` attribute for template inheritance in item XML schema
+
+**Conclusion**: Items do NOT use template references. No template resolution changes needed for items.
+
+**Template Error Field**: Only `Weapon` model needs `template_error` field. `Item` model does not need this field.
+
+---
+
+## Updated Summary of Technical Decisions
+
+| Decision | Implementation | Files Modified |
+|----------|----------------|----------------|
+| Cross-package template resolution | Fallback to `vanilla/weapons/` | `src-tauri/src/weapons.rs` |
+| Template error handling | Continue parsing, store error | `src-tauri/src/weapons.rs`, `Weapon` model |
+| Detail drawer action buttons | Add buttons with lucide icons | `weapons/items.component.html`, `icons/index.ts` |
+| Items template support | N/A - items don't use templates | None |
+
+---
+
+## Implementation Status
+
+As of 2025-01-21, the following has been implemented:
+- ✅ Cross-package template resolution fallback
+- ✅ Template error field in Weapon model
+- ✅ Template error parsing with partial data
+- ✅ Detail drawer action buttons (weapons + items)
+- ✅ Copy icon registered in APP_ICONS
+- ✅ Warning UI in weapons detail drawer

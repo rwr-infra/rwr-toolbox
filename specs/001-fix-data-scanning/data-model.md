@@ -128,9 +128,9 @@ pub struct ValidationResult {
 
 ---
 
-### Weapon (No Changes)
+### Weapon (Extended with template_error)
 
-Core weapon entity is not modified. Template resolution is an internal parsing concern.
+Core weapon entity extended with template error tracking for UI warning display.
 
 **Location**: `src-tauri/src/weapons.rs`
 
@@ -150,6 +150,20 @@ pub struct Weapon {
     pub file_path: String,
     pub source_file: String,
     pub package_name: String,
+    /// NEW: Error message if template resolution failed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "templateError")]
+    pub template_error: Option<String>,
+}
+```
+
+**Frontend TypeScript Model** (`src/app/shared/models/weapons.models.ts`):
+
+```typescript
+export interface Weapon {
+    // ... existing fields ...
+    /** NEW: Error message if template resolution failed */
+    templateError?: string;
 }
 ```
 

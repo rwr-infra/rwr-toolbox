@@ -89,6 +89,7 @@
         "noDirectories": "No directories configured yet",
         "lastScanned": "Last scanned: {{ date }}",
         "packageCount": "{{ count }} packages",
+        "packageCount_one": "{{ count }} package",
         "itemCount": "{{ count }} items",
         "activeDirectory": "Active - included in scans",
         "inactiveDirectory": "Inactive - excluded from scans",

@@ -47,6 +47,10 @@ pub struct Weapon {
     pub file_path: String,
     pub source_file: String,
     pub package_name: String,
+    /// Error message if template resolution failed (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "templateError")]
+    pub template_error: Option<String>,
 }
 
 /// Stance accuracy values
@@ -378,12 +382,21 @@ fn parse_weapon_file(weapon_path: &Path, input_path: &Path) -> Result<Weapon, an
     let mut raw_weapon: RawWeapon = from_str(&content)?;
 
     // Resolve template inheritance if needed
+    // If template resolution fails, continue with partial data and set template_error
+    let mut template_error: Option<String> = None;
     if let Some(template_file) = &raw_weapon.template_file {
         let weapon_parent = weapon_path
             .parent()
             .ok_or_else(|| anyhow::anyhow!("Cannot get parent directory of weapon file"))?;
-        let resolved = resolve_template(weapon_parent, template_file, &mut HashSet::new())?;
-        raw_weapon = merge_attributes(resolved, raw_weapon);
+        match resolve_template(weapon_parent, template_file, &mut HashSet::new()) {
+            Ok(resolved) => {
+                raw_weapon = merge_attributes(resolved, raw_weapon);
+            }
+            Err(e) => {
+                // Template resolution failed - continue with partial data
+                template_error = Some(format!("Template resolution failed: {}", e));
+            }
+        }
     }
 
     // T007, T008, T009: Extract tag and class as separate fields
@@ -487,6 +500,7 @@ fn parse_weapon_file(weapon_path: &Path, input_path: &Path) -> Result<Weapon, an
         file_path,
         source_file: weapon_path.to_string_lossy().to_string(),
         package_name: package_name.to_string(),
+        template_error, // Set to Some(message) if template resolution failed, None otherwise
     };
 
     Ok(weapon)
@@ -494,12 +508,32 @@ fn parse_weapon_file(weapon_path: &Path, input_path: &Path) -> Result<Weapon, an
 
 /// Recursively resolve template inheritance with cycle detection
 /// base_dir: Parent directory of the file being parsed (for resolving relative template paths)
+/// Supports fallback to vanilla package for cross-package template references
 fn resolve_template(
     base_dir: &Path,
     template_file: &str,
     visited: &mut HashSet<PathBuf>,
 ) -> Result<RawWeapon, anyhow::Error> {
+    // Try to resolve template relative to the base directory first
     let template_path = base_dir.join(template_file);
+
+    // If template doesn't exist in the same directory, try vanilla package as fallback
+    let template_path = if !template_path.exists() {
+        // Extract the packages root from base_dir
+        // e.g., /path/to/packages/man_vs_zombies/weapons -> /path/to/packages
+        if let Some(packages_dir) = base_dir.ancestors().nth(2) {
+            let vanilla_template = packages_dir.join("vanilla/weapons").join(template_file);
+            if vanilla_template.exists() {
+                vanilla_template
+            } else {
+                template_path // Return original path for better error message
+            }
+        } else {
+            template_path
+        }
+    } else {
+        template_path
+    };
 
     // Cycle detection
     if !visited.insert(template_path.clone()) {

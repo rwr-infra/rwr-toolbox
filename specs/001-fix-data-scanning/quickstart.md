@@ -68,7 +68,7 @@ pnpm tauri dev
 ### 3. Key Files to Modify
 
 - `src/app/shared/models/directory.models.ts` - Add active, packageCount fields
-- `src/app/shared/icons/index.ts` - Register ToggleLeft icon
+- `src/app/shared/icons/index.ts` - Register ToggleLeft and Copy icons
 - `src/app/features/settings/services/directory.service.ts` - Active state management
 - `src/app/features/settings/settings.component.html` - Toggle UI, package display
 - `src/app/features/data/local/local.component.ts` - Auto-scan fix
@@ -233,8 +233,13 @@ async saveScanDirs(directories: ScanDirectory[]): Promise<void> {
 - [ ] `ScanDirectory.active` field added to model
 - [ ] `ScanDirectory.packageCount` field added to model
 - [ ] `ValidationResult.package_count` added to Rust struct
+- [ ] `Weapon.template_error` field added to Rust struct
+- [ ] `Weapon.templateError` field added to TypeScript model
+- [ ] `parse_weapon_file()` catches template errors and continues parsing
 - [ ] `hasNoDirectories()` checks scan progress state
-- [ ] ToggleLeft icon registered in `icons/index.ts`
+- [ ] ToggleLeft and Copy icons registered in `icons/index.ts`
+- [ ] Detail drawer action buttons added (weapons + items)
+- [ ] Template error warning alert in weapons detail drawer
 - [ ] i18n keys added for "packages", "activeDirectory"
 - [ ] Drawer image moved to content area (not top)
 

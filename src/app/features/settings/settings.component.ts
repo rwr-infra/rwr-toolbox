@@ -61,11 +61,9 @@ export class SettingsComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        // Bug fix: Load scan directories from Tauri store and revalidate
-        // Previously: this.directoryService.loadDirectories(); was not awaited
-        this.directoryService.loadDirectories().then(() => {
-            this.directoryService.revalidateAll();
-        });
+        // Ensure directories are loaded/revalidated even if the user navigated here first.
+        // DirectoryService also auto-initializes on first injection, so this is mostly a no-op.
+        void this.directoryService.ensureInitialized();
     }
 
     /**

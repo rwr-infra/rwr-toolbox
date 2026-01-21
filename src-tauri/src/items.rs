@@ -4,9 +4,10 @@
 //! parses them, and returns structured item data to the frontend.
 
 use quick_xml::de::from_str;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::path::Path;
+use walkdir::WalkDir;
 
 /// Unified item structure (all item types)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -238,6 +239,9 @@ pub async fn scan_items(
     game_path: String,
     directory: Option<String>,
 ) -> Result<ItemScanResult, String> {
+    use std::sync::Mutex;
+    use std::collections::HashMap;
+
     let start_time = std::time::Instant::now();
 
     // Use provided directory if available, otherwise fall back to game_path/packages
@@ -254,74 +258,65 @@ pub async fn scan_items(
 
     let input_path = input_path.to_path_buf();
 
-    let mut items = Vec::new();
-    let mut errors = Vec::new();
-    let mut seen_keys = HashSet::new();
-    let mut duplicate_keys = Vec::new();
+    // Thread-safe collections for parallel processing
+    let items = Mutex::new(Vec::new());
+    let errors = Mutex::new(Vec::new());
+    let all_keys = Mutex::new(HashMap::new());
 
-    // Scan for item files in input_path/**/items/
-    let items_pattern = input_path.join("**/items/*.carry_item");
-    let visual_items_pattern = input_path.join("**/items/*.visual_item");
+    // Parallel file discovery and processing using rayon
+    WalkDir::new(&input_path)
+        .into_iter()
+        .par_bridge()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "carry_item" || ext == "visual_item"))
+        .for_each(|entry| {
+            let path = entry.path();
+            let file_str = path.to_string_lossy().to_string();
+            let is_carry_item = path.extension().is_some_and(|ext| ext == "carry_item");
 
-    // Scan carry_item files
-    if let Ok(entries) = glob::glob(&items_pattern.to_string_lossy()) {
-        for entry in entries {
-            if let Ok(path) = entry {
-                if path.is_file() {
-                    match parse_carry_item(&path, &input_path) {
-                        Ok(items_from_file) => {
-                            for item in items_from_file {
-                                if let Some(ref key) = item.key {
-                                    if seen_keys.contains(key) {
-                                        duplicate_keys.push(key.clone());
-                                    } else {
-                                        seen_keys.insert(key.clone());
-                                    }
-                                }
-                                items.push(item);
-                            }
+            let result = if is_carry_item {
+                parse_carry_item(path, &input_path)
+                    .map(|items_from_file| {
+                        items_from_file.into_iter().map(|i| (i, true)).collect::<Vec<_>>()
+                    })
+            } else {
+                parse_visual_item(path, &input_path)
+                    .map(|item| vec![(item, false)])
+            };
+
+            match result {
+                Ok(item_entries) => {
+                    for (item, _is_carry) in item_entries {
+                        // Check for duplicate keys
+                        if let Some(ref key) = item.key {
+                            let mut keys = all_keys.lock().unwrap();
+                            let entry = keys.entry(key.clone()).or_insert(0);
+                            *entry += 1;
                         }
-                        Err(e) => {
-                            errors.push(ScanError {
-                                file: path.display().to_string(),
-                                error: e,
-                                severity: "error".to_string(),
-                            });
-                        }
+                        items.lock().unwrap().push(item);
                     }
                 }
-            }
-        }
-    }
-
-    // Scan visual_item files
-    if let Ok(entries) = glob::glob(&visual_items_pattern.to_string_lossy()) {
-        for entry in entries {
-            if let Ok(path) = entry {
-                if path.is_file() {
-                    match parse_visual_item(&path, &input_path) {
-                        Ok(item) => {
-                            if let Some(ref key) = item.key {
-                                if seen_keys.contains(key) {
-                                    duplicate_keys.push(key.clone());
-                                } else {
-                                    seen_keys.insert(key.clone());
-                                }
-                            }
-                            items.push(item);
-                        }
-                        Err(e) => {
-                            errors.push(ScanError {
-                                file: path.display().to_string(),
-                                error: e,
-                                severity: "error".to_string(),
-                            });
-                        }
-                    }
+                Err(e) => {
+                    errors.lock().unwrap().push(ScanError {
+                        file: file_str,
+                        error: e,
+                        severity: "error".to_string(),
+                    });
                 }
             }
-        }
-    }
+        });
+
+    // Extract results from mutex
+    let items = items.into_inner().unwrap();
+    let errors = errors.into_inner().unwrap();
+    let all_keys = all_keys.into_inner().unwrap();
+
+    // Find duplicate keys
+    let duplicate_keys: Vec<String> = all_keys
+        .into_iter()
+        .filter(|(_, count)| *count > 1)
+        .map(|(key, _)| key)
+        .collect();
 
     let scan_time = start_time.elapsed().as_millis() as u64;
 

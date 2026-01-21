@@ -89,6 +89,7 @@
         "noDirectories": "尚未配置目录",
         "lastScanned": "上次扫描：{{ date }}",
         "packageCount": "{{ count }} 个包",
+        "packageCount_one": "{{ count }} 个包",
         "itemCount": "{{ count }} 个项目",
         "activeDirectory": "激活 - 已包含在扫描中",
         "inactiveDirectory": "未激活 - 已从扫描中排除",
