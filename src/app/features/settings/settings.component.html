@@ -266,11 +266,11 @@
                                                 'settings.lastScanned'
                                                     | transloco
                                                         : {
-                                                              date: dir.lastScannedAt,
+                                                              date: formatTimestamp(dir.lastScannedAt)
                                                           }
                                             }}</span>
                                         }
-                                        @if (dir.packageCount !== undefined) {
+                                        @if (dir.packageCount !== undefined && dir.packageCount !== null) {
                                             <span>{{
                                                 'settings.packageCount'
                                                     | transloco

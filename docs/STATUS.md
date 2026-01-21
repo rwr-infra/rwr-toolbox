@@ -154,12 +154,29 @@ API 限制说明：
 - `src/app/features/hotkeys/services/hotkey.service.ts`
 - `src/app/features/hotkeys/hotkeys.component.ts`
 
-### ❌ 待实现
+### ✅ 已完成
 
-#### 8. 数据管理 (0%)
-- [ ] 本地游戏数据目录扫描
-- [ ] 资源文件预览
-- [ ] Workshop 内容解析
+#### 8. 数据管理 (90%)
+- [x] **001-fix-data-scanning**: 修复数据扫描错误和 UX 改进
+  - [x] 模板文件解析修复（支持 `@file` 相对路径引用）
+  - [x] 并行扫描（使用 rayon 提升性能）
+  - [x] 自动扫描触发（首次进入 /data 页面自动加载）
+  - [x] 多目录激活状态管理（可启用/禁用扫描目录）
+  - [x] 包数量显示（设置页面显示 "X packages"）
+  - [x] 抽屉图片布局优化（图片内联显示）
+  - [ ] 本地游戏数据目录扫描 (基础扫描功能已完成)
+  - [ ] 资源文件预览
+  - [ ] Workshop 内容解析
+
+关键文件：
+- `src-tauri/src/weapons.rs` - 武器扫描引擎
+- `src-tauri/src/items.rs` - 物品扫描引擎
+- `src-tauri/src/directories.rs` - 目录验证
+- `src/app/features/data/weapons/weapons.component.ts` - 武器列表组件
+- `src/app/features/data/items/items.component.ts` - 物品列表组件
+- `src/app/features/settings/services/directory.service.ts` - 目录管理服务
+
+### ❌ 待实现
 
 ## 设计规范（快照）
 

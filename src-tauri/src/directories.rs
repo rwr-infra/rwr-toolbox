@@ -17,6 +17,9 @@ pub struct DirectoryValidationResult {
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<ValidationDetails>,
+    /// Number of package subdirectories found in media/
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub package_count: Option<usize>,
 }
 
 /// Error codes for directory validation
@@ -47,6 +50,7 @@ pub struct ValidationDetails {
 /// 2. Path is a directory (not a file)
 /// 3. Path is readable (no permission denied)
 /// 4. Path contains a `media` subdirectory
+/// 5. Counts package subdirectories in media/
 #[tauri::command]
 pub fn validate_directory(path: String) -> DirectoryValidationResult {
     let path_obj = Path::new(&path);
@@ -63,6 +67,7 @@ pub fn validate_directory(path: String) -> DirectoryValidationResult {
                 is_readable: false,
                 has_media_subdirectory: false,
             }),
+            package_count: None,
         };
     }
 
@@ -78,6 +83,7 @@ pub fn validate_directory(path: String) -> DirectoryValidationResult {
                 is_readable: false,
                 has_media_subdirectory: false,
             }),
+            package_count: None,
         };
     }
 
@@ -94,6 +100,7 @@ pub fn validate_directory(path: String) -> DirectoryValidationResult {
                 is_readable: false,
                 has_media_subdirectory: false,
             }),
+            package_count: None,
         };
     }
 
@@ -111,8 +118,12 @@ pub fn validate_directory(path: String) -> DirectoryValidationResult {
                 is_readable: true,
                 has_media_subdirectory: false,
             }),
+            package_count: None,
         };
     }
+
+    // Count package subdirectories in media/
+    let package_count = count_packages(&media_path);
 
     // All checks passed
     DirectoryValidationResult {
@@ -125,6 +136,19 @@ pub fn validate_directory(path: String) -> DirectoryValidationResult {
             is_readable: true,
             has_media_subdirectory: true,
         }),
+        package_count: Some(package_count),
+    }
+}
+
+/// Count package subdirectories in the media folder
+/// Packages are immediate subdirectories of media/
+fn count_packages(media_path: &Path) -> usize {
+    match std::fs::read_dir(media_path) {
+        Ok(entries) => entries
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| entry.path().is_dir())
+            .count(),
+        Err(_) => 0,
     }
 }
 

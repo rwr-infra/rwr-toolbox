@@ -15,6 +15,7 @@ import {
 import { DirectoryService } from './services/directory.service';
 import { ThemeService } from '../../shared/services/theme.service';
 import { SettingsService } from '../../core/services/settings.service';
+import { DatePipe } from '@angular/common';
 
 /**
  * Settings component
@@ -23,6 +24,7 @@ import { SettingsService } from '../../core/services/settings.service';
 @Component({
     selector: 'app-settings',
     imports: [CommonModule, TranslocoDirective, TranslocoPipe, LucideAngularModule],
+    providers: [DatePipe],
     templateUrl: './settings.component.html',
     styleUrl: './settings.component.css',
 })
@@ -31,6 +33,7 @@ export class SettingsComponent implements OnInit {
     private directoryService = inject(DirectoryService);
     private themeService = inject(ThemeService);
     private settingsService = inject(SettingsService);
+    private datePipe = inject(DatePipe);
 
     /** Available locales */
     readonly locales = LOCALES;
@@ -168,5 +171,15 @@ export class SettingsComponent implements OnInit {
      */
     async onDirectorySelect(directoryId: string): Promise<void> {
         await this.directoryService.setSelectedDirectory(directoryId);
+    }
+
+    /**
+     * Format a timestamp for display
+     * @param timestamp Unix timestamp in milliseconds
+     * @returns Formatted date string or empty string if timestamp is 0
+     */
+    formatTimestamp(timestamp: number): string {
+        if (timestamp === 0) return '';
+        return this.datePipe.transform(timestamp, 'short') || '';
     }
 }

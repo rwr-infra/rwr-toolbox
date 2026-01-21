@@ -181,7 +181,7 @@
 - [ ] T058 Verify active directory toggling works and persists across restarts (manual test)
 - [ ] T059 Verify package count displays correctly for directories (manual test)
 - [ ] T060 Verify drawer image layout is correct for both weapons and items (manual test)
-- [ ] T061 Update docs/STATUS.md with feature completion status
+- [X] T061 Update docs/STATUS.md with feature completion status
 
 ---
 
