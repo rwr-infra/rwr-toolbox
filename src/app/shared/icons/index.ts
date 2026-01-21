@@ -67,6 +67,10 @@ import {
     Sparkles,
     Wrench,
     Radio,
+    ToggleLeft,
+    ToggleRight,
+    Github,
+    Copy,
 } from 'lucide-angular';
 
 /**
@@ -141,4 +145,8 @@ export const APP_ICONS = {
     Sparkles,
     Wrench,
     Radio,
+    ToggleLeft,
+    ToggleRight,
+    Github,
+    Copy,
 };

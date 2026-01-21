@@ -35,6 +35,12 @@ export interface ScanDirectory {
     /** Optional: Type classification (game/workshop/other) */
     type?: 'game' | 'workshop' | 'other';
 
+    /** Include this directory in scans (default: true) */
+    active?: boolean;
+
+    /** Number of package subdirectories */
+    packageCount?: number;
+
     /** Last validation error if status is 'invalid' */
     lastError?: ValidationResult;
 }
@@ -71,6 +77,9 @@ export interface ValidationResult {
         /** Whether media subdirectory exists */
         hasMediaSubdirectory: boolean;
     };
+
+    /** Number of package subdirectories found */
+    packageCount?: number;
 }
 
 /**

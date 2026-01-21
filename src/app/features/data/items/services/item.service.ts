@@ -39,21 +39,26 @@ export class ItemService {
     );
     private sortState = signal<SortState>({ columnKey: null, direction: null });
 
-    // Public computed signals
-    readonly filteredItems = computed(() => {
+    // Private signals for processing
+    private filteredItemsSig = computed(() => {
         const items = this.items();
         const term = this.searchTerm();
         const filters = this.filters();
-        const sort = this.sortState();
 
-        let filtered = items.filter(
+        return items.filter(
             (i) =>
                 this.matchesSearch(i, term) && this.matchesFilters(i, filters),
         );
+    });
+
+    // Public computed signals
+    readonly filteredItems = computed(() => {
+        const filtered = this.filteredItemsSig();
+        const sort = this.sortState();
 
         // Apply sorting if active
         if (sort.columnKey && sort.direction) {
-            filtered = this.sortItems(filtered, sort.columnKey, sort.direction);
+            return this.sortItems(filtered, sort.columnKey, sort.direction);
         }
 
         return filtered;
@@ -87,11 +92,9 @@ export class ItemService {
                 directory: directory || null,
             });
 
-            // Tag items with source directory for multi-directory support and generate unique IDs
+            // Note: _id for modifiers is still needed for frontend tracking if they don't have IDs from backend
             const itemsWithSource = result.items.map((i) => ({
                 ...i,
-                sourceDirectory: directory || gamePath,
-                _id: crypto.randomUUID(),
                 modifiers: i.modifiers?.map((m) => ({
                     ...m,
                     _id: crypto.randomUUID(),
@@ -99,7 +102,10 @@ export class ItemService {
             }));
 
             if (append) {
-                this.items.set([...this.items(), ...itemsWithSource]);
+                this.items.update((current) => [
+                    ...current,
+                    ...itemsWithSource,
+                ]);
             } else {
                 this.items.set(itemsWithSource);
             }
@@ -123,6 +129,64 @@ export class ItemService {
             if (!append) {
                 this.loading.set(false);
             }
+        }
+    }
+
+    /**
+     * Batch scan multiple directories and update signals ONCE
+     */
+    async batchScanItems(paths: string[]): Promise<GenericItem[]> {
+        if (paths.length === 0) return [];
+
+        this.loading.set(true);
+        this.error.set(null);
+
+        try {
+            // Fetch all in parallel
+            const scanPromises = paths.map((path) =>
+                invoke<ItemScanResult>('scan_items', {
+                    gamePath: path,
+                    directory: path,
+                }).catch((e) => {
+                    console.error(`Batch scan failed for ${path}:`, e);
+                    return {
+                        items: [],
+                        errors: [e],
+                        duplicateKeys: [],
+                        scanTime: 0,
+                    } as ItemScanResult;
+                }),
+            );
+
+            const results = await Promise.all(scanPromises);
+
+            // Process modifiers efficiently
+            const allItems = results
+                .flatMap((r) => r.items)
+                .map((i) => ({
+                    ...i,
+                    modifiers: i.modifiers?.map((m) => ({
+                        ...m,
+                        _id: crypto.randomUUID(),
+                    })),
+                }));
+
+            const allErrors = results.flatMap((r) => r.errors);
+
+            // Single update to the signal
+            this.items.set(allItems);
+
+            if (allErrors.length > 0) {
+                this.error.set(
+                    this.transloco.translate('items.scanError', {
+                        error: `${allErrors.length} issues detected across directories`,
+                    }),
+                );
+            }
+
+            return allItems;
+        } finally {
+            this.loading.set(false);
         }
     }
 

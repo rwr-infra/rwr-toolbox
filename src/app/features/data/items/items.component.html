@@ -1,130 +1,148 @@
-<div class="flex flex-col sm:flex-row gap-2 mb-4">
-    <!-- Search input with type filter -->
-    <div class="join flex-1 w-full flex-col gap-2">
-        <input
-            type="text"
-            [placeholder]="'items.search' | transloco"
-            class="input input-bordered"
-            [value]="searchTerm()"
-            (input)="onSearch($any($event.target).value)"
-        />
-        <select
-            class="select select-bordered"
-            (change)="onItemTypeFilter($any($event.target).value)"
-        >
-            <option value="">
-                {{ 'items.filters.allTypes' | transloco }}
-            </option>
-            @for (type of availableItemTypes(); track type) {
-                <option [value]="type" [selected]="selectedItemType() === type">
-                    {{ 'items.filters.' + type | transloco }}
-                </option>
-            }
-        </select>
-    </div>
-    <!-- Page Size Selector -->
-    <div class="form-control">
-        <label class="label py-1">
-            <span class="label-text text-xs">{{
-                'items.page_size' | transloco
-            }}</span>
-        </label>
-        <select
-            class="select select-bordered select-sm"
-            [value]="pagination().pageSize"
-            (change)="onPageSizeChange($event)"
-        >
-            @for (size of pageSizeOptions; track size) {
-                <option [value]="size">
-                    {{ 'items.page_size_' + size | transloco }}
-                </option>
-            }
-        </select>
-    </div>
-    <!-- Column Toggle Dropdown -->
-    <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="btn btn-outline">
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+<div class="control-area">
+    <!-- Search and Filter Group -->
+    <div class="flex flex-1 gap-2 min-w-[300px]">
+        <div class="join w-full">
+            <div
+                class="join-item flex items-center bg-base-100 border border-base-300 px-3"
             >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
-                />
-            </svg>
+                <i-lucide name="search" class="h-4 w-4 opacity-50"></i-lucide>
+            </div>
+            <input
+                type="text"
+                [placeholder]="'items.search' | transloco"
+                class="input input-bordered input-sm join-item flex-1"
+                [value]="searchTerm()"
+                (input)="onSearch($any($event.target).value)"
+            />
+            <select
+                class="select select-bordered select-sm join-item w-40"
+                (change)="onItemTypeFilter($any($event.target).value)"
+            >
+                <option value="">
+                    {{ 'items.filters.allTypes' | transloco }}
+                </option>
+                @for (type of availableItemTypes(); track type) {
+                    <option
+                        [value]="type"
+                        [selected]="selectedItemType() === type"
+                    >
+                        {{ 'items.filters.' + type | transloco }}
+                    </option>
+                }
+            </select>
         </div>
-        <ul
-            tabindex="0"
-            class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52"
-        >
-            <li class="menu-title">
-                <span>{{ 'items.column.selectColumns' | transloco }}</span>
-            </li>
-            @for (col of columns; track col.key) {
-                <li>
-                    <label class="label cursor-pointer gap-2 justify-start">
-                        <input
-                            type="checkbox"
-                            class="checkbox checkbox-xs"
-                            [checked]="isColumnVisible(col.key)"
-                            [disabled]="isColumnDisabled(col.key)"
-                            (change)="onColumnToggle(col.key)"
-                        />
-                        <span class="label-text text-sm">{{
-                            col.i18nKey | transloco
-                        }}</span>
-                    </label>
-                </li>
-            }
-        </ul>
     </div>
-    <!-- Scrolling Mode Toggle Button -->
-    <button
-        class="btn btn-outline"
-        (click)="toggleScrollingMode()"
-        [title]="'scrolling.toggleTooltip' | transloco"
-    >
-        <i-lucide
-            [name]="isTableOnlyMode() ? 'arrow-down-to-line' : 'maximize-2'"
-            class="h-5 w-5"
-        ></i-lucide>
-    </button>
-    <!-- Refresh button -->
-    <button class="btn btn-primary" (click)="onRefresh()">
-        @if (loading()) {
-            <span class="loading loading-spinner"></span>
-        }
-        {{ 'items.refresh' | transloco }}
-    </button>
+
+    <!-- Tools Group -->
+    <div class="flex items-end gap-2">
+        <!-- Page Size -->
+        <div class="form-control">
+            <label class="label py-0 h-4">
+                <span class="label-text text-[10px] uppercase opacity-50">{{
+                    'items.page_size' | transloco
+                }}</span>
+            </label>
+            <select
+                class="select select-bordered select-sm"
+                [value]="pagination().pageSize"
+                (change)="onPageSizeChange($event)"
+            >
+                @for (size of pageSizeOptions; track size) {
+                    <option [value]="size">
+                        {{ 'items.page_size_' + size | transloco }}
+                    </option>
+                }
+            </select>
+        </div>
+
+        <!-- Column Toggle Dropdown -->
+        <div class="dropdown dropdown-end">
+            <div
+                tabindex="0"
+                role="button"
+                class="btn btn-outline btn-sm"
+                [title]="'items.column.selectColumns' | transloco"
+            >
+                <i-lucide name="settings-2" class="h-4 w-4"></i-lucide>
+            </div>
+            <ul
+                tabindex="0"
+                class="dropdown-content z-[10] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300"
+            >
+                <li class="menu-title">
+                    <span class="text-[10px] uppercase opacity-50">{{
+                        'items.column.selectColumns' | transloco
+                    }}</span>
+                </li>
+                @for (col of columns; track col.key) {
+                    <li>
+                        <label
+                            class="label cursor-pointer py-1 gap-2 justify-start"
+                        >
+                            <input
+                                type="checkbox"
+                                class="checkbox checkbox-xs checkbox-primary"
+                                [checked]="isColumnVisible(col.key)"
+                                [disabled]="isColumnDisabled(col.key)"
+                                (change)="onColumnToggle(col.key)"
+                            />
+                            <span class="label-text text-xs">{{
+                                col.i18nKey | transloco
+                            }}</span>
+                        </label>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <!-- Scrolling Mode Toggle Button -->
+        <button
+            class="btn btn-outline btn-sm"
+            (click)="toggleScrollingMode()"
+            [title]="'scrolling.toggleTooltip' | transloco"
+        >
+            <i-lucide
+                [name]="isTableOnlyMode() ? 'arrow-down-to-line' : 'maximize-2'"
+                class="h-4 w-4"
+            ></i-lucide>
+        </button>
+
+        <!-- Refresh button -->
+        <button class="btn btn-primary btn-sm" (click)="onRefresh()">
+            @if (loading()) {
+                <span class="loading loading-spinner h-4 w-4"></span>
+            } @else {
+                <i-lucide name="refresh-cw" class="h-4 w-4"></i-lucide>
+            }
+            {{ 'items.refresh' | transloco }}
+        </button>
+    </div>
 </div>
 
 <!-- Advanced Search Panel -->
-<div class="collapse collapse-arrow bg-base-200 mb-4">
+<div
+    class="collapse collapse-arrow bg-base-200/50 border border-base-300 mb-4 rounded-box overflow-visible"
+>
     <input
         type="checkbox"
         [checked]="showAdvancedSearch()"
         (change)="toggleAdvancedSearch()"
     />
-    <div class="collapse-title text-lg font-medium">
+    <div class="collapse-title text-sm font-medium flex items-center gap-2">
+        <i-lucide name="layers" class="h-4 w-4 opacity-50"></i-lucide>
         {{ 'items.advancedSearch' | transloco }}
     </div>
     <div class="collapse-content">
         <!-- Range Filters -->
-        <div class="grid grid-cols-2 gap-2 mb-3">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <!-- Encumbrance Range -->
             <div class="form-control">
-                <label class="label">
-                    <span class="label-text text-xs">{{
+                <label class="label py-1">
+                    <span class="label-text text-[10px] uppercase opacity-50">{{
                         'items.columns.encumbrance' | transloco
                     }}</span>
                 </label>
-                <div class="join">
+                <div class="join w-full">
                     <input
                         type="number"
                         class="input input-bordered input-xs join-item w-full"
@@ -156,12 +174,12 @@
 
             <!-- Price Range -->
             <div class="form-control">
-                <label class="label">
-                    <span class="label-text text-xs">{{
+                <label class="label py-1">
+                    <span class="label-text text-[10px] uppercase opacity-50">{{
                         'items.columns.price' | transloco
                     }}</span>
                 </label>
-                <div class="join">
+                <div class="join w-full">
                     <input
                         type="number"
                         class="input input-bordered input-xs join-item w-full"
@@ -192,91 +210,90 @@
             </div>
         </div>
 
-        <!-- Exact Match Filters -->
-        <div class="flex flex-wrap gap-3 mb-3">
-            <label class="label cursor-pointer gap-2">
-                <input
-                    type="checkbox"
-                    class="checkbox checkbox-xs"
-                    [checked]="filters().canRespawnWith === true"
-                    (change)="
-                        onExactFilter(
-                            'canRespawnWith',
-                            $any($event.target).checked ? true : undefined
-                        )
-                    "
-                />
-                <span class="label-text text-xs">{{
-                    'weapons.filters.canRespawnWith' | transloco
-                }}</span>
-            </label>
+        <div
+            class="flex flex-wrap items-center justify-between gap-4 border-t border-base-300 pt-4"
+        >
+            <!-- Exact Match Filters -->
+            <div class="flex flex-wrap gap-4">
+                <label class="label cursor-pointer gap-2 py-0">
+                    <input
+                        type="checkbox"
+                        class="checkbox checkbox-xs checkbox-primary"
+                        [checked]="filters().canRespawnWith === true"
+                        (change)="
+                            onExactFilter(
+                                'canRespawnWith',
+                                $any($event.target).checked ? true : undefined
+                            )
+                        "
+                    />
+                    <span class="label-text text-xs">{{
+                        'weapons.filters.canRespawnWith' | transloco
+                    }}</span>
+                </label>
 
-            <label class="label cursor-pointer gap-2">
-                <input
-                    type="checkbox"
-                    class="checkbox checkbox-xs"
-                    [checked]="filters().inStock === true"
-                    (change)="
-                        onExactFilter(
-                            'inStock',
-                            $any($event.target).checked ? true : undefined
-                        )
-                    "
-                />
-                <span class="label-text text-xs">{{
-                    'weapons.details.inStock' | transloco
-                }}</span>
-            </label>
+                <label class="label cursor-pointer gap-2 py-0">
+                    <input
+                        type="checkbox"
+                        class="checkbox checkbox-xs checkbox-primary"
+                        [checked]="filters().inStock === true"
+                        (change)="
+                            onExactFilter(
+                                'inStock',
+                                $any($event.target).checked ? true : undefined
+                            )
+                        "
+                    />
+                    <span class="label-text text-xs">{{
+                        'weapons.details.inStock' | transloco
+                    }}</span>
+                </label>
+            </div>
+
+            <!-- Clear Filters Button -->
+            <button
+                class="btn btn-ghost btn-xs text-error"
+                (click)="onClearFilters()"
+            >
+                <i-lucide name="trash-2" class="h-3 w-3"></i-lucide>
+                {{ 'items.clearFilters' | transloco }}
+            </button>
         </div>
-
-        <!-- Clear Filters Button -->
-        <button class="btn btn-ghost btn-sm" (click)="onClearFilters()">
-            {{ 'items.clearFilters' | transloco }}
-        </button>
     </div>
 </div>
 
 <!-- Error Alert -->
 @if (hasError()) {
-    <div class="alert alert-error mb-4">
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-        >
-            <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-        </svg>
+    <div class="alert alert-error mb-4 py-2 px-3 text-sm">
+        <i-lucide name="alert-circle" class="h-4 w-4 shrink-0"></i-lucide>
         <span>{{ error() }}</span>
     </div>
 }
 
 <!-- Loading State -->
 @if (loading()) {
-    <div class="alert alert-info mb-4">
-        <span class="loading loading-spinner"></span>
+    <div
+        class="alert alert-info mb-4 py-2 px-3 text-sm bg-info/10 text-info border-info/20"
+    >
+        <span class="loading loading-spinner h-4 w-4"></span>
         <span>{{ 'items.scanning' | transloco }}</span>
     </div>
 }
 
 <!-- Items Table -->
 <div
+    class="border border-base-300 rounded-box bg-base-100"
     [class]="
         isTableOnlyMode() ? 'h-[600px] overflow-y-auto' : 'overflow-x-auto'
     "
 >
-    <table class="table table-xs">
+    <table class="table table-xs table-zebra table-pin-rows">
         <thead>
             <tr>
                 @for (col of getVisibleColumns(); track col.key) {
                     <th
                         [class.text-right]="col.alignment === 'right'"
-                        class="cursor-pointer hover:bg-base-200 transition-colors"
+                        class="cursor-pointer hover:bg-base-200 transition-colors py-3 px-4"
                         [title]="
                             'items.sort.' +
                                 (getColumnSortDirection(col.key) || 'unsorted')
@@ -288,39 +305,22 @@
                             class="flex items-center gap-1"
                             [class.justify-end]="col.alignment === 'right'"
                         >
-                            <span>{{ col.i18nKey | transloco }}</span>
+                            <span
+                                class="uppercase tracking-wider text-[10px] opacity-60"
+                                >{{ col.i18nKey | transloco }}</span
+                            >
                             @if (getColumnSortDirection(col.key) === 'asc') {
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-3 w-3"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M5 15l7-7 7 7"
-                                    />
-                                </svg>
+                                <i-lucide
+                                    name="chevron-up"
+                                    class="h-3 w-3 text-primary"
+                                ></i-lucide>
                             } @else if (
                                 getColumnSortDirection(col.key) === 'desc'
                             ) {
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-3 w-3"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M19 9l-7 7-7-7"
-                                    />
-                                </svg>
+                                <i-lucide
+                                    name="chevron-down"
+                                    class="h-3 w-3 text-primary"
+                                ></i-lucide>
                             }
                         </div>
                     </th>
@@ -332,155 +332,237 @@
                 <tr>
                     <td
                         [colSpan]="getVisibleColumns().length"
-                        class="text-center"
+                        class="text-center py-20"
                     >
-                        {{ 'items.noItems' | transloco }}
+                        <div class="flex flex-col items-center opacity-20">
+                            <i-lucide
+                                name="inbox"
+                                class="h-12 w-12 mb-2"
+                            ></i-lucide>
+                            <p>{{ 'items.noItems' | transloco }}</p>
+                        </div>
                     </td>
                 </tr>
             } @else {
-                @for (item of paginatedItems(); track item._id) {
+                @for (item of paginatedItems(); track item.id) {
                     <tr
-                        class="cursor-pointer hover:bg-base-200"
-                        [class.active]="selectedItem()?.key === item.key"
+                        class="cursor-pointer hover:bg-base-200 transition-colors group"
+                        [class.bg-base-300]="selectedItem()?.key === item.key"
+                        [class.border-l-2]="selectedItem()?.key === item.key"
+                        [class.border-l-primary]="
+                            selectedItem()?.key === item.key
+                        "
                         (click)="selectItem(item)"
-                        (keydown.arrowDown)="selectNext()"
-                        (keydown.arrowUp)="selectPrevious()"
-                        (keydown.escape)="closeDetailPanel()"
                     >
                         @for (col of getVisibleColumns(); track col.key) {
                             <td
+                                class="py-2 px-4"
                                 [class.text-right]="col.alignment === 'right'"
                                 [class.text-left]="col.alignment === 'left'"
                             >
                                 @if (col.key === 'image') {
-                                    <!-- T023: Image column with lazy loading and fallback -->
                                     @if (getItemIconUrl(item)) {
-                                        <img
-                                            [src]="getItemIconUrl(item)"
-                                            [alt]="item.name"
-                                            class="w-12 h-12 object-contain"
-                                            loading="lazy"
-                                            (error)="onItemImageError()"
-                                        />
+                                        <div
+                                            class="w-10 h-10 bg-base-200/50 rounded flex items-center justify-center p-1"
+                                        >
+                                            <img
+                                                [src]="getItemIconUrl(item)"
+                                                [alt]="item.name"
+                                                class="max-w-full max-h-full object-contain"
+                                                loading="lazy"
+                                                (error)="onItemImageError()"
+                                            />
+                                        </div>
                                     } @else {
                                         <div
-                                            class="w-12 h-12 bg-base-300 flex items-center justify-center"
+                                            class="w-10 h-10 bg-base-200/50 rounded flex items-center justify-center"
                                         >
-                                            <lucide-icon
+                                            <i-lucide
                                                 name="image-off"
-                                                class="w-6 h-6 opacity-30"
+                                                class="w-5 h-5 opacity-20"
                                             />
                                         </div>
                                     }
                                 } @else if (col.field === 'filePath') {
-                                    <div class="flex items-center gap-1">
+                                    <div
+                                        class="flex items-center gap-1 group/path"
+                                    >
                                         <span
-                                            class="text-xs font-mono truncate flex-1"
+                                            class="text-[10px] font-mono truncate flex-1 opacity-60"
                                             [title]="item.filePath"
                                         >
                                             {{ item.filePath }}
                                         </span>
-                                        <button
-                                            class="btn btn-ghost btn-xs btn-circle"
-                                            [title]="
-                                                'items.actions.openInEditor'
-                                                    | transloco
-                                            "
-                                            (click)="
-                                                $event.stopPropagation();
-                                                onOpenInEditor(item)
-                                            "
+                                        <div
+                                            class="flex opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                class="h-4 w-4"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
+                                            <button
+                                                class="btn btn-ghost btn-xs btn-square h-6 w-6"
+                                                [title]="
+                                                    'items.actions.openInEditor'
+                                                        | transloco
+                                                "
+                                                (click)="
+                                                    $event.stopPropagation();
+                                                    onOpenInEditor(item)
+                                                "
                                             >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                                                />
-                                            </svg>
-                                        </button>
-                                        <button
-                                            class="btn btn-ghost btn-xs btn-circle"
-                                            [title]="
-                                                'items.actions.copyPath'
-                                                    | transloco
-                                            "
-                                            (click)="
-                                                $event.stopPropagation();
-                                                onCopyPath(item)
-                                            "
-                                        >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                class="h-4 w-4"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
+                                                <i-lucide
+                                                    name="square-pen"
+                                                    class="h-3 w-3"
+                                                ></i-lucide>
+                                            </button>
+                                            <button
+                                                class="btn btn-ghost btn-xs btn-square h-6 w-6"
+                                                [title]="
+                                                    'items.actions.copyPath'
+                                                        | transloco
+                                                "
+                                                (click)="
+                                                    $event.stopPropagation();
+                                                    onCopyPath(item)
+                                                "
                                             >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                                />
-                                            </svg>
-                                        </button>
+                                                <i-lucide
+                                                    name="copy"
+                                                    class="h-3 w-3"
+                                                ></i-lucide>
+                                            </button>
+                                        </div>
                                     </div>
+                                } @else if (col.field === 'name') {
+                                    <span
+                                        class="font-medium text-sm"
+                                        [innerHTML]="highlight(item.name)"
+                                    ></span>
+                                } @else if (col.field === 'itemType') {
+                                    <span
+                                        class="badge badge-ghost badge-sm font-mono text-[10px] opacity-70"
+                                        [innerHTML]="
+                                            highlight(
+                                                'items.filters.' + item.itemType
+                                                    | transloco
+                                            )
+                                        "
+                                    ></span>
+                                } @else if (col.field === 'key') {
+                                    <span
+                                        class="text-xs"
+                                        [innerHTML]="highlight(item.key)"
+                                    ></span>
                                 } @else if (col.field === 'capacity.value') {
-                                    {{ getExtendedValue(item, 'capacity.value') }}
+                                    <span class="text-xs">{{
+                                        getExtendedValue(item, 'capacity.value')
+                                    }}</span>
                                 } @else if (col.field === 'capacity.source') {
-                                    {{ getExtendedValue(item, 'capacity.source') }}
+                                    <span class="text-xs">{{
+                                        getExtendedValue(
+                                            item,
+                                            'capacity.source'
+                                        )
+                                    }}</span>
                                 } @else if (col.field === 'commonness.value') {
-                                    {{ getExtendedValue(item, 'commonness.value') }}
-                                } @else if (col.field === 'commonness.inStock') {
-                                    @if (getBooleanBadge(item, 'commonness.inStock') === 'true') {
-                                        <span class="badge badge-success">{{
-                                            'common.yes' | transloco
-                                        }}</span>
-                                    } @else if (getBooleanBadge(item, 'commonness.inStock') === 'false') {
-                                        <span class="badge badge-error">{{
-                                            'common.no' | transloco
-                                        }}</span>
+                                    <span class="text-xs">{{
+                                        getExtendedValue(
+                                            item,
+                                            'commonness.value'
+                                        )
+                                    }}</span>
+                                } @else if (
+                                    col.field === 'commonness.inStock'
+                                ) {
+                                    @if (
+                                        getBooleanBadge(
+                                            item,
+                                            'commonness.inStock'
+                                        ) === 'true'
+                                    ) {
+                                        <span
+                                            class="badge badge-success badge-xs"
+                                            >{{
+                                                'common.yes' | transloco
+                                            }}</span
+                                        >
+                                    } @else if (
+                                        getBooleanBadge(
+                                            item,
+                                            'commonness.inStock'
+                                        ) === 'false'
+                                    ) {
+                                        <span
+                                            class="badge badge-error badge-xs"
+                                            >{{ 'common.no' | transloco }}</span
+                                        >
                                     } @else {
-                                        -
+                                        <span class="opacity-20">-</span>
                                     }
-                                } @else if (col.field === 'commonness.canRespawnWith') {
-                                    @if (getBooleanBadge(item, 'commonness.canRespawnWith') === 'true') {
-                                        <span class="badge badge-success">{{
-                                            'common.yes' | transloco
-                                        }}</span>
-                                    } @else if (getBooleanBadge(item, 'commonness.canRespawnWith') === 'false') {
-                                        <span class="badge badge-error">{{
-                                            'common.no' | transloco
-                                        }}</span>
+                                } @else if (
+                                    col.field === 'commonness.canRespawnWith'
+                                ) {
+                                    @if (
+                                        getBooleanBadge(
+                                            item,
+                                            'commonness.canRespawnWith'
+                                        ) === 'true'
+                                    ) {
+                                        <span
+                                            class="badge badge-success badge-xs"
+                                            >{{
+                                                'common.yes' | transloco
+                                            }}</span
+                                        >
+                                    } @else if (
+                                        getBooleanBadge(
+                                            item,
+                                            'commonness.canRespawnWith'
+                                        ) === 'false'
+                                    ) {
+                                        <span
+                                            class="badge badge-error badge-xs"
+                                            >{{ 'common.no' | transloco }}</span
+                                        >
                                     } @else {
-                                        -
+                                        <span class="opacity-20">-</span>
                                     }
-                                } @else if (col.field === 'transformOnConsume') {
-                                    {{ getExtendedValue(item, 'transformOnConsume') }}
+                                } @else if (
+                                    col.field === 'transformOnConsume'
+                                ) {
+                                    <span class="text-xs">{{
+                                        getExtendedValue(
+                                            item,
+                                            'transformOnConsume'
+                                        )
+                                    }}</span>
                                 } @else if (col.field === 'timeToLive') {
-                                    {{ getExtendedValue(item, 'timeToLive') }}
+                                    <span class="text-xs">{{
+                                        getExtendedValue(item, 'timeToLive')
+                                    }}</span>
                                 } @else if (col.field === 'draggable') {
-                                    @if (getBooleanBadge(item, 'draggable') === 'true') {
-                                        <span class="badge badge-success">{{
-                                            'common.yes' | transloco
-                                        }}</span>
-                                    } @else if (getBooleanBadge(item, 'draggable') === 'false') {
-                                        <span class="badge badge-ghost">{{
-                                            'common.no' | transloco
-                                        }}</span>
+                                    @if (
+                                        getBooleanBadge(item, 'draggable') ===
+                                        'true'
+                                    ) {
+                                        <span
+                                            class="badge badge-success badge-xs"
+                                            >{{
+                                                'common.yes' | transloco
+                                            }}</span
+                                        >
+                                    } @else if (
+                                        getBooleanBadge(item, 'draggable') ===
+                                        'false'
+                                    ) {
+                                        <span
+                                            class="badge badge-ghost badge-xs"
+                                            >{{ 'common.no' | transloco }}</span
+                                        >
                                     } @else {
-                                        -
+                                        <span class="opacity-20">-</span>
                                     }
                                 } @else {
-                                    {{ getColumnValue(item, col.key) }}
+                                    <span class="text-xs">{{
+                                        getColumnValue(item, col.key)
+                                    }}</span>
                                 }
                             </td>
                         }
@@ -489,245 +571,456 @@
             }
         </tbody>
     </table>
-
-    <!-- T075: Pagination controls -->
-    @if (itemCount() > 0) {
-        <div
-            class="flex flex-col sm:flex-row justify-between items-center mt-4 gap-3 px-1"
-        >
-            <!-- Display Stats -->
-            <div class="text-[10px] text-base-content/50 order-2 sm:order-1">
-                {{
-                    'items.pagination_info'
-                        | transloco
-                            : {
-                                  start: getDisplayRange().start,
-                                  end: getDisplayRange().end,
-                                  total: totalItems(),
-                              }
-                }}
-            </div>
-
-            <!-- Page Navigation -->
-            <div class="join order-1 sm:order-2">
-                @for (page of getPageNumbers(); track page) {
-                    @if (page === -1) {
-                        <button
-                            class="btn btn-xs join-item pointer-events-none opacity-50"
-                        >
-                            ...
-                        </button>
-                    } @else {
-                        <button
-                            class="btn btn-xs join-item"
-                            [class.btn-active]="
-                                page === pagination().currentPage
-                            "
-                            (click)="onPageChange(page)"
-                        >
-                            {{ page }}
-                        </button>
-                    }
-                }
-            </div>
-        </div>
-    }
 </div>
+
+<!-- Pagination Controls -->
+@if (itemCount() > 0) {
+    <div
+        class="flex flex-col sm:flex-row justify-between items-center mt-4 gap-3 px-1"
+    >
+        <!-- Display Stats -->
+        <div
+            class="text-[10px] text-base-content/50 uppercase tracking-wider order-2 sm:order-1"
+        >
+            {{
+                'items.pagination_info'
+                    | transloco
+                        : {
+                              start: getDisplayRange().start,
+                              end: getDisplayRange().end,
+                              total: totalItems(),
+                          }
+            }}
+            <span class="mx-2">|</span>
+            {{ 'items.itemCount' | transloco: { count: itemCount() } }}
+        </div>
+
+        <!-- Page Navigation -->
+        <div class="join order-1 sm:order-2 shadow-sm border border-base-300">
+            @for (page of getPageNumbers(); track page) {
+                @if (page === -1) {
+                    <button
+                        class="btn btn-xs join-item pointer-events-none opacity-50 bg-base-100"
+                    >
+                        ...
+                    </button>
+                } @else {
+                    <button
+                        class="btn btn-xs join-item bg-base-100"
+                        [class.btn-active]="page === pagination().currentPage"
+                        [class.btn-primary]="page === pagination().currentPage"
+                        (click)="onPageChange(page)"
+                    >
+                        {{ page }}
+                    </button>
+                }
+            }
+        </div>
+    </div>
+}
 
 <!-- Detail Side Panel -->
 @if (isDetailPanelOpen() && selectedItem()) {
-    <aside @slideIn class="fixed top-0 right-0 w-[75%] min-w-[400px] h-screen bg-base-200 border-l border-base-300 shadow-lg z-50 flex flex-col">
-        <!-- Feature 007: Image/Icon Display Section (top of panel, centered, 192px for visual cue) -->
-        <div class="flex justify-center py-6 border-b border-base-300">
-            @if (getItemIconUrl(selectedItem()!)) {
-                <!-- Display actual game image if available -->
-                <img
-                    [src]="getItemIconUrl(selectedItem()!)"
-                    [alt]="selectedItem()!.name"
-                    class="w-48 h-48 object-contain bg-base-300 rounded-lg shadow-md p-4"
-                    (error)="onItemImageError()"
-                />
-            } @else {
-                <!-- Fallback to Lucide icon if no image available -->
-                <lucide-icon
-                    [name]="getIconForItemType(selectedItem()!.itemType || '')"
-                    class="w-48 h-48 p-8 bg-base-300 rounded-lg text-primary shadow-md"
-                    [attr.aria-label]="'Item type: ' + selectedItem()!.itemType">
-                </lucide-icon>
-            }
-        </div>
-
+    <aside
+        @slideIn
+        class="fixed top-0 right-0 w-[75%] min-w-[400px] h-screen bg-base-100 border-l border-base-300 shadow-2xl z-[100] flex flex-col"
+    >
         <!-- Header -->
-        <div class="flex justify-between items-center p-4 border-b border-base-300">
-            <h3 class="font-bold text-lg">{{ selectedItem()!.name }}</h3>
-            <button class="btn btn-sm btn-circle btn-ghost" (click)="closeDetailPanel()">
-                <lucide-icon name="X"></lucide-icon>
+        <div
+            class="flex justify-between items-center p-4 border-b border-base-300 bg-base-200/30"
+        >
+            <div class="flex items-center gap-3">
+                <i-lucide name="info" class="h-5 w-5 text-primary"></i-lucide>
+                <h3 class="font-bold text-lg tracking-tight">
+                    {{ selectedItem()!.name }}
+                </h3>
+            </div>
+            <button
+                class="btn btn-sm btn-circle btn-ghost"
+                (click)="closeDetailPanel()"
+            >
+                <i-lucide name="x" class="h-5 w-5"></i-lucide>
             </button>
         </div>
 
         <!-- Content -->
-        <div class="flex-1 p-4 overflow-y-auto">
-            <!-- Basic Info -->
-            <div class="mb-4">
-                <div class="mb-2">
-                    <span class="text-xs opacity-70">{{ 'items.columns.key' | transloco }}</span>
-                    <div class="font-mono text-sm">{{ selectedItem()!.key || '-' }}</div>
+        <div class="flex-1 p-6 overflow-y-auto custom-scrollbar">
+            <!-- First row: Image + Basic Info -->
+            <div class="flex gap-6 mb-8">
+                <div class="flex-shrink-0">
+                    @if (getItemIconUrl(selectedItem()!)) {
+                        <div
+                            class="w-32 h-32 bg-base-200 rounded-xl shadow-inner border border-base-300 flex items-center justify-center p-4"
+                        >
+                            <img
+                                [src]="getItemIconUrl(selectedItem()!)"
+                                [alt]="selectedItem()!.name"
+                                class="max-w-full max-h-full object-contain"
+                                (error)="onItemImageError()"
+                            />
+                        </div>
+                    } @else {
+                        <div
+                            class="w-32 h-32 bg-base-200 rounded-xl shadow-inner border border-base-300 flex items-center justify-center"
+                        >
+                            <i-lucide
+                                [name]="
+                                    getIconForItemType(
+                                        selectedItem()!.itemType || ''
+                                    )
+                                "
+                                class="w-16 h-16 text-primary/40"
+                            ></i-lucide>
+                        </div>
+                    }
                 </div>
-                <div class="mb-2">
-                    <span class="text-xs opacity-70">{{ 'items.columns.itemType' | transloco }}</span>
-                    <div class="text-sm">{{ 'items.filters.' + selectedItem()!.itemType | transloco }}</div>
-                </div>
-                @if (getItemSlotValue()) {
-                    <div class="mb-2">
-                        <span class="text-xs opacity-70">{{ 'items.columns.slot' | transloco }}</span>
-                        <div class="text-sm">{{ getItemSlotValue() }}</div>
+
+                <div class="flex-1 min-w-0 grid grid-cols-1 gap-4">
+                    <div>
+                        <span
+                            class="text-[10px] uppercase font-bold opacity-40 block mb-1"
+                            >{{ 'items.columns.key' | transloco }}</span
+                        >
+                        <div
+                            class="font-mono text-sm bg-base-200 py-1 px-2 rounded border border-base-300 truncate"
+                        >
+                            {{ selectedItem()!.key || '-' }}
+                        </div>
                     </div>
-                }
-                <div class="mb-2">
-                    <span class="text-xs opacity-70">{{ 'items.columns.filePath' | transloco }}</span>
-                    <div class="file-path-cell">{{ selectedItem()!.filePath }}</div>
-                </div>
-                <div class="mb-2">
-                    <span class="text-xs opacity-70">{{ 'weapons.details.package' | transloco }}</span>
-                    <div class="text-sm">{{ selectedItem()!.packageName }}</div>
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <span
+                                class="text-[10px] uppercase font-bold opacity-40 block mb-1"
+                                >{{
+                                    'items.columns.itemType' | transloco
+                                }}</span
+                            >
+                            <div class="text-sm font-medium">
+                                {{
+                                    'items.filters.' + selectedItem()!.itemType
+                                        | transloco
+                                }}
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <span
+                                class="text-[10px] uppercase font-bold opacity-40 block mb-1"
+                                >{{
+                                    'weapons.details.package' | transloco
+                                }}</span
+                            >
+                            <div
+                                class="text-sm font-medium truncate"
+                                [title]="selectedItem()!.packageName"
+                            >
+                                {{ selectedItem()!.packageName }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
+            <!-- File Path -->
+            <div class="mb-8 p-3 bg-base-200 rounded-lg border border-base-300">
+                <span
+                    class="text-[10px] uppercase font-bold opacity-40 block mb-2"
+                    >{{ 'items.columns.filePath' | transloco }}</span
+                >
+                <div class="flex items-center gap-3">
+                    <div class="text-xs font-mono break-all flex-1 opacity-70">
+                        {{ selectedItem()!.filePath }}
+                    </div>
+                    <div class="flex gap-1">
+                        <button
+                            class="btn btn-ghost btn-xs btn-square"
+                            (click)="onOpenInEditor(selectedItem()!)"
+                        >
+                            <i-lucide
+                                name="square-pen"
+                                class="h-4 w-4"
+                            ></i-lucide>
+                        </button>
+                        <button
+                            class="btn btn-ghost btn-xs btn-square"
+                            (click)="onCopyPath(selectedItem()!)"
+                        >
+                            <i-lucide name="copy" class="h-4 w-4"></i-lucide>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @if (getItemSlotValue()) {
+                <div class="mb-8">
+                    <span
+                        class="text-[10px] uppercase font-bold opacity-40 block mb-1"
+                        >{{ 'items.columns.slot' | transloco }}</span
+                    >
+                    <div class="text-sm font-medium">
+                        {{ getItemSlotValue() }}
+                    </div>
+                </div>
+            }
+
             <!-- Specifications -->
-            <h4 class="font-semibold text-md mb-2">{{ 'weapons.details.specifications' | transloco }}</h4>
-            <table class="table table-sm mb-4">
-                <tbody>
-                    @if (selectedItem()!.encumbrance !== null && selectedItem()!.encumbrance !== undefined) {
-                        <tr>
-                            <td>{{ 'items.columns.encumbrance' | transloco }}</td>
-                            <td class="text-right font-mono text-xs">{{ selectedItem()!.encumbrance }}</td>
-                        </tr>
+            <div class="mb-8">
+                <h4
+                    class="text-xs font-bold uppercase opacity-40 mb-3 tracking-widest"
+                >
+                    {{ 'weapons.details.specifications' | transloco }}
+                </h4>
+                <div class="grid grid-cols-2 gap-x-8 gap-y-2">
+                    @if (
+                        selectedItem()!.encumbrance !== null &&
+                        selectedItem()!.encumbrance !== undefined
+                    ) {
+                        <div
+                            class="flex justify-between border-b border-base-300 py-2"
+                        >
+                            <span class="text-sm opacity-70">{{
+                                'items.columns.encumbrance' | transloco
+                            }}</span>
+                            <span class="font-mono font-bold">{{
+                                selectedItem()!.encumbrance
+                            }}</span>
+                        </div>
                     }
-                    @if (selectedItem()!.price !== null && selectedItem()!.price !== undefined) {
-                        <tr>
-                            <td>{{ 'items.columns.price' | transloco }}</td>
-                            <td class="text-right font-mono text-xs">{{ selectedItem()!.price }}</td>
-                        </tr>
-                    }
-                    @if (selectedItem()!.canRespawnWith !== null && selectedItem()!.canRespawnWith !== undefined) {
-                        <tr>
-                            <td>{{ 'weapons.details.canRespawnWith' | transloco }}</td>
-                            <td class="text-right">
-                                @if (selectedItem()!.canRespawnWith) {
-                                    <span class="badge badge-success">{{ 'weapons.details.yes' | transloco }}</span>
-                                } @else {
-                                    <span class="badge badge-ghost">{{ 'weapons.details.no' | transloco }}</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                    @if (selectedItem()!.inStock !== null && selectedItem()!.inStock !== undefined) {
-                        <tr>
-                            <td>{{ 'weapons.details.inStock' | transloco }}</td>
-                            <td class="text-right">
-                                @if (selectedItem()!.inStock) {
-                                    <span class="badge badge-success">{{ 'weapons.details.yes' | transloco }}</span>
-                                } @else {
-                                    <span class="badge badge-ghost">{{ 'weapons.details.no' | transloco }}</span>
-                                }
-                            </td>
-                        </tr>
+                    @if (
+                        selectedItem()!.price !== null &&
+                        selectedItem()!.price !== undefined
+                    ) {
+                        <div
+                            class="flex justify-between border-b border-base-300 py-2"
+                        >
+                            <span class="text-sm opacity-70">{{
+                                'items.columns.price' | transloco
+                            }}</span>
+                            <span class="font-mono font-bold text-success">{{
+                                selectedItem()!.price
+                            }}</span>
+                        </div>
                     }
                     @if (getTransformOnConsume(selectedItem()!)) {
-                        <tr>
-                            <td>{{ 'items.columns.transformOnConsume' | transloco }}</td>
-                            <td class="text-right font-mono text-xs">{{ getTransformOnConsume(selectedItem()!) }}</td>
-                        </tr>
+                        <div
+                            class="flex justify-between border-b border-base-300 py-2"
+                        >
+                            <span class="text-sm opacity-70">{{
+                                'items.columns.transformOnConsume' | transloco
+                            }}</span>
+                            <span class="text-sm font-medium">{{
+                                getTransformOnConsume(selectedItem()!)
+                            }}</span>
+                        </div>
                     }
-                    @if (getTimeToLive(selectedItem()!) !== null && getTimeToLive(selectedItem()!) !== undefined) {
-                        <tr>
-                            <td>{{ 'items.columns.timeToLive' | transloco }}</td>
-                            <td class="text-right font-mono text-xs">{{ getTimeToLive(selectedItem()!) }}</td>
-                        </tr>
+                    @if (
+                        getTimeToLive(selectedItem()!) !== null &&
+                        getTimeToLive(selectedItem()!) !== undefined
+                    ) {
+                        <div
+                            class="flex justify-between border-b border-base-300 py-2"
+                        >
+                            <span class="text-sm opacity-70">{{
+                                'items.columns.timeToLive' | transloco
+                            }}</span>
+                            <span class="font-mono font-bold">{{
+                                getTimeToLive(selectedItem()!)
+                            }}</span>
+                        </div>
                     }
-                    @if (getDraggable(selectedItem()!) !== null && getDraggable(selectedItem()!) !== undefined) {
-                        <tr>
-                            <td>{{ 'items.columns.draggable' | transloco }}</td>
-                            <td class="text-right">
-                                @if (getDraggable(selectedItem()!)) {
-                                    <span class="badge badge-success">{{ 'common.yes' | transloco }}</span>
-                                } @else {
-                                    <span class="badge badge-ghost">{{ 'common.no' | transloco }}</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4 mt-4">
+                    <div
+                        class="bg-base-200 p-3 rounded-lg border border-base-300 flex flex-col items-center"
+                    >
+                        <span
+                            class="text-[10px] uppercase opacity-40 mb-1 text-center leading-tight h-6 flex items-center"
+                            >{{
+                                'weapons.details.canRespawnWith' | transloco
+                            }}</span
+                        >
+                        @if (selectedItem()!.canRespawnWith) {
+                            <i-lucide
+                                name="check-circle"
+                                class="h-5 w-5 text-success"
+                            ></i-lucide>
+                        } @else {
+                            <i-lucide
+                                name="x-circle"
+                                class="h-5 w-5 opacity-20"
+                            ></i-lucide>
+                        }
+                    </div>
+                    <div
+                        class="bg-base-200 p-3 rounded-lg border border-base-300 flex flex-col items-center"
+                    >
+                        <span
+                            class="text-[10px] uppercase opacity-40 mb-1 text-center leading-tight h-6 flex items-center"
+                            >{{ 'weapons.details.inStock' | transloco }}</span
+                        >
+                        @if (selectedItem()!.inStock) {
+                            <i-lucide
+                                name="check-circle"
+                                class="h-5 w-5 text-success"
+                            ></i-lucide>
+                        } @else {
+                            <i-lucide
+                                name="x-circle"
+                                class="h-5 w-5 opacity-20"
+                            ></i-lucide>
+                        }
+                    </div>
+                    <div
+                        class="bg-base-200 p-3 rounded-lg border border-base-300 flex flex-col items-center"
+                    >
+                        <span
+                            class="text-[10px] uppercase opacity-40 mb-1 text-center leading-tight h-6 flex items-center"
+                            >{{ 'items.columns.draggable' | transloco }}</span
+                        >
+                        @if (getDraggable(selectedItem()!)) {
+                            <i-lucide
+                                name="check-circle"
+                                class="h-5 w-5 text-success"
+                            ></i-lucide>
+                        } @else {
+                            <i-lucide
+                                name="x-circle"
+                                class="h-5 w-5 opacity-20"
+                            ></i-lucide>
+                        }
+                    </div>
+                </div>
+            </div>
 
             <!-- Extended Attributes -->
-            @if (hasCapacity(selectedItem()!) || hasCommonness(selectedItem()!) || hasModifiers(selectedItem()!)) {
-                <h4 class="font-semibold text-md mb-2">Extended Attributes</h4>
-                <table class="table table-sm mb-4">
-                    <tbody>
+            @if (
+                hasCapacity(selectedItem()!) ||
+                hasCommonness(selectedItem()!) ||
+                hasModifiers(selectedItem()!)
+            ) {
+                <div class="mb-8">
+                    <h4
+                        class="text-xs font-bold uppercase opacity-40 mb-3 tracking-widest"
+                    >
+                        Extended Attributes
+                    </h4>
+                    <div class="grid grid-cols-1 gap-2">
                         @if (hasCapacity(selectedItem()!)) {
-                            @for (field of ['value', 'source']; track field) {
-                                <tr>
-                                    <td>{{ field === 'value' ? 'items.columns.capacityValue' : 'items.columns.capacitySource' | transloco }}</td>
-                                    <td class="text-right font-mono text-xs">{{ getExtendedValue(selectedItem()!, 'capacity.' + field) }}</td>
-                                </tr>
-                            }
+                            <div
+                                class="flex justify-between border-b border-base-300 py-2"
+                            >
+                                <span class="text-sm opacity-70">{{
+                                    'items.columns.capacityValue' | transloco
+                                }}</span>
+                                <span class="font-mono font-bold">{{
+                                    getExtendedValue(
+                                        selectedItem()!,
+                                        'capacity.value'
+                                    )
+                                }}</span>
+                            </div>
+                            <div
+                                class="flex justify-between border-b border-base-300 py-2"
+                            >
+                                <span class="text-sm opacity-70">{{
+                                    'items.columns.capacitySource' | transloco
+                                }}</span>
+                                <span class="text-sm font-medium">{{
+                                    getExtendedValue(
+                                        selectedItem()!,
+                                        'capacity.source'
+                                    )
+                                }}</span>
+                            </div>
                         }
                         @if (hasCommonness(selectedItem()!)) {
-                            @if (getCommonness(selectedItem()!).value !== null && getCommonness(selectedItem()!).value !== undefined) {
-                                <tr>
-                                    <td>{{ 'items.columns.commonnessValue' | transloco }}</td>
-                                    <td class="text-right font-mono text-xs">{{ getExtendedValue(selectedItem()!, 'commonness.value') }}</td>
-                                </tr>
-                            }
+                            <div
+                                class="flex justify-between border-b border-base-300 py-2"
+                            >
+                                <span class="text-sm opacity-70">{{
+                                    'items.columns.commonnessValue' | transloco
+                                }}</span>
+                                <span class="font-mono font-bold">{{
+                                    getExtendedValue(
+                                        selectedItem()!,
+                                        'commonness.value'
+                                    )
+                                }}</span>
+                            </div>
                         }
-                    </tbody>
-                </table>
+                    </div>
+                </div>
             }
 
             <!-- Modifiers -->
             @if (hasModifiers(selectedItem()!)) {
-                <h4 class="font-semibold text-md mb-2">{{ 'items.columns.modifiers' | transloco }}</h4>
-                <table class="table table-sm mb-4">
-                    <thead>
-                        <tr>
-                            <th>Class</th>
-                            <th>Value</th>
-                            <th>State Transition</th>
-                            <th>Consumes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (modifier of getModifiers(selectedItem()!); track modifier._id) {
-                            <tr>
-                                <td><span class="font-mono text-xs">{{ modifier.class || '(no class)' }}</span></td>
-                                <td>
-                                    @if (modifier.value !== undefined && modifier.value !== null) {
-                                        <span class="badge badge-outline">{{ modifier.value }}</span>
-                                    } @else {
-                                        -
+                <div class="mb-8">
+                    <h4
+                        class="text-xs font-bold uppercase opacity-40 mb-3 tracking-widest"
+                    >
+                        {{ 'items.columns.modifiers' | transloco }}
+                    </h4>
+                    <div class="space-y-3">
+                        @for (
+                            modifier of getModifiers(selectedItem()!);
+                            track modifier._id
+                        ) {
+                            <div
+                                class="p-3 bg-base-200/50 rounded-lg border border-base-300"
+                            >
+                                <div
+                                    class="flex justify-between items-center mb-2"
+                                >
+                                    <span class="text-xs font-bold font-mono">{{
+                                        modifier.class || '(no class)'
+                                    }}</span>
+                                    @if (
+                                        modifier.value !== undefined &&
+                                        modifier.value !== null
+                                    ) {
+                                        <span
+                                            class="badge badge-primary badge-sm"
+                                            >{{ modifier.value }}</span
+                                        >
                                     }
-                                </td>
-                                <td>
-                                    @if (modifier.inputCharacterState || modifier.outputCharacterState) {
-                                        <span class="text-xs">
-                                            {{ modifier.inputCharacterState || '?' }} &rarr; {{ modifier.outputCharacterState || '?' }}
-                                        </span>
-                                    } @else {
-                                        -
-                                    }
-                                </td>
-                                <td>
+                                </div>
+                                <div
+                                    class="flex items-center justify-between text-[11px]"
+                                >
+                                    <div
+                                        class="flex items-center gap-2 opacity-70"
+                                    >
+                                        <i-lucide
+                                            name="activity"
+                                            class="h-3 w-3"
+                                        ></i-lucide>
+                                        <span>{{
+                                            modifier.inputCharacterState || '?'
+                                        }}</span>
+                                        <i-lucide
+                                            name="arrow-right"
+                                            class="h-2.5 w-2.5"
+                                        ></i-lucide>
+                                        <span>{{
+                                            modifier.outputCharacterState || '?'
+                                        }}</span>
+                                    </div>
                                     @if (modifier.consumesItem) {
-                                        <span class="badge badge-warning badge-xs">Yes</span>
-                                    } @else {
-                                        <span class="badge badge-ghost badge-xs">No</span>
+                                        <span
+                                            class="text-warning font-bold flex items-center gap-1"
+                                        >
+                                            <i-lucide
+                                                name="trash-2"
+                                                class="h-3 w-3"
+                                            ></i-lucide>
+                                            CONSUMES
+                                        </span>
                                     }
-                                </td>
-                            </tr>
+                                </div>
+                            </div>
                         }
-                    </tbody>
-                </table>
+                    </div>
+                </div>
             }
         </div>
     </aside>

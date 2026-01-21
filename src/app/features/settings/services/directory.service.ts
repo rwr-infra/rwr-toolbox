@@ -35,6 +35,7 @@ export class DirectoryService {
     private weaponService = inject(WeaponService);
     private itemService = inject(ItemService);
     private store: Store | null = null;
+    private initPromise: Promise<void> | null = null;
 
     // T016: Private writable signals
     private directoriesState = signal<ScanDirectory[]>(
@@ -50,6 +51,7 @@ export class DirectoryService {
     });
     private loadingState = signal<boolean>(false);
     private errorState = signal<string | null>(null);
+    private initializedState = signal<boolean>(false);
 
     // T017: Public readonly signals
     readonly directoriesSig = this.directoriesState.asReadonly();
@@ -57,6 +59,29 @@ export class DirectoryService {
     readonly scanProgressSig = this.scanProgressState.asReadonly();
     readonly loadingSig = this.loadingState.asReadonly();
     readonly errorSig = this.errorState.asReadonly();
+    readonly initializedSig = this.initializedState.asReadonly();
+
+    constructor() {
+        // Kick off initialization on first injection so pages like Weapons/Items work even
+        // if the user never visits Settings (where directories were previously loaded).
+        this.ensureInitialized().catch((e) =>
+            console.error('[DirectoryService] Initialization failed:', e),
+        );
+    }
+
+    /**
+     * Ensure initialization runs at most once.
+     * Safe to call from any component that depends on directories being loaded.
+     */
+    ensureInitialized(): Promise<void> {
+        if (this.initializedState()) {
+            return Promise.resolve();
+        }
+        if (!this.initPromise) {
+            this.initPromise = this.initialize();
+        }
+        return this.initPromise;
+    }
 
     /**
      * T004: Computed signal: Get selected directory object from SettingsService
@@ -64,7 +89,7 @@ export class DirectoryService {
     readonly selectedDirectorySig = computed(() => {
         const selectedId = this.settingsService.settings().selectedDirectoryId;
         if (!selectedId) return null;
-        return this.directoriesState().find(d => d.id === selectedId) || null;
+        return this.directoriesState().find((d) => d.id === selectedId) || null;
     });
 
     /**
@@ -88,25 +113,52 @@ export class DirectoryService {
     });
 
     /**
+     * Computed signal: Get all active directories (for reactive access)
+     * Filters by active state only, regardless of validation status
+     */
+    readonly activeDirectoriesSig = computed(() => {
+        return this.directoriesState().filter((d) => d.active ?? true);
+    });
+
+    /**
+     * Computed signal: Count of valid directories (reactive)
+     * Used by components to detect when directories become available for scanning
+     */
+    readonly validDirectoryCountSig = computed(() => {
+        return this.directoriesState().filter(
+            (d) => d.status === 'valid' && (d.active ?? true),
+        ).length;
+    });
+
+    /**
      * T026: Initialize service by loading scanDirectories from plugin-store
      */
     async initialize(): Promise<void> {
-        // Load from plugin-store first (persisted settings)
-        await this.loadDirectories();
+        try {
+            // Load from plugin-store first (persisted settings)
+            await this.loadDirectories();
 
-        // Check if we have any directories configured (status will be 'pending' until revalidated)
-        const hasAnyDirectories = this.directoriesState().length > 0;
+            // Check if we have any directories configured (status will be 'pending' until revalidated)
+            const hasAnyDirectories = this.directoriesState().length > 0;
 
-        // T065: Initial revalidation of all directories to detect external changes
-        await this.revalidateAll();
+            // T065: Initial revalidation of all directories to detect external changes
+            // Must be awaited so we don't attempt an auto-scan while directories are still "pending".
+            await this.revalidateAll();
 
-        // Auto-scan if we have any directories (triggers data loading on startup)
-        // After revalidation, directories will be marked as 'valid' or 'invalid'
-        if (hasAnyDirectories) {
-            // Run scan in background without blocking initialization
-            this.scanAllDirectories().catch((e) =>
-                console.error('Auto-scan failed on startup:', e),
-            );
+            // Auto-scan if we have any directories (triggers data loading on startup)
+            // After revalidation, directories will be marked as 'valid' or 'invalid'
+            if (hasAnyDirectories) {
+                // Only auto-scan if there is at least one valid active directory after revalidation.
+                if (this.getValidDirectories().length > 0) {
+                    // Run scan in background without blocking initialization
+                    this.scanAllDirectories().catch((e) =>
+                        console.error('Auto-scan failed on startup:', e),
+                    );
+                }
+            }
+        } finally {
+            // Mark service as initialized regardless of errors
+            this.initializedState.set(true);
         }
     }
 
@@ -115,12 +167,13 @@ export class DirectoryService {
      */
     async revalidateAll(): Promise<void> {
         const directories = this.directoriesState();
-        for (const dir of directories) {
-            // Run revalidation in background, don't await all to not block initialization
-            this.revalidateDirectory(dir.id).catch((e) =>
-                console.error(`Failed to revalidate ${dir.path}:`, e),
-            );
-        }
+        await Promise.all(
+            directories.map((dir) =>
+                this.revalidateDirectory(dir.id).catch((e) => {
+                    console.error(`Failed to revalidate ${dir.path}:`, e);
+                }),
+            ),
+        );
     }
 
     /**
@@ -158,6 +211,8 @@ export class DirectoryService {
                 lastScannedAt: 0,
                 itemCount: 0,
                 weaponCount: 0,
+                active: true, // Default to active for new directories
+                packageCount: result.packageCount,
             };
 
             // Update state
@@ -184,6 +239,18 @@ export class DirectoryService {
     }
 
     /**
+     * Toggle active state of a directory
+     * @param directoryId ID of directory to toggle
+     */
+    async toggleActive(directoryId: string): Promise<void> {
+        const updated = this.directoriesState().map((d) =>
+            d.id === directoryId ? { ...d, active: !(d.active ?? true) } : d,
+        );
+        this.directoriesState.set(updated);
+        await this.saveScanDirs(updated);
+    }
+
+    /**
      * T020: Validate a directory path using Tauri command
      * @param path Directory path to validate
      * @returns Validation result with error code and message
@@ -198,6 +265,7 @@ export class DirectoryService {
                 errorCode: result.errorCode || null,
                 message: result.message,
                 details: result.details || undefined,
+                packageCount: result.packageCount,
             };
         } catch (e) {
             return {
@@ -232,6 +300,7 @@ export class DirectoryService {
                               ? 'valid'
                               : 'invalid') as DirectoryStatus,
                           lastError: result.valid ? undefined : result,
+                          packageCount: result.packageCount,
                       }
                     : d,
             );
@@ -252,7 +321,7 @@ export class DirectoryService {
     }
 
     /**
-     * T022: Scan all configured directories sequentially
+     * T022: Scan all configured directories in parallel and batch updates
      */
     async scanAllDirectories(): Promise<void> {
         const directories = this.getValidDirectories();
@@ -261,70 +330,57 @@ export class DirectoryService {
             return;
         }
 
-        // Clear existing data before multi-directory scan
-        this.weaponService.clearWeapons();
-        this.itemService.clearItems();
-
         this.scanProgressState.set({
             total: directories.length,
             completed: 0,
-            currentPath: directories[0].path,
+            currentPath: 'Scanning all directories...',
             state: 'scanning',
             errors: {},
         });
 
-        const errors: Record<string, string> = {};
+        try {
+            const paths = directories.map((d) => d.path);
 
-        for (const dir of directories) {
+            // Execute batch scans which handle parallel backend calls and single signal updates
+            const [weapons, items] = await Promise.all([
+                this.weaponService.batchScanWeapons(paths),
+                this.itemService.batchScanItems(paths),
+            ]);
+
+            // Update directory metadata based on the loaded data
+            const updated = this.directoriesState().map((d) => {
+                const dirWeaponCount = weapons.filter(
+                    (w) => w.sourceDirectory === d.path,
+                ).length;
+                const dirItemCount = items.filter(
+                    (i) => i.sourceDirectory === d.path,
+                ).length;
+
+                return {
+                    ...d,
+                    lastScannedAt: Date.now(),
+                    weaponCount: dirWeaponCount,
+                    itemCount: dirItemCount,
+                };
+            });
+
+            this.directoriesState.set(updated);
+            await this.settingsService.updateScanDirectories(updated);
+
             this.scanProgressState.update((p) => ({
                 ...p,
-                currentPath: dir.path,
+                state: 'completed',
+                completed: directories.length,
+                currentPath: null,
             }));
-
-            try {
-                // Scan weapons and items for this directory, appending to results
-                const weapons = await this.weaponService.scanWeapons(
-                    dir.path,
-                    dir.path,
-                    true,
-                );
-                const items = await this.itemService.scanItems(
-                    dir.path,
-                    dir.path,
-                    true,
-                );
-
-                // Update directory metadata with scan results
-                const updated = this.directoriesState().map((d) =>
-                    d.id === dir.id
-                        ? {
-                              ...d,
-                              lastScannedAt: Date.now(),
-                              weaponCount: weapons.length,
-                              itemCount: items.length,
-                          }
-                        : d,
-                );
-                this.directoriesState.set(updated);
-                await this.settingsService.updateScanDirectories(updated);
-            } catch (e) {
-                errors[dir.path] = String(e);
-            }
-
+        } catch (e) {
+            console.error('[DirectoryService] Batch scan failed:', e);
             this.scanProgressState.update((p) => ({
                 ...p,
-                completed: p.completed + 1,
+                state: 'partial',
+                currentPath: null,
             }));
         }
-
-        const finalState: ScanState =
-            Object.keys(errors).length > 0 ? 'partial' : 'completed';
-        this.scanProgressState.update((p) => ({
-            ...p,
-            state: finalState,
-            errors,
-            currentPath: null,
-        }));
     }
 
     /**
@@ -382,7 +438,17 @@ export class DirectoryService {
     }
 
     getValidDirectories(): ScanDirectory[] {
-        return this.directoriesState().filter((d) => d.status === 'valid');
+        return this.directoriesState().filter(
+            (d) => d.status === 'valid' && (d.active ?? true),
+        );
+    }
+
+    /**
+     * Get all active directories (non-reactive access)
+     * Filters by active state only, regardless of validation status
+     */
+    getActiveDirectories(): ScanDirectory[] {
+        return this.directoriesState().filter((d) => d.active ?? true);
     }
 
     getTotalItemCount(): number {
@@ -421,6 +487,7 @@ export class DirectoryService {
                     lastScannedAt: 0,
                     itemCount: 0,
                     weaponCount: 0,
+                    active: true, // Default to active for existing directories
                 }));
                 this.directoriesState.set(scanDirs);
             } else {
@@ -498,7 +565,9 @@ export class DirectoryService {
      * @param directoryId Directory ID to select, or null to clear selection
      */
     async setSelectedDirectory(directoryId: string | null): Promise<void> {
-        await this.settingsService.updateSettings({ selectedDirectoryId: directoryId });
+        await this.settingsService.updateSettings({
+            selectedDirectoryId: directoryId,
+        });
     }
 
     /**

@@ -4,9 +4,11 @@
 //! and returns structured weapon data to the frontend.
 
 use quick_xml::de::from_str;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 use walkdir::WalkDir;
 
 const MAX_TEMPLATE_DEPTH: usize = 10;
@@ -15,6 +17,7 @@ const MAX_TEMPLATE_DEPTH: usize = 10;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")] // Apply camelCase to all fields by default
 pub struct Weapon {
+    pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key: Option<String>,
     pub name: String,
@@ -44,7 +47,12 @@ pub struct Weapon {
     pub stance_accuracies: Vec<StanceAccuracy>,
     pub file_path: String,
     pub source_file: String,
+    pub source_directory: String,
     pub package_name: String,
+    /// Error message if template resolution failed (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "templateError")]
+    pub template_error: Option<String>,
 }
 
 /// Stance accuracy values
@@ -80,6 +88,10 @@ pub struct ValidationResult {
     #[serde(rename = "weaponsPath")]
     pub weapons_path: String,
     pub package_count: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
 }
 
 /// Raw weapon XML structure (for parsing)
@@ -197,7 +209,13 @@ pub async fn validate_game_path(path: String) -> Result<ValidationResult, String
 
     // Check if input path exists
     if !input_path.exists() {
-        return Err(format!("Path does not exist: {}", path));
+        return Ok(ValidationResult {
+            valid: false,
+            weapons_path: String::new(),
+            package_count: 0,
+            error_code: Some("PATH_NOT_EXISTS".to_string()),
+            message: Some(format!("Path does not exist: {}", path)),
+        });
     }
 
     // Determine packages directory:
@@ -211,18 +229,30 @@ pub async fn validate_game_path(path: String) -> Result<ValidationResult, String
 
     // Check if packages directory exists
     if !packages_dir.exists() {
-        return Err(format!(
-            "packages directory not found. Expected: {}",
-            packages_dir.display()
-        ));
+        return Ok(ValidationResult {
+            valid: false,
+            weapons_path: String::new(),
+            package_count: 0,
+            error_code: Some("PACKAGES_NOT_FOUND".to_string()),
+            message: Some(format!(
+                "packages directory not found. Expected: {}",
+                packages_dir.display()
+            )),
+        });
     }
 
     // Check if it's a directory
     if !packages_dir.is_dir() {
-        return Err(format!(
-            "packages path is not a directory: {}",
-            packages_dir.display()
-        ));
+        return Ok(ValidationResult {
+            valid: false,
+            weapons_path: String::new(),
+            package_count: 0,
+            error_code: Some("PACKAGES_NOT_DIRECTORY".to_string()),
+            message: Some(format!(
+                "packages path is not a directory: {}",
+                packages_dir.display()
+            )),
+        });
     }
 
     // Count packages
@@ -238,6 +268,8 @@ pub async fn validate_game_path(path: String) -> Result<ValidationResult, String
         valid: true,
         weapons_path: packages_dir.to_string_lossy().to_string(),
         package_count,
+        error_code: None,
+        message: Some("Directory is valid".to_string()),
     })
 }
 
@@ -276,36 +308,41 @@ pub async fn scan_weapons(
         });
     }
 
-    let mut weapons = Vec::new();
-    let mut errors = Vec::new();
-    let mut all_keys = HashMap::new();
+    // Thread-safe collections for parallel processing
+    let weapons = Mutex::new(Vec::new());
+    let errors = Mutex::new(Vec::new());
+    let all_keys: Mutex<HashMap<String, i32>> = Mutex::new(HashMap::new());
 
-    // Parse each weapon file
-    for weapon_file in weapon_files {
+    // Parse each weapon file in parallel using rayon
+    weapon_files.into_par_iter().enumerate().for_each(|(index, weapon_file)| {
         let file_str = weapon_file.to_string_lossy().to_string();
+        let id = format!("{}_{}", file_str, index);
 
-        match parse_weapon_file(&weapon_file, &input_path) {
+        match parse_weapon_file(&weapon_file, &input_path, id, &scan_path) {
             Ok(weapon) => {
                 // Check for duplicate keys
                 if let Some(key) = &weapon.key {
-                    if let Some(existing) = all_keys.get(key) {
-                        all_keys.insert(key.clone(), existing + 1);
-                    } else {
-                        all_keys.insert(key.clone(), 1);
-                    }
+                    let mut keys = all_keys.lock().unwrap();
+                    let entry = keys.entry(key.clone()).or_insert(0);
+                    *entry += 1;
                 }
 
-                weapons.push(weapon);
+                weapons.lock().unwrap().push(weapon);
             }
             Err(e) => {
-                errors.push(ScanError {
-                    file: file_str.clone(),
+                errors.lock().unwrap().push(ScanError {
+                    file: file_str,
                     error: e.to_string(),
                     severity: "error".to_string(),
                 });
             }
         }
-    }
+    });
+
+    // Extract results from mutex
+    let weapons = weapons.into_inner().unwrap();
+    let errors = errors.into_inner().unwrap();
+    let all_keys = all_keys.into_inner().unwrap();
 
     // Find duplicate keys
     let duplicate_keys: Vec<String> = all_keys
@@ -333,7 +370,12 @@ fn discover_weapons(input_path: &Path) -> Vec<PathBuf> {
 }
 
 /// Parse a single weapon XML file with template resolution
-fn parse_weapon_file(weapon_path: &Path, input_path: &Path) -> Result<Weapon, anyhow::Error> {
+fn parse_weapon_file(
+    weapon_path: &Path,
+    input_path: &Path,
+    id: String,
+    source_directory: &str,
+) -> Result<Weapon, anyhow::Error> {
     let content = std::fs::read_to_string(weapon_path)?;
 
     // Get package name from path
@@ -348,9 +390,21 @@ fn parse_weapon_file(weapon_path: &Path, input_path: &Path) -> Result<Weapon, an
     let mut raw_weapon: RawWeapon = from_str(&content)?;
 
     // Resolve template inheritance if needed
+    // If template resolution fails, continue with partial data and set template_error
+    let mut template_error: Option<String> = None;
     if let Some(template_file) = &raw_weapon.template_file {
-        let resolved = resolve_template(input_path, template_file, &mut HashSet::new())?;
-        raw_weapon = merge_attributes(resolved, raw_weapon);
+        let weapon_parent = weapon_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Cannot get parent directory of weapon file"))?;
+        match resolve_template(weapon_parent, template_file, &mut HashSet::new()) {
+            Ok(resolved) => {
+                raw_weapon = merge_attributes(resolved, raw_weapon);
+            }
+            Err(e) => {
+                // Template resolution failed - continue with partial data
+                template_error = Some(format!("Template resolution failed: {}", e));
+            }
+        }
     }
 
     // T007, T008, T009: Extract tag and class as separate fields
@@ -426,6 +480,7 @@ fn parse_weapon_file(weapon_path: &Path, input_path: &Path) -> Result<Weapon, an
 
     // Convert to final Weapon structure
     let weapon = Weapon {
+        id,
         key: raw_weapon.key.filter(|k| !k.is_empty()).or_else(|| {
             weapon_path
                 .file_stem()
@@ -453,19 +508,42 @@ fn parse_weapon_file(weapon_path: &Path, input_path: &Path) -> Result<Weapon, an
         stance_accuracies,
         file_path,
         source_file: weapon_path.to_string_lossy().to_string(),
+        source_directory: source_directory.to_string(),
         package_name: package_name.to_string(),
+        template_error, // Set to Some(message) if template resolution failed, None otherwise
     };
 
     Ok(weapon)
 }
 
 /// Recursively resolve template inheritance with cycle detection
+/// base_dir: Parent directory of the file being parsed (for resolving relative template paths)
+/// Supports fallback to vanilla package for cross-package template references
 fn resolve_template(
-    input_path: &Path,
+    base_dir: &Path,
     template_file: &str,
     visited: &mut HashSet<PathBuf>,
 ) -> Result<RawWeapon, anyhow::Error> {
-    let template_path = input_path.join(template_file);
+    // Try to resolve template relative to the base directory first
+    let template_path = base_dir.join(template_file);
+
+    // If template doesn't exist in the same directory, try vanilla package as fallback
+    let template_path = if !template_path.exists() {
+        // Extract the packages root from base_dir
+        // e.g., /path/to/packages/man_vs_zombies/weapons -> /path/to/packages
+        if let Some(packages_dir) = base_dir.ancestors().nth(2) {
+            let vanilla_template = packages_dir.join("vanilla/weapons").join(template_file);
+            if vanilla_template.exists() {
+                vanilla_template
+            } else {
+                template_path // Return original path for better error message
+            }
+        } else {
+            template_path
+        }
+    } else {
+        template_path
+    };
 
     // Cycle detection
     if !visited.insert(template_path.clone()) {
@@ -487,7 +565,10 @@ fn resolve_template(
 
     // Resolve parent template if exists
     if let Some(parent_file) = &raw_weapon.template_file {
-        let parent = resolve_template(input_path, parent_file, visited)?;
+        let template_parent = template_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Cannot get parent directory of template"))?;
+        let parent = resolve_template(template_parent, parent_file, visited)?;
         raw_weapon = merge_attributes(parent, raw_weapon);
     }
 

@@ -32,6 +32,12 @@
         "about": "关于",
         "about_desc": "关于 RWR 工具箱"
     },
+    "about_page": {
+        "title": "关于 RWR 工具箱",
+        "description": "一个为《小兵步枪》(Running With Rifles) 玩家和模组开发者提供的强大桌面工具。轻松扫描、搜索和探索游戏数据，包括武器、物品和服务器信息。",
+        "github_button": "在 GitHub 上查看",
+        "footer": "为 RWR 社区精心打造 ❤️"
+    },
     "common": {
         "quick_search": "快速搜索：",
         "status_panel": "状态面板",
@@ -88,7 +94,11 @@
         "validatingDirectories": "正在验证目录...",
         "noDirectories": "尚未配置目录",
         "lastScanned": "上次扫描：{{ date }}",
+        "packageCount": "{{ count }} 个包",
+        "packageCount_one": "{{ count }} 个包",
         "itemCount": "{{ count }} 个项目",
+        "activeDirectory": "激活 - 已包含在扫描中",
+        "inactiveDirectory": "未激活 - 已从扫描中排除",
         "errors": {
             "pathNotFound": "指定的路径不存在",
             "notADirectory": "该路径不是目录",

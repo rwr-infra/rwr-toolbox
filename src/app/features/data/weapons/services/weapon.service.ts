@@ -29,25 +29,26 @@ export class WeaponService {
     );
     private sortState = signal<SortState>({ columnKey: null, direction: null });
 
-    // Public computed signals
-    readonly filteredWeapons = computed(() => {
+    // Private signals for processing
+    private filteredWeaponsSig = computed(() => {
         const weapons = this.weapons();
         const term = this.searchTerm();
         const filters = this.advancedFilters();
-        const sort = this.sortState();
 
-        let filtered = weapons.filter(
+        return weapons.filter(
             (w) =>
                 this.matchesSearch(w, term) && this.matchesFilters(w, filters),
         );
+    });
+
+    // Public computed signals
+    readonly filteredWeapons = computed(() => {
+        const filtered = this.filteredWeaponsSig();
+        const sort = this.sortState();
 
         // Apply sorting if active
         if (sort.columnKey && sort.direction) {
-            filtered = this.sortWeapons(
-                filtered,
-                sort.columnKey,
-                sort.direction,
-            );
+            return this.sortWeapons(filtered, sort.columnKey, sort.direction);
         }
 
         return filtered;
@@ -81,15 +82,13 @@ export class WeaponService {
                 directory: directory || null,
             });
 
-            // Tag weapons with source directory for multi-directory support and generate unique IDs
-            const weaponsWithSource = result.weapons.map((w) => ({
-                ...w,
-                sourceDirectory: directory || gamePath,
-                _id: crypto.randomUUID(),
-            }));
+            const weaponsWithSource = result.weapons;
 
             if (append) {
-                this.weapons.set([...this.weapons(), ...weaponsWithSource]);
+                this.weapons.update((current) => [
+                    ...current,
+                    ...weaponsWithSource,
+                ]);
             } else {
                 this.weapons.set(weaponsWithSource);
             }
@@ -99,6 +98,7 @@ export class WeaponService {
                 const errorMsg = this.transloco.translate('weapons.scanError', {
                     error: `${result.errors.length} files failed`,
                 });
+                console.log('Touch errors', result.errors);
                 this.error.set(errorMsg);
             }
 
@@ -116,13 +116,63 @@ export class WeaponService {
         }
     }
 
+    /**
+     * Batch scan multiple directories and update signals ONCE
+     */
+    async batchScanWeapons(paths: string[]): Promise<Weapon[]> {
+        if (paths.length === 0) return [];
+
+        this.loading.set(true);
+        this.error.set(null);
+
+        try {
+            // Fetch all in parallel
+            const scanPromises = paths.map((path) =>
+                invoke<WeaponScanResult>('scan_weapons', {
+                    gamePath: path,
+                    directory: path,
+                }).catch((e) => {
+                    console.error(`Batch scan failed for ${path}:`, e);
+                    return {
+                        weapons: [],
+                        errors: [e],
+                        duplicateKeys: [],
+                        scanTime: 0,
+                    } as WeaponScanResult;
+                }),
+            );
+
+            const results = await Promise.all(scanPromises);
+            const allWeapons = results.flatMap((r) => r.weapons);
+            const allErrors = results.flatMap((r) => r.errors);
+
+            // Single update to the signal
+            this.weapons.set(allWeapons);
+
+            if (allErrors.length > 0) {
+                this.error.set(
+                    this.transloco.translate('weapons.scanError', {
+                        error: `${allErrors.length} issues detected across directories`,
+                    }),
+                );
+            }
+
+            return allWeapons;
+        } finally {
+            this.loading.set(false);
+        }
+    }
+
     /** Clear weapons */
     clearWeapons(): void {
         this.weapons.set([]);
     }
 
     /** Refresh weapons using stored game path */
-    async refreshWeapons(gamePath: string, directory?: string): Promise<Weapon[]> {
+    async refreshWeapons(
+        gamePath: string,
+        directory?: string,
+    ): Promise<Weapon[]> {
         return await this.scanWeapons(gamePath, directory);
     }
 

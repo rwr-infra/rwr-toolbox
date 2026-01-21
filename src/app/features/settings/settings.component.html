@@ -1,19 +1,16 @@
-<div class="p-6 max-w-4xl mx-auto" *transloco="let t">
+<div class="p-6 max-w-5xl mx-auto" *transloco="let t">
     <h1 class="text-2xl font-bold mb-6">{{ t('menu.settings') }}</h1>
 
-    <div class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <!-- Language Settings -->
-        <div class="card bg-base-100 shadow-lg">
+        <div class="card bg-base-100 shadow-sm border border-base-300/50">
             <div class="card-body">
-                <h2 class="card-title mb-4">{{ t('settings.language') }}</h2>
+                <h2 class="card-title text-sm uppercase opacity-50 mb-2">
+                    {{ t('settings.language') }}
+                </h2>
                 <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{
-                            t('settings.language')
-                        }}</span>
-                    </label>
                     <select
-                        class="select select-bordered"
+                        class="select select-bordered select-sm"
                         [value]="localeValue"
                         (change)="onLocaleChange($event)"
                     >
@@ -26,27 +23,19 @@
                             </option>
                         }
                     </select>
-                    <label class="label">
-                        <span class="label-text-alt">{{
-                            t('settings.reload_hint')
-                        }}</span>
-                    </label>
                 </div>
             </div>
         </div>
 
         <!-- Theme Settings -->
-        <div class="card bg-base-100 shadow-lg">
+        <div class="card bg-base-100 shadow-sm border border-base-300/50">
             <div class="card-body">
-                <h2 class="card-title mb-4">{{ t('settings.theme') }}</h2>
+                <h2 class="card-title text-sm uppercase opacity-50 mb-2">
+                    {{ t('settings.theme') }}
+                </h2>
                 <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{
-                            t('settings.theme')
-                        }}</span>
-                    </label>
                     <select
-                        class="select select-bordered"
+                        class="select select-bordered select-sm"
                         (change)="onThemeChange($event)"
                     >
                         <option
@@ -68,323 +57,279 @@
                             {{ t('settings.themeDark') }}
                         </option>
                     </select>
-                    <label class="label">
-                        <span class="label-text-alt opacity-70">
-                            Theme preference is saved and applied automatically
-                        </span>
-                    </label>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- T030-T033: Directory Management (Multi-Directory Support) -->
-        <div class="card bg-base-100 shadow-lg">
-            <div class="card-body">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="card-title">
-                        {{ t('settings.directoryList') }}
-                    </h2>
-                    <!-- T031: Add Directory button -->
-                    <button
-                        class="btn btn-primary btn-sm"
-                        (click)="onAddDirectory()"
-                        [disabled]="loadingSig()"
-                    >
-                        @if (loadingSig()) {
-                            <span
-                                class="loading loading-spinner loading-sm"
-                            ></span>
-                        }
-                        {{ t('settings.addDirectory') }}
-                    </button>
-                </div>
+    <!-- Directory Management (Full Width) -->
+    <div class="card bg-base-100 shadow-sm border border-base-300/50">
+        <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="card-title text-sm uppercase opacity-50">
+                    {{ t('settings.directoryList') }}
+                </h2>
+                <button
+                    class="btn btn-primary btn-sm"
+                    (click)="onAddDirectory()"
+                    [disabled]="loadingSig()"
+                >
+                    @if (loadingSig()) {
+                        <span class="loading loading-spinner loading-xs"></span>
+                    }
+                    <i-lucide name="plus" class="h-4 w-4"></i-lucide>
+                    {{ t('settings.addDirectory') }}
+                </button>
+            </div>
 
-                <!-- T057: Validation progress indicator -->
-                @if (isAnyValidatingSig()) {
-                    <div class="mb-4">
-                        <div
-                            class="flex justify-between text-xs mb-1 opacity-70"
-                        >
-                            <span>{{
-                                t('settings.validatingDirectories')
-                            }}</span>
-                        </div>
-                        <progress
-                            class="progress progress-primary w-full"
-                            [value]="validationProgressSig()"
-                            max="100"
-                        ></progress>
-                    </div>
-                }
-
-                <!-- T030: Directory list with ngFor loop -->
-                @if (directoriesSig().length === 0) {
-                    <div class="text-center py-8 opacity-70">
-                        <p>{{ t('settings.noDirectories') }}</p>
-                    </div>
-                } @else {
+            @if (isAnyValidatingSig()) {
+                <div class="mb-4">
                     <div
-                        class="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"
+                        class="flex justify-between text-[10px] mb-1 opacity-70"
                     >
-                        @for (dir of directoriesSig(); track dir.id) {
-                            <!-- T032: Directory item template -->
-                            <div
-                                class="flex items-center justify-between p-4 bg-base-200 rounded-lg hover:bg-base-300 transition-colors"
-                                [class.border]="isDirectorySelected(dir.id)"
-                                [class.border-primary]="isDirectorySelected(dir.id)"
-                            >
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-3">
-                                        <!-- T004: Radio button for scan library selection -->
-                                        <input
-                                            type="radio"
-                                            class="radio radio-primary radio-sm"
-                                            [name]="'scan-library'"
-                                            [checked]="isDirectorySelected(dir.id)"
-                                            (change)="onDirectorySelect(dir.id)"
-                                            [disabled]="dir.status !== 'valid'"
-                                        />
-                                        <!-- Path display -->
-                                        <!-- Path display -->
-                                        <div class="flex-1 min-w-0">
+                        <span>{{ t('settings.validatingDirectories') }}</span>
+                    </div>
+                    <progress
+                        class="progress progress-primary w-full h-1"
+                        [value]="validationProgressSig()"
+                        max="100"
+                    ></progress>
+                </div>
+            }
+            @if (directoriesSig().length === 0) {
+                <div
+                    class="text-center py-10 bg-base-200/50 rounded-lg border-2 border-dashed border-base-300"
+                >
+                    <i-lucide
+                        name="folder-open"
+                        class="h-10 w-10 mx-auto opacity-20 mb-2"
+                    ></i-lucide>
+                    <p class="text-sm opacity-50">
+                        {{ t('settings.noDirectories') }}
+                    </p>
+                </div>
+            } @else {
+                <div
+                    class="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"
+                >
+                    @for (dir of directoriesSig(); track dir.id) {
+                        <div
+                            class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-transparent hover:border-base-300 hover:bg-base-200 transition-all"
+                        >
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2">
                                             <p
-                                                class="font-medium truncate"
+                                                class="font-medium text-sm truncate"
                                                 [title]="dir.path"
                                             >
                                                 {{ dir.displayName }}
                                             </p>
-                                            <p
-                                                class="text-xs opacity-70 truncate"
-                                                [title]="dir.path"
-                                            >
-                                                {{ dir.path }}
-                                            </p>
-                                        </div>
 
-                                        <!-- Status badge -->
-                                        <div
-                                            class="badge gap-1"
-                                            [class.badge-success]="
-                                                dir.status === 'valid'
-                                            "
-                                            [class.badge-error]="
-                                                dir.status === 'invalid'
-                                            "
-                                            [class.badge-ghost]="
-                                                dir.status === 'pending'
-                                            "
-                                        >
-                                            @if (dir.status === 'valid') {
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    class="h-3 w-3"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M5 13l4 4L19 7"
-                                                    />
-                                                </svg>
-                                                {{
-                                                    t('settings.validDirectory')
-                                                }}
-                                            } @else if (
-                                                dir.status === 'invalid'
-                                            ) {
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    class="h-3 w-3"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M6 18L18 6M6 6l12 12"
-                                                    />
-                                                </svg>
-                                                {{
-                                                    t(
-                                                        'settings.invalidDirectory'
-                                                    )
-                                                }}
-                                            } @else {
-                                                <span
-                                                    class="loading loading-spinner loading-xs"
-                                                ></span>
-                                            }
-                                        </div>
-
-                                        <!-- T050/T054: Validation error details on hover/tooltip -->
-                                        @if (
-                                            dir.status === 'invalid' &&
-                                            dir.lastError
-                                        ) {
                                             <div
-                                                class="tooltip tooltip-error"
-                                                [attr.data-tip]="
-                                                    dir.lastError.message
+                                                class="badge badge-xs gap-1 border-none px-1.5"
+                                                [class.bg-success]="
+                                                    dir.status === 'valid'
+                                                "
+                                                [class.text-success-content]="
+                                                    dir.status === 'valid'
+                                                "
+                                                [class.bg-error]="
+                                                    dir.status === 'invalid'
+                                                "
+                                                [class.text-error-content]="
+                                                    dir.status === 'invalid'
+                                                "
+                                                [class.bg-base-300]="
+                                                    dir.status === 'pending'
                                                 "
                                             >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    class="h-5 w-5 text-error"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                                    />
-                                                </svg>
+                                                @if (dir.status === 'valid') {
+                                                    <i-lucide
+                                                        name="check"
+                                                        class="h-2.5 w-2.5"
+                                                    ></i-lucide>
+                                                    <span class="text-[10px]">{{
+                                                        t(
+                                                            'settings.validDirectory'
+                                                        )
+                                                    }}</span>
+                                                } @else if (
+                                                    dir.status === 'invalid'
+                                                ) {
+                                                    <i-lucide
+                                                        name="x"
+                                                        class="h-2.5 w-2.5"
+                                                    ></i-lucide>
+                                                    <span class="text-[10px]">{{
+                                                        t(
+                                                            'settings.invalidDirectory'
+                                                        )
+                                                    }}</span>
+                                                } @else {
+                                                    <span
+                                                        class="loading loading-spinner h-2.5 w-2.5"
+                                                    ></span>
+                                                }
                                             </div>
-                                        }
-
-                                        <!-- Validation indicator -->
-                                        @if (validatingSig()[dir.id]) {
-                                            <span
-                                                class="loading loading-spinner loading-sm"
-                                            ></span>
-                                        }
+                                        </div>
+                                        <p
+                                            class="text-[11px] opacity-50 truncate font-mono"
+                                            [title]="dir.path"
+                                        >
+                                            {{ dir.path }}
+                                        </p>
                                     </div>
 
-                                    <!-- Additional info -->
-                                    <div
-                                        class="flex gap-4 mt-2 text-xs opacity-70"
-                                    >
-                                        @if (dir.lastScannedAt > 0) {
-                                            <span>{{
-                                                'settings.lastScanned'
-                                                    | transloco
-                                                        : {
-                                                              date: dir.lastScannedAt,
-                                                          }
-                                            }}</span>
-                                        }
-                                        @if (dir.itemCount !== undefined) {
-                                            <span>{{
-                                                'settings.itemCount'
-                                                    | transloco
-                                                        : {
-                                                              count: dir.itemCount,
-                                                          }
-                                            }}</span>
-                                        }
-                                    </div>
-
-                                    <!-- T051: Detailed error and actions -->
                                     @if (
                                         dir.status === 'invalid' &&
                                         dir.lastError
                                     ) {
                                         <div
-                                            class="mt-2 text-xs text-error bg-error/10 p-2 rounded border border-error/20"
+                                            class="tooltip tooltip-error"
+                                            [attr.data-tip]="
+                                                dir.lastError.message
+                                            "
                                         >
-                                            <p class="font-bold">
-                                                {{ dir.lastError.message }}
-                                            </p>
-                                            <p class="mt-1 opacity-80">
-                                                {{
-                                                    t(
-                                                        'settings.errorResolution.' +
-                                                            dir.lastError
-                                                                .errorCode
-                                                    )
-                                                }}
-                                            </p>
+                                            <i-lucide
+                                                name="alert-circle"
+                                                class="h-4 w-4 text-error"
+                                            ></i-lucide>
                                         </div>
+                                    }
+                                    @if (validatingSig()[dir.id]) {
+                                        <span
+                                            class="loading loading-spinner loading-xs text-primary"
+                                        ></span>
                                     }
                                 </div>
 
-                                <!-- Action buttons -->
-                                <div class="flex gap-2 ml-4">
-                                    <!-- Revalidate button -->
-                                    <button
-                                        class="btn btn-ghost btn-sm"
-                                        (click)="onRevalidateDirectory(dir.id)"
-                                        [disabled]="validatingSig()[dir.id]"
-                                        title="{{ t('settings.revalidate') }}"
-                                    >
-                                        @if (validatingSig()[dir.id]) {
-                                            <span
-                                                class="loading loading-spinner loading-xs"
-                                            ></span>
-                                        } @else {
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                class="h-4 w-4"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                                />
-                                            </svg>
-                                        }
-                                    </button>
-
-                                    <!-- Delete button -->
-                                    <button
-                                        class="btn btn-error btn-sm btn-ghost"
-                                        (click)="onRemoveDirectory(dir.id)"
-                                        title="{{
-                                            t('settings.removeDirectory')
-                                        }}"
-                                    >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            class="h-4 w-4"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                            />
-                                        </svg>
-                                    </button>
+                                <div
+                                    class="flex gap-4 mt-1.5 text-[10px] opacity-60"
+                                >
+                                    @if (dir.lastScannedAt > 0) {
+                                        <span class="flex items-center gap-1">
+                                            <i-lucide
+                                                name="refresh-cw"
+                                                class="h-2.5 w-2.5"
+                                            ></i-lucide>
+                                            {{
+                                                'settings.lastScanned'
+                                                    | transloco
+                                                        : {
+                                                              date: formatTimestamp(
+                                                                  dir.lastScannedAt
+                                                              ),
+                                                          }
+                                            }}
+                                        </span>
+                                    }
+                                    @if (
+                                        dir.packageCount !== undefined &&
+                                        dir.packageCount !== null
+                                    ) {
+                                        <span class="flex items-center gap-1">
+                                            <i-lucide
+                                                name="package"
+                                                class="h-2.5 w-2.5"
+                                            ></i-lucide>
+                                            {{
+                                                'settings.packageCount'
+                                                    | transloco
+                                                        : {
+                                                              count: dir.packageCount,
+                                                          }
+                                            }}
+                                        </span>
+                                    }
                                 </div>
-                            </div>
-                        }
-                    </div>
-                }
 
-                <!-- T033: Error message display for validation failures -->
-                @if (errorSig()) {
-                    <div class="alert alert-error mt-4">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="stroke-current shrink-0 h-6 w-6"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                        </svg>
-                        <span>{{ errorSig() }}</span>
-                    </div>
-                }
-            </div>
+                                @if (
+                                    dir.status === 'invalid' && dir.lastError
+                                ) {
+                                    <div
+                                        class="mt-2 text-[11px] text-error bg-error/5 p-2 rounded border border-error/10"
+                                    >
+                                        <p class="font-bold">
+                                            {{ dir.lastError.message }}
+                                        </p>
+                                        <p class="mt-0.5 opacity-80">
+                                            {{
+                                                t(
+                                                    'settings.errorResolution.' +
+                                                        dir.lastError.errorCode
+                                                )
+                                            }}
+                                        </p>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="flex gap-1 ml-4 items-center">
+                                <button
+                                    class="btn btn-ghost btn-xs btn-square"
+                                    (click)="onToggleActive(dir.id)"
+                                    [class.text-primary]="dir.active ?? true"
+                                    [class.opacity-40]="!(dir.active ?? true)"
+                                    title="{{
+                                        (dir.active ?? true)
+                                            ? t('settings.activeDirectory')
+                                            : t('settings.inactiveDirectory')
+                                    }}"
+                                >
+                                    <i-lucide
+                                        class="h-4 w-4"
+                                        [name]="
+                                            (dir.active ?? true)
+                                                ? 'toggle-right'
+                                                : 'toggle-left'
+                                        "
+                                    ></i-lucide>
+                                </button>
+
+                                <button
+                                    class="btn btn-ghost btn-xs btn-square"
+                                    (click)="onRevalidateDirectory(dir.id)"
+                                    [disabled]="validatingSig()[dir.id]"
+                                    title="{{ t('settings.revalidate') }}"
+                                >
+                                    @if (validatingSig()[dir.id]) {
+                                        <span
+                                            class="loading loading-spinner h-3.5 w-3.5"
+                                        ></span>
+                                    } @else {
+                                        <i-lucide
+                                            name="refresh-ccw"
+                                            class="h-3.5 w-3.5"
+                                        ></i-lucide>
+                                    }
+                                </button>
+
+                                <button
+                                    class="btn btn-ghost btn-xs btn-square text-error/60 hover:text-error hover:bg-error/10"
+                                    (click)="onRemoveDirectory(dir.id)"
+                                    title="{{ t('settings.removeDirectory') }}"
+                                >
+                                    <i-lucide
+                                        name="trash-2"
+                                        class="h-3.5 w-3.5"
+                                    ></i-lucide>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            @if (errorSig()) {
+                <div class="alert alert-error mt-4 py-2 px-3 text-sm">
+                    <i-lucide
+                        name="alert-circle"
+                        class="h-4 w-4 shrink-0"
+                    ></i-lucide>
+                    <span>{{ errorSig() }}</span>
+                </div>
+            }
         </div>
     </div>
 </div>

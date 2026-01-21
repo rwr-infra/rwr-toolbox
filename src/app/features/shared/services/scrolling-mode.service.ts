@@ -16,7 +16,8 @@ export class ScrollingModeService {
             if (!this.store) {
                 this.store = await Store.load('settings.json');
             }
-            const saved = await this.store.get<ScrollingMode>(SCROLLING_MODE_KEY);
+            const saved =
+                await this.store.get<ScrollingMode>(SCROLLING_MODE_KEY);
             this.mode.set(saved || 'table-only');
         } catch (error) {
             console.error('Failed to load scrolling mode:', error);

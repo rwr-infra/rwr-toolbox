@@ -180,3 +180,17 @@
 .menu .active:hover {
     background-color: oklch(0.6 0.18 264);
 }
+
+/* 统一查询工具栏区域 */
+.control-area {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem; /* gap-4 */
+    background-color: oklch(var(--b2)); /* bg-base-200 */
+    padding: 1rem; /* p-4 */
+    border-radius: var(--rounded-box, 1rem); /* rounded-box */
+    margin-bottom: 1rem; /* mb-4 */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+    border: 1px solid oklch(var(--bc) / 0.1);
+}

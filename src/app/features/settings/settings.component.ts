@@ -5,6 +5,7 @@ import {
     TranslocoPipe,
     TranslocoService,
 } from '@jsverse/transloco';
+import { LucideAngularModule } from 'lucide-angular';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
     SupportedLocale,
@@ -14,6 +15,7 @@ import {
 import { DirectoryService } from './services/directory.service';
 import { ThemeService } from '../../shared/services/theme.service';
 import { SettingsService } from '../../core/services/settings.service';
+import { DatePipe } from '@angular/common';
 
 /**
  * Settings component
@@ -21,7 +23,13 @@ import { SettingsService } from '../../core/services/settings.service';
  */
 @Component({
     selector: 'app-settings',
-    imports: [CommonModule, TranslocoDirective, TranslocoPipe],
+    imports: [
+        CommonModule,
+        TranslocoDirective,
+        TranslocoPipe,
+        LucideAngularModule,
+    ],
+    providers: [DatePipe],
     templateUrl: './settings.component.html',
     styleUrl: './settings.component.css',
 })
@@ -30,6 +38,7 @@ export class SettingsComponent implements OnInit {
     private directoryService = inject(DirectoryService);
     private themeService = inject(ThemeService);
     private settingsService = inject(SettingsService);
+    private datePipe = inject(DatePipe);
 
     /** Available locales */
     readonly locales = LOCALES;
@@ -50,8 +59,8 @@ export class SettingsComponent implements OnInit {
     readonly errorSig = this.directoryService.errorSig;
 
     /** T004: Selected directory ID from SettingsService */
-    readonly selectedDirectoryIdSig = computed(() =>
-        this.settingsService.settings().selectedDirectoryId
+    readonly selectedDirectoryIdSig = computed(
+        () => this.settingsService.settings().selectedDirectoryId,
     );
 
     /** Current locale from Transloco */
@@ -60,11 +69,9 @@ export class SettingsComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        // Bug fix: Load scan directories from Tauri store and revalidate
-        // Previously: this.directoryService.loadDirectories(); was not awaited
-        this.directoryService.loadDirectories().then(() => {
-            this.directoryService.revalidateAll();
-        });
+        // Ensure directories are loaded/revalidated even if the user navigated here first.
+        // DirectoryService also auto-initializes on first injection, so this is mostly a no-op.
+        void this.directoryService.ensureInitialized();
     }
 
     /**
@@ -151,6 +158,13 @@ export class SettingsComponent implements OnInit {
     }
 
     /**
+     * Toggle active state of a directory
+     */
+    async onToggleActive(directoryId: string): Promise<void> {
+        await this.directoryService.toggleActive(directoryId);
+    }
+
+    /**
      * T004: Check if a directory is currently selected
      */
     isDirectorySelected(directoryId: string): boolean {
@@ -162,5 +176,15 @@ export class SettingsComponent implements OnInit {
      */
     async onDirectorySelect(directoryId: string): Promise<void> {
         await this.directoryService.setSelectedDirectory(directoryId);
+    }
+
+    /**
+     * Format a timestamp for display
+     * @param timestamp Unix timestamp in milliseconds
+     * @returns Formatted date string or empty string if timestamp is 0
+     */
+    formatTimestamp(timestamp: number): string {
+        if (timestamp === 0) return '';
+        return this.datePipe.transform(timestamp, 'short') || '';
     }
 }

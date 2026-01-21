@@ -32,6 +32,12 @@
         "about": "About",
         "about_desc": "About RWR Toolbox"
     },
+    "about_page": {
+        "title": "About RWR Toolbox",
+        "description": "A powerful desktop utility for Running With Rifles players and modders. Easily scan, search, and explore game data including weapons, items, and servers.",
+        "github_button": "View on GitHub",
+        "footer": "Created with ❤️ for the RWR Community"
+    },
     "common": {
         "quick_search": "Quick Search:",
         "status_panel": "Status Panel",
@@ -88,7 +94,11 @@
         "validatingDirectories": "Validating directories...",
         "noDirectories": "No directories configured yet",
         "lastScanned": "Last scanned: {{ date }}",
+        "packageCount": "{{ count }} packages",
+        "packageCount_one": "{{ count }} package",
         "itemCount": "{{ count }} items",
+        "activeDirectory": "Active - included in scans",
+        "inactiveDirectory": "Inactive - excluded from scans",
         "errors": {
             "pathNotFound": "The specified path does not exist",
             "notADirectory": "The path is not a directory",

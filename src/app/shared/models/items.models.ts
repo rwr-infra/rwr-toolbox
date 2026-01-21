@@ -7,8 +7,8 @@
  * Generic item structure (all item types)
  */
 export interface GameItem {
-    /** Unique identifier for tracking (generated frontend) - not persisted */
-    _id?: string;
+    /** Unique identifier for tracking (generated backend) */
+    id: string;
     key?: string;
     name: string;
     itemType: string;

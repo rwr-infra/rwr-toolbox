@@ -336,4 +336,44 @@ export class PlayersComponent implements OnInit {
             this.onSortChange(key as PlayerSortField);
         }
     }
+
+    private escapeRegExp(text: string): string {
+        return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    private escapeHtml(text: string): string {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    /**
+     * Highlight current search query inside text (case-insensitive).
+     * Returns HTML string; all non-markup content is escaped.
+     */
+    highlight(text: string | null | undefined): string {
+        const raw = (text ?? '').toString();
+        if (!raw) return '-';
+
+        const query = (this.filter().search ?? '').trim();
+        if (!query) return this.escapeHtml(raw);
+
+        const re = new RegExp(this.escapeRegExp(query), 'gi');
+        let result = '';
+        let lastIndex = 0;
+
+        for (const match of raw.matchAll(re)) {
+            const index = match.index ?? 0;
+            const matched = match[0] ?? '';
+            result += this.escapeHtml(raw.slice(lastIndex, index));
+            result += `<span class="bg-yellow-200/70 text-base-content px-0.5 rounded-sm">${this.escapeHtml(matched)}</span>`;
+            lastIndex = index + matched.length;
+        }
+
+        result += this.escapeHtml(raw.slice(lastIndex));
+        return result || this.escapeHtml(raw);
+    }
 }

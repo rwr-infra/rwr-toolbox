@@ -270,8 +270,8 @@
                             >
                                 <span
                                     class="font-medium truncate max-w-[140px] sm:max-w-[220px] inline-block"
-                                    >{{ player.username }}</span
-                                >
+                                    [innerHTML]="highlight(player.username)"
+                                ></span>
                             </td>
                             <!-- Middle cells (scrollable) -->
                             @for (column of columns; track column.key) {
@@ -430,9 +430,14 @@
                                                 >
                                             }
                                             @case ('rankName') {
-                                                <span class="text-[10px]">{{
-                                                    player.rankName ?? '-'
-                                                }}</span>
+                                                <span
+                                                    class="text-[10px]"
+                                                    [innerHTML]="
+                                                        highlight(
+                                                            player.rankName
+                                                        )
+                                                    "
+                                                ></span>
                                             }
                                         }
                                     </td>

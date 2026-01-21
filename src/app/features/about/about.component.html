@@ -1,1 +1,27 @@
-<p>about works!</p>
+<div class="p-6 max-w-2xl mx-auto" *transloco="let t">
+    <div class="card bg-base-100 shadow-xl border border-base-300">
+        <div class="card-body items-center text-center">
+            <h1 class="card-title text-3xl font-bold mb-4">
+                {{ t('about_page.title') }}
+            </h1>
+            <p class="text-lg opacity-80 mb-6">
+                {{ t('about_page.description') }}
+            </p>
+
+            <div class="flex flex-col items-center gap-4 w-full">
+                <a
+                    href="https://github.com/Kreedzt/rwr-toolbox"
+                    target="_blank"
+                    class="btn btn-primary gap-2"
+                >
+                    <i-lucide name="github" class="h-5 w-5"></i-lucide>
+                    {{ t('about_page.github_button') }}
+                </a>
+
+                <p class="text-sm opacity-50 mt-4">
+                    {{ t('about_page.footer') }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -29,7 +29,11 @@ export class LocalComponent {
 
     /** T042: Check if no directories are configured */
     hasNoDirectories(): boolean {
-        return this.directoryService.directoriesSig().length === 0;
+        const dirs = this.directoryService.directoriesSig();
+        const progress = this.directoryService.scanProgressSig();
+        const initialized = this.directoryService.initializedSig();
+        // Only show empty state if service is initialized AND truly no directories AND not currently scanning
+        return initialized && dirs.length === 0 && progress.state === 'idle';
     }
 
     /**
