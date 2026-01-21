@@ -98,7 +98,9 @@
                 </div>
                 <div class="stat-value text-lg">
                     @if (stats().apiStatus === 'online') {
-                        <span class="text-success">Online</span>
+                        <span class="text-success">{{
+                            stats().apiPing ? stats().apiPing + 'ms' : 'Online'
+                        }}</span>
                     } @else {
                         <span class="text-error">Offline</span>
                     }
@@ -139,10 +141,10 @@
                     </button>
                     <button
                         class="btn btn-accent btn-sm gap-2 h-10"
-                        routerLink="/data/extract"
+                        routerLink="/mods"
                     >
-                        <i-lucide name="download" class="h-4 w-4"></i-lucide>
-                        <span class="truncate">{{ t('menu.extract') }}</span>
+                        <i-lucide name="package" class="h-4 w-4"></i-lucide>
+                        <span class="truncate">{{ t('menu.mods') }}</span>
                     </button>
                     <button
                         class="btn btn-neutral btn-sm gap-2 h-10"

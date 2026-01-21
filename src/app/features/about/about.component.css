@@ -1,0 +1,35 @@
+.changelog-container :host ::ng-deep h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid oklch(var(--b3));
+    padding-bottom: 0.25rem;
+}
+
+.changelog-container :host ::ng-deep h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: oklch(var(--p));
+}
+
+.changelog-container :host ::ng-deep ul {
+    list-style-type: disc;
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.changelog-container :host ::ng-deep li {
+    margin-bottom: 0.25rem;
+}
+
+.changelog-container :host ::ng-deep a {
+    color: oklch(var(--p));
+    text-decoration: underline;
+}
+
+.changelog-container :host ::ng-deep p {
+    margin-bottom: 0.75rem;
+}

@@ -1,5 +1,6 @@
 import { Component, inject, computed, signal, effect } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { invoke } from '@tauri-apps/api/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { ItemService, ItemFilters } from './services/item.service';
 import { DirectoryService } from '../../settings/services/directory.service';
@@ -582,7 +583,20 @@ export class ItemsComponent {
 
     /** Open item file in default editor */
     async onOpenInEditor(item: GenericItem): Promise<void> {
-        // Will be implemented with Tauri command
+        try {
+            await invoke('open_file_in_editor', {
+                filePath: item.sourceFile,
+            });
+        } catch (error) {
+            console.error('Failed to open file:', error);
+            const errorMsg = this.transloco.translate(
+                'items.errors.openFileFailed',
+                {
+                    file: item.filePath,
+                },
+            );
+            this.itemService['error'].set(errorMsg);
+        }
     }
 
     /** Copy file path to clipboard */

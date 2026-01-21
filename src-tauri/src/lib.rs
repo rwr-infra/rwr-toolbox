@@ -219,6 +219,41 @@ async fn proxy_fetch(url: &str, timeout_ms: Option<u64>) -> Result<String, Strin
     }
 }
 
+/// Get project changelog from root CHANGELOG.md
+#[tauri::command]
+async fn get_changelog(app: tauri::AppHandle) -> Result<String, String> {
+    use std::fs;
+    // In development, the file is in the project root.
+    // In production, it should be bundled with the application.
+    let resource_path = app
+        .path()
+        .resource_dir()
+        .map_err(|e| format!("Failed to get resource dir: {}", e))?
+        .join("CHANGELOG.md");
+
+    let path = if resource_path.exists() {
+        resource_path
+    } else {
+        // Fallback to current directory (dev mode)
+        std::env::current_dir()
+            .map_err(|e| format!("Failed to get current dir: {}", e))?
+            .join("CHANGELOG.md")
+    };
+
+    if !path.exists() {
+        return Err("CHANGELOG.md not found".to_string());
+    }
+
+    fs::read_to_string(path).map_err(|e| format!("Failed to read CHANGELOG.md: {}", e))
+}
+
+/// Check if a directory path exists on disk
+#[tauri::command]
+async fn check_path_exists(path: String) -> bool {
+    let p = std::path::Path::new(&path);
+    p.exists() && p.is_dir()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -232,6 +267,8 @@ pub fn run() {
             get_system_theme,
             get_theme_preference,
             set_theme_preference,
+            get_changelog,
+            check_path_exists,
             ping::ping_server,
             rwrmi::bundle_mod,
             rwrmi::generate_mod_config,

@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use tauri_plugin_opener::OpenerExt;
 use walkdir::WalkDir;
 
 const MAX_TEMPLATE_DEPTH: usize = 10;
@@ -669,54 +670,16 @@ fn merge_specification(parent: &RawSpecification, child: &mut RawSpecification) 
 
 /// Open a file in the system's default editor
 #[tauri::command]
-pub async fn open_file_in_editor(file_path: String) -> Result<(), String> {
+pub async fn open_file_in_editor(app: tauri::AppHandle, file_path: String) -> Result<(), String> {
     // Check if file exists
     let path = Path::new(&file_path);
     if !path.exists() {
         return Err(format!("File not found: {}", file_path));
     }
 
-    // Use platform-specific command to open file
-    #[cfg(target_os = "macos")]
-    {
-        std::process::Command::new("open")
-            .arg("-t") // Open with default text editor
-            .arg(&file_path)
-            .spawn()
-            .map_err(|e| format!("Failed to open file: {}", e))?;
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        // Try xdg-open first, then common editors as fallback
-        let result = std::process::Command::new("xdg-open")
-            .arg(&file_path)
-            .spawn();
-
-        if result.is_err() {
-            // Fallback: try common text editors
-            for editor in &["code", "gedit", "kate", "nano", "vim"] {
-                if std::process::Command::new(editor)
-                    .arg(&file_path)
-                    .spawn()
-                    .is_ok()
-                {
-                    return Ok(());
-                }
-            }
-            return Err("Failed to open file: No suitable editor found".to_string());
-        }
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("cmd")
-            .args(["/C", "start", "", "\"\"", &file_path])
-            .spawn()
-            .map_err(|e| format!("Failed to open file: {}", e))?;
-    }
-
-    Ok(())
+    app.opener()
+        .open_path(file_path, None::<String>)
+        .map_err(|e| format!("Failed to open file: {}", e))
 }
 
 /// Get the absolute path to a texture file for icon rendering

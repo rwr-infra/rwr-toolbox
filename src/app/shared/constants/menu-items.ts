@@ -38,20 +38,27 @@ export const MAIN_MENU_ITEMS: MenuItem[] = [
         description: 'menu.data_desc',
     },
     {
+        label: 'menu.mods',
+        icon: 'package',
+        link: '/mods',
+        shortcut: 'Ctrl+5',
+        description: 'menu.mods_desc',
+    },
+    {
         divider: true,
     },
     {
         label: 'menu.hotkeys',
         icon: 'keyboard',
         link: '/hotkeys',
-        shortcut: 'Ctrl+5',
+        shortcut: 'Ctrl+6',
         description: 'menu.hotkeys_desc',
     },
     {
         label: 'menu.settings',
         icon: 'settings',
         link: '/settings',
-        shortcut: 'Ctrl+6',
+        shortcut: 'Ctrl+7',
         description: 'menu.settings_desc',
     },
     {
@@ -61,7 +68,7 @@ export const MAIN_MENU_ITEMS: MenuItem[] = [
         label: 'menu.about',
         icon: 'info',
         link: '/about',
-        shortcut: 'Ctrl+7',
+        shortcut: 'Ctrl+8',
         description: 'menu.about_desc',
     },
 ];

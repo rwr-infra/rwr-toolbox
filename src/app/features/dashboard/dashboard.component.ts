@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
 import { RouterLink } from '@angular/router';
@@ -21,7 +21,7 @@ import {
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.css',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
     private dashboardService = inject(DashboardService);
 
     // Convert observables to signals
@@ -30,9 +30,10 @@ export class DashboardComponent implements OnInit {
             serverCount: 0,
             playerCount: 0,
             modCount: 0,
-            apiStatus: 'loading',
+            apiStatus: 'loading' as const,
+            apiPing: null,
             lastUpdate: Date.now(),
-        },
+        } as DashboardStats,
     });
 
     activities = toSignal(this.dashboardService.getRecentActivities$(), {
@@ -41,6 +42,10 @@ export class DashboardComponent implements OnInit {
 
     ngOnInit(): void {
         this.dashboardService.initialize();
+    }
+
+    ngOnDestroy(): void {
+        this.dashboardService.stopPingInterval();
     }
 
     refresh(): void {

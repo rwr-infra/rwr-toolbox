@@ -21,6 +21,21 @@
                 <p class="text-sm opacity-50 mt-4">
                     {{ t('about_page.footer') }}
                 </p>
+                <div
+                    class="card bg-base-100 shadow-md border border-base-300 mt-6"
+                >
+                    <div class="card-body">
+                        <h2
+                            class="card-title text-sm uppercase opacity-50 mb-2"
+                        >
+                            Version History
+                        </h2>
+                        <div
+                            class="changelog-container text-sm leading-relaxed max-h-96 overflow-y-auto pr-2 custom-scrollbar"
+                            [innerHTML]="changelogHtml()"
+                        ></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

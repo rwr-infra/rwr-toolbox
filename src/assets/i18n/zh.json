@@ -15,6 +15,8 @@
         "data_desc": "管理游戏数据和资源",
         "local_data": "本地数据",
         "local_data_desc": "浏览本地游戏数据",
+        "mods": "本地模组",
+        "mods_desc": "管理本地游戏模组（替换游戏文件）",
         "extract": "提取",
         "extract_desc": "提取 game 资源",
         "workshop": "创意工坊",
@@ -217,6 +219,14 @@
             "throwablesThrown": "投掷次数",
             "rankProgression": "经验",
             "rankName": "军衔"
+        }
+    },
+    "dashboard": {
+        "activities": {
+            "welcome": "欢迎使用 RWR 工具箱",
+            "welcome_desc": "您的工具箱已准备就绪",
+            "latest_update": "最新版本: v{{ version }}",
+            "view_details": "在\"关于\"页面查看详情"
         }
     },
     "data": {

@@ -15,6 +15,8 @@
         "data_desc": "Manage game data and resources",
         "local_data": "Local Data",
         "local_data_desc": "Browse local game data",
+        "mods": "Local Mods",
+        "mods_desc": "Manage local mods (replace game files)",
         "extract": "Extract",
         "extract_desc": "Extract game resources",
         "workshop": "Workshop",
@@ -217,6 +219,14 @@
             "throwablesThrown": "Throws",
             "rankProgression": "XP",
             "rankName": "Rank"
+        }
+    },
+    "dashboard": {
+        "activities": {
+            "welcome": "Welcome to RWR Toolbox",
+            "welcome_desc": "Your toolkit is ready to use",
+            "latest_update": "Latest Update: v{{ version }}",
+            "view_details": "View details in About page"
         }
     },
     "data": {
