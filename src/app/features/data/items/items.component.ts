@@ -133,6 +133,39 @@ export class ItemsComponent implements AfterViewInit {
     // Table columns
     readonly columns = ITEM_COLUMNS;
 
+    // Keep header/body column widths consistent when we render two separate tables.
+    private readonly columnWidthPxByKey: Record<string, number> = {
+        image: 56,
+        key: 180,
+        name: 240,
+        itemType: 140,
+        slot: 120,
+        encumbrance: 110,
+        price: 110,
+        capacityValue: 130,
+        capacitySource: 160,
+        commonnessValue: 140,
+        inStock: 110,
+        canRespawnWith: 150,
+        transformOnConsume: 220,
+        timeToLive: 120,
+        draggable: 110,
+        filePath: 360,
+    };
+
+    readonly visibleColumnsForDisplay = computed(() => {
+        const visibilityMap = new Map(
+            this.visibleColumns().map((c) => [c.columnId, c.visible]),
+        );
+        return this.columns.filter(
+            (col) => visibilityMap.get(col.key) !== false,
+        );
+    });
+
+    getColumnWidthPx(columnKey: string): number | null {
+        return this.columnWidthPxByKey[columnKey] ?? null;
+    }
+
     // Page size options
     readonly pageSizeOptions = [25, 50, 100, 200];
 
@@ -495,12 +528,7 @@ export class ItemsComponent implements AfterViewInit {
 
     /** Get visible columns for display */
     getVisibleColumns() {
-        const visibilityMap = new Map(
-            this.visibleColumns().map((c) => [c.columnId, c.visible]),
-        );
-        return this.columns.filter(
-            (col) => visibilityMap.get(col.key) !== false,
-        );
+        return this.visibleColumnsForDisplay();
     }
 
     /** Refresh items from game directory */

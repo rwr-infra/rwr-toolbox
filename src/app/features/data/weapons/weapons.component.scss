@@ -9,6 +9,10 @@
 }
 
 table {
+    width: max-content;
+    min-width: 100%;
+    table-layout: fixed;
+
     tr.hover {
         cursor: pointer;
     }

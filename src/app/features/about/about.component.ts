@@ -15,8 +15,11 @@ export class AboutComponent implements OnInit {
     private sanitizer = inject(DomSanitizer);
 
     changelogHtml = signal<SafeHtml>('');
+    changelogLoadFailed = signal(false);
 
     async ngOnInit(): Promise<void> {
+        this.changelogLoadFailed.set(false);
+
         try {
             const content = await invoke<string>('get_changelog');
             // Parse markdown to HTML
@@ -26,9 +29,8 @@ export class AboutComponent implements OnInit {
             );
         } catch (error) {
             console.error('Failed to load changelog:', error);
-            this.changelogHtml.set(
-                '<p class="opacity-50">Changelog not available.</p>',
-            );
+            this.changelogLoadFailed.set(true);
+            this.changelogHtml.set(this.sanitizer.bypassSecurityTrustHtml(''));
         }
     }
 }

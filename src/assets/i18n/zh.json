@@ -47,12 +47,20 @@
         "dataSyncTitle": "数据同步",
         "dataSyncDesc": "强制手动刷新",
         "refresh": "刷新",
-        "noActivity": "暂无活动"
+        "noActivity": "暂无活动",
+        "activities": {
+            "welcome": "欢迎使用 RWR 工具箱",
+            "welcome_desc": "您的工具箱已准备就绪",
+            "latest_update": "最新版本: v{{ version }}",
+            "view_details": "在\"关于\"页面查看详情"
+        }
     },
     "about_page": {
         "title": "关于 RWR 工具箱",
         "description": "一个为《小兵步枪》(Running With Rifles) 玩家和模组开发者提供的强大桌面工具。轻松扫描、搜索和探索游戏数据，包括武器、物品和服务器信息。",
         "github_button": "在 GitHub 上查看",
+        "versionHistoryTitle": "版本历史",
+        "changelogUnavailable": "更新日志不可用。",
         "footer": "为 RWR 社区精心打造 ❤️"
     },
     "common": {
@@ -243,14 +251,6 @@
             "throwablesThrown": "投掷次数",
             "rankProgression": "经验",
             "rankName": "军衔"
-        }
-    },
-    "dashboard": {
-        "activities": {
-            "welcome": "欢迎使用 RWR 工具箱",
-            "welcome_desc": "您的工具箱已准备就绪",
-            "latest_update": "最新版本: v{{ version }}",
-            "view_details": "在\"关于\"页面查看详情"
         }
     },
     "data": {

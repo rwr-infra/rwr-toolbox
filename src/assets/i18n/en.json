@@ -47,12 +47,20 @@
         "dataSyncTitle": "Data Sync",
         "dataSyncDesc": "Force manual refresh",
         "refresh": "Refresh",
-        "noActivity": "No activity recorded"
+        "noActivity": "No activity recorded",
+        "activities": {
+            "welcome": "Welcome to RWR Toolbox",
+            "welcome_desc": "Your toolkit is ready to use",
+            "latest_update": "Latest Update: v{{ version }}",
+            "view_details": "View details in About page"
+        }
     },
     "about_page": {
         "title": "About RWR Toolbox",
         "description": "A powerful desktop utility for Running With Rifles players and modders. Easily scan, search, and explore game data including weapons, items, and servers.",
         "github_button": "View on GitHub",
+        "versionHistoryTitle": "Version History",
+        "changelogUnavailable": "Changelog not available.",
         "footer": "Created with ❤️ for the RWR Community"
     },
     "common": {
@@ -243,14 +251,6 @@
             "throwablesThrown": "Throws",
             "rankProgression": "XP",
             "rankName": "Rank"
-        }
-    },
-    "dashboard": {
-        "activities": {
-            "welcome": "Welcome to RWR Toolbox",
-            "welcome_desc": "Your toolkit is ready to use",
-            "latest_update": "Latest Update: v{{ version }}",
-            "view_details": "View details in About page"
         }
     },
     "data": {

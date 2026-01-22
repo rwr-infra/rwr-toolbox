@@ -417,17 +417,17 @@
 
 <!-- Weapons Table -->
 <div class="border border-base-300 rounded-box bg-base-100 overflow-x-auto">
-    <cdk-virtual-scroll-viewport
-        #weaponsViewport
-        class="h-[calc(100vh-380px)] w-full"
-        [itemSize]="rowHeight"
-        [minBufferPx]="rowHeight * 8"
-        [maxBufferPx]="rowHeight * 30"
-    >
-        <table class="table table-xs table-zebra table-pin-rows w-full">
+    <!-- Header is rendered outside the virtual-scroll viewport to avoid sticky + transform issues -->
+    <div class="border-b border-base-300 bg-base-100">
+        <table class="table table-xs w-max min-w-full table-fixed">
+            <colgroup>
+                @for (col of visibleColumnsForDisplay(); track col.key) {
+                    <col [style.width.px]="getColumnWidthPx(col.key)" />
+                }
+            </colgroup>
             <thead>
                 <tr>
-                    @for (col of getVisibleColumns(); track col.key) {
+                    @for (col of visibleColumnsForDisplay(); track col.key) {
                         <th
                             [class.text-right]="col.alignment === 'right'"
                             class="cursor-pointer hover:bg-base-200 transition-colors py-3 px-4"
@@ -466,11 +466,27 @@
                     }
                 </tr>
             </thead>
+        </table>
+    </div>
+
+    <cdk-virtual-scroll-viewport
+        #weaponsViewport
+        class="h-[calc(100vh-420px)] w-full"
+        [itemSize]="rowHeight"
+        [minBufferPx]="rowHeight * 8"
+        [maxBufferPx]="rowHeight * 30"
+    >
+        <table class="table table-xs table-zebra w-max min-w-full table-fixed">
+            <colgroup>
+                @for (col of visibleColumnsForDisplay(); track col.key) {
+                    <col [style.width.px]="getColumnWidthPx(col.key)" />
+                }
+            </colgroup>
             <tbody>
                 @if (weaponCount() === 0) {
                     <tr>
                         <td
-                            [colSpan]="getVisibleColumns().length"
+                            [colSpan]="visibleColumnsForDisplay().length"
                             class="text-center py-20"
                         >
                             <div class="flex flex-col items-center opacity-20">
@@ -500,7 +516,10 @@
                         "
                         (click)="selectWeapon(weapon)"
                     >
-                        @for (col of getVisibleColumns(); track col.key) {
+                        @for (
+                            col of visibleColumnsForDisplay();
+                            track col.key
+                        ) {
                             <td
                                 class="py-2 px-4"
                                 [class.text-right]="col.alignment === 'right'"

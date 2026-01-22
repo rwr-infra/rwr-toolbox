@@ -1,49 +1,50 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
-  "productName": "rwr-toolbox",
-  "version": "0.1.0",
-  "identifier": "com.rwr-toolbox.app",
-  "build": {
-    "beforeDevCommand": "pnpm start",
-    "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
-    "frontendDist": "../dist/rwr-toolbox/browser"
-  },
-  "app": {
-    "windows": [
-      {
-        "title": "rwr-toolbox",
-        "width": 800,
-        "height": 600
-      }
-    ],
-    "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost https://api.steampowered.com; img-src 'self' asset: http://asset.localhost data: https://cdn.cloudflare.steamstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:",
-      "assetProtocol": {
-        "enable": true,
-        "scope": ["**"]
-      }
+    "$schema": "https://schema.tauri.app/config/2",
+    "productName": "rwr-toolbox",
+    "version": "0.1.0",
+    "identifier": "com.rwr-toolbox.app",
+    "build": {
+        "beforeDevCommand": "pnpm start",
+        "devUrl": "http://localhost:1420",
+        "beforeBuildCommand": "pnpm build",
+        "frontendDist": "../dist/rwr-toolbox/browser"
+    },
+    "app": {
+        "windows": [
+            {
+                "title": "rwr-toolbox",
+                "width": 800,
+                "height": 600
+            }
+        ],
+        "security": {
+            "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost https://api.steampowered.com; img-src 'self' asset: http://asset.localhost data: https://cdn.cloudflare.steamstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:",
+            "assetProtocol": {
+                "enable": true,
+                "scope": ["**"]
+            }
+        }
+    },
+    "bundle": {
+        "active": true,
+        "targets": "all",
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ],
+        "resources": ["../CHANGELOG.md"]
+    },
+    "plugins": {
+        "updater": {
+            "active": true,
+            "endpoints": [
+                "https://github.com/<OWNER>/<REPO>/releases/latest/download/latest-update.json"
+            ],
+            "dialog": true,
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6bWluaWZpZWQgcHVibGljIGtleTogNjE1QjU5RDg3RjI4NjE2QzZDRTlGNUE3Mjg5Q0Y3OEU3NjI2NjE0QTcyRjY0Njg2QTc0"
+        }
     }
-  },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ]
-  },
-  "plugins": {
-    "updater": {
-      "active": true,
-      "endpoints": [
-        "https://github.com/<OWNER>/<REPO>/releases/latest/download/latest-update.json"
-      ],
-      "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6bWluaWZpZWQgcHVibGljIGtleTogNjE1QjU5RDg3RjI4NjE2QzZDRTlGNUE3Mjg5Q0Y3OEU3NjI2NjE0QTcyRjY0Njg2QTc0"
-    }
-  }
 }
