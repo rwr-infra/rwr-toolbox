@@ -1,6 +1,7 @@
 # RWR Toolbox
 
-> [!WARNING] > **Active Development**: This project is in its early stages and should be considered **unstable**. Features may change or break without notice.
+> [!WARNING]
+> **Active Development**: This project is in its early stages and should be considered **unstable**. Features may change or break without notice.
 
 A high-performance desktop utility designed for **Running With Rifles** players and modders. Built with safety and speed in mind, RWR Toolbox provides a comprehensive suite of tools to manage game data, servers, and configurations.
 

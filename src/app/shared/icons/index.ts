@@ -27,6 +27,8 @@ import {
     CircleDot,
     ChevronLeft,
     ChevronRight,
+    ChevronUp,
+    ChevronDown,
     Inbox,
     CheckCircle,
     XCircle,
@@ -71,6 +73,8 @@ import {
     ToggleRight,
     Github,
     Copy,
+    LayoutList,
+    LayoutGrid,
 } from 'lucide-angular';
 
 /**
@@ -106,6 +110,8 @@ export const APP_ICONS = {
     CircleDot,
     ChevronLeft,
     ChevronRight,
+    ChevronUp,
+    ChevronDown,
     Inbox,
     CheckCircle,
     XCircle,
@@ -149,4 +155,6 @@ export const APP_ICONS = {
     ToggleRight,
     Github,
     Copy,
+    LayoutList,
+    LayoutGrid,
 };

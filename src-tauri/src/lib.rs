@@ -1,9 +1,12 @@
 mod directories;
+mod events;
 mod hotkeys;
 mod items;
 mod ping;
 mod rwrmi;
 mod weapons;
+
+pub use events::ScanEvent;
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -287,10 +290,12 @@ pub fn run() {
             hotkeys::open_hotkeys_in_editor,
             weapons::validate_game_path,
             weapons::scan_weapons,
+            weapons::scan_weapons_collect,
             weapons::open_file_in_editor,
             weapons::get_texture_path,
             weapons::get_weapon_icon_base64,
             items::scan_items,
+            items::scan_items_collect,
             items::get_item_texture_path,
             items::get_item_icon_base64,
             directories::validate_directory

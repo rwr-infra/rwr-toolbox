@@ -3,16 +3,65 @@
 //! Scans RWR game directory for weapon XML files, parses them with template inheritance resolution,
 //! and returns structured weapon data to the frontend.
 
+use crate::ScanEvent;
 use quick_xml::de::from_str;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+
+fn resolve_packages_dirs(base: &Path) -> Vec<PathBuf> {
+    if base.ends_with("packages") {
+        return vec![base.to_path_buf()];
+    }
+
+    let mut roots: Vec<PathBuf> = Vec::new();
+
+    // macOS Steam installs often keep base game resources inside the app bundle.
+    let app_bundle_packages = base
+        .join("RunningWithRifles.app")
+        .join("Contents")
+        .join("Resources")
+        .join("media")
+        .join("packages");
+    if app_bundle_packages.exists() {
+        roots.push(app_bundle_packages);
+    }
+
+    // Workshop/custom content is typically under `media/packages` next to the executable.
+    let media_packages = base.join("media").join("packages");
+    if media_packages.exists() {
+        roots.push(media_packages);
+    }
+
+    // Some setups pass a game root where `packages/` exists directly.
+    let direct_packages = base.join("packages");
+    if direct_packages.exists() {
+        roots.push(direct_packages);
+    }
+
+    if roots.is_empty() {
+        roots.push(base.join("packages"));
+    }
+
+    // De-dupe while keeping order.
+    let mut deduped: Vec<PathBuf> = Vec::new();
+    for root in roots {
+        if !deduped.contains(&root) {
+            deduped.push(root);
+        }
+    }
+
+    deduped
+}
+
 use std::sync::Mutex;
+use tauri::ipc::Channel;
 use tauri_plugin_opener::OpenerExt;
 use walkdir::WalkDir;
 
 const MAX_TEMPLATE_DEPTH: usize = 10;
+const BATCH_SIZE: usize = 50;
 
 /// Main weapon structure with all attributes from XML
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -64,7 +113,7 @@ pub struct StanceAccuracy {
 }
 
 /// Error during weapon scanning
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct ScanError {
     pub file: String,
     pub error: String,
@@ -274,91 +323,199 @@ pub async fn validate_game_path(path: String) -> Result<ValidationResult, String
     })
 }
 
-/// Scan all weapon files from game directory
-/// If `directory` is provided, scan that directory directly (it's expected to already be the packages directory)
+/// Scan all weapon files from a game/workshop directory.
+///
+/// `directory` / `game_path` may be either:
+/// - the `packages` directory
+/// - the game/workshop root that contains `media/` (we'll scan `media/packages`)
 #[tauri::command]
 pub async fn scan_weapons(
     game_path: String,
     directory: Option<String>,
-) -> Result<WeaponScanResult, String> {
-    let start_time = std::time::Instant::now();
+    on_event: Channel<ScanEvent<Weapon>>,
+) -> Result<(), String> {
+    let source_directory = directory.clone().unwrap_or_else(|| game_path.clone());
+    let package_roots = resolve_packages_dirs(Path::new(&source_directory));
 
-    // Use provided directory if available, otherwise fall back to game_path/packages
-    let scan_path = if let Some(dir) = &directory {
-        dir.clone()
-    } else {
-        format!("{}/packages", game_path)
-    };
-    let input_path = Path::new(&scan_path);
-
-    if !input_path.exists() {
-        return Err(format!("Directory not found: {}", scan_path));
+    #[cfg(debug_assertions)]
+    {
+        eprintln!(
+            "[scan_weapons] source_directory={} roots={}",
+            source_directory,
+            package_roots
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect::<Vec<_>>()
+                .join(" | ")
+        );
     }
 
-    let input_path = input_path.to_path_buf();
+    if package_roots.iter().all(|p| !p.exists()) {
+        let paths = package_roots
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(format!("Directory not found (tried: {paths})"));
+    }
 
-    // Discover all .weapon files
-    let weapon_files = discover_weapons(&input_path);
+    // Collect all .weapon files across possible packages roots (macOS app bundle + external media).
+    let mut weapon_files: Vec<(PathBuf, PathBuf)> = Vec::new();
+    for root in &package_roots {
+        if !root.exists() {
+            continue;
+        }
+        for weapon_file in discover_weapons(root) {
+            weapon_files.push((root.clone(), weapon_file));
+        }
+    }
+
+    let send_event = |evt: ScanEvent<Weapon>| -> Result<(), String> {
+        on_event
+            .send(evt)
+            .map_err(|e| format!("Failed to send scan event: {e}"))
+    };
+
+    #[cfg(debug_assertions)]
+    {
+        eprintln!("[scan_weapons] discovered_files={}", weapon_files.len());
+    }
+
+    if weapon_files.is_empty() {
+        // Nothing to scan, but still notify the frontend so it can stop loading.
+        send_event(ScanEvent::Finished)?;
+        return Ok(());
+    }
+
+    let total = weapon_files.len();
+    send_event(ScanEvent::Progress { current: 0, total })?;
+
+    // Parallel processing with chunked channel sending
+    let all_results: Vec<Result<Weapon, ScanError>> = weapon_files
+        .into_par_iter()
+        .enumerate()
+        .map(|(index, (packages_root, weapon_file))| {
+            let file_str = weapon_file.to_string_lossy().to_string();
+            let id = format!("{}_{}", file_str, index);
+
+            parse_weapon_file(&weapon_file, &packages_root, id, &source_directory).map_err(|e| {
+                ScanError {
+                    file: file_str,
+                    error: e.to_string(),
+                    severity: "error".to_string(),
+                }
+            })
+        })
+        .collect();
+
+    #[cfg(debug_assertions)]
+    {
+        let ok_count = all_results.iter().filter(|r| r.is_ok()).count();
+        let err_count = all_results.len() - ok_count;
+        eprintln!("[scan_weapons] parsed_ok={} parsed_err={}", ok_count, err_count);
+    }
+
+    // Send in batches
+    for (i, chunk) in all_results.chunks(BATCH_SIZE).enumerate() {
+        let weapons: Vec<Weapon> = chunk.iter().filter_map(|r| r.as_ref().ok().cloned()).collect();
+        let errors: Vec<ScanError> = chunk.iter().filter_map(|r| r.as_ref().err().cloned()).collect();
+
+        if !weapons.is_empty() {
+            send_event(ScanEvent::Chunk(weapons))?;
+        }
+
+        for error in errors {
+            send_event(ScanEvent::Error(error.error))?;
+        }
+
+        send_event(ScanEvent::Progress {
+            current: ((i + 1) * BATCH_SIZE).min(total),
+            total,
+        })?;
+    }
+
+    send_event(ScanEvent::Finished)?;
+
+    Ok(())
+}
+
+/// Fallback scan API (no IPC `Channel`).
+///
+/// Some environments (notably macOS WebView) may fail to deliver IPC channel
+/// messages reliably. This command returns all results in one payload; the
+/// frontend can still process the returned array in a worker in smaller chunks.
+#[tauri::command]
+pub async fn scan_weapons_collect(
+    game_path: String,
+    directory: Option<String>,
+) -> Result<WeaponScanResult, String> {
+    let started = std::time::Instant::now();
+
+    let source_directory = directory.clone().unwrap_or_else(|| game_path.clone());
+    let package_roots = resolve_packages_dirs(Path::new(&source_directory));
+
+    if package_roots.iter().all(|p| !p.exists()) {
+        let paths = package_roots
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(format!("Directory not found (tried: {paths})"));
+    }
+
+    let mut weapon_files: Vec<(PathBuf, PathBuf)> = Vec::new();
+    for root in &package_roots {
+        if !root.exists() {
+            continue;
+        }
+        for weapon_file in discover_weapons(root) {
+            weapon_files.push((root.clone(), weapon_file));
+        }
+    }
 
     if weapon_files.is_empty() {
         return Ok(WeaponScanResult {
             weapons: vec![],
             errors: vec![],
             duplicate_keys: vec![],
-            scan_time: start_time.elapsed().as_millis() as u64,
+            scan_time: started.elapsed().as_millis() as u64,
         });
     }
 
-    // Thread-safe collections for parallel processing
-    let weapons = Mutex::new(Vec::new());
-    let errors = Mutex::new(Vec::new());
-    let all_keys: Mutex<HashMap<String, i32>> = Mutex::new(HashMap::new());
+    let all_results: Vec<Result<Weapon, ScanError>> = weapon_files
+        .into_par_iter()
+        .enumerate()
+        .map(|(index, (packages_root, weapon_file))| {
+            let file_str = weapon_file.to_string_lossy().to_string();
+            let id = format!("{}_{}", file_str, index);
 
-    // Parse each weapon file in parallel using rayon
-    weapon_files.into_par_iter().enumerate().for_each(|(index, weapon_file)| {
-        let file_str = weapon_file.to_string_lossy().to_string();
-        let id = format!("{}_{}", file_str, index);
-
-        match parse_weapon_file(&weapon_file, &input_path, id, &scan_path) {
-            Ok(weapon) => {
-                // Check for duplicate keys
-                if let Some(key) = &weapon.key {
-                    let mut keys = all_keys.lock().unwrap();
-                    let entry = keys.entry(key.clone()).or_insert(0);
-                    *entry += 1;
-                }
-
-                weapons.lock().unwrap().push(weapon);
-            }
-            Err(e) => {
-                errors.lock().unwrap().push(ScanError {
+            parse_weapon_file(&weapon_file, &packages_root, id, &source_directory).map_err(|e| {
+                ScanError {
                     file: file_str,
                     error: e.to_string(),
                     severity: "error".to_string(),
-                });
-            }
-        }
-    });
+                }
+            })
+        })
+        .collect();
 
-    // Extract results from mutex
-    let weapons = weapons.into_inner().unwrap();
-    let errors = errors.into_inner().unwrap();
-    let all_keys = all_keys.into_inner().unwrap();
-
-    // Find duplicate keys
-    let duplicate_keys: Vec<String> = all_keys
-        .into_iter()
-        .filter(|(_, count)| *count > 1)
-        .map(|(key, _)| key)
+    let weapons: Vec<Weapon> = all_results
+        .iter()
+        .filter_map(|r| r.as_ref().ok().cloned())
+        .collect();
+    let errors: Vec<ScanError> = all_results
+        .iter()
+        .filter_map(|r| r.as_ref().err().cloned())
         .collect();
 
     Ok(WeaponScanResult {
         weapons,
         errors,
-        duplicate_keys,
-        scan_time: start_time.elapsed().as_millis() as u64,
+        duplicate_keys: vec![],
+        scan_time: started.elapsed().as_millis() as u64,
     })
 }
+
 
 /// Discover all .weapon files in packages directory
 fn discover_weapons(input_path: &Path) -> Vec<PathBuf> {

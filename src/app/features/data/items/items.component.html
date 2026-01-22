@@ -102,7 +102,7 @@
             [title]="'scrolling.toggleTooltip' | transloco"
         >
             <i-lucide
-                [name]="isTableOnlyMode() ? 'arrow-down-to-line' : 'maximize-2'"
+                [name]="isTableOnlyMode() ? 'layout-list' : 'layout-grid'"
                 class="h-4 w-4"
             ></i-lucide>
         </button>
@@ -121,143 +121,159 @@
 
 <!-- Advanced Search Panel -->
 <div
-    class="collapse collapse-arrow bg-base-200/50 border border-base-300 mb-4 rounded-box overflow-visible"
+    class="bg-base-200/50 border border-base-300 mb-4 rounded-box overflow-hidden"
 >
-    <input
-        type="checkbox"
-        [checked]="showAdvancedSearch()"
-        (change)="toggleAdvancedSearch()"
-    />
-    <div class="collapse-title text-sm font-medium flex items-center gap-2">
-        <i-lucide name="layers" class="h-4 w-4 opacity-50"></i-lucide>
-        {{ 'items.advancedSearch' | transloco }}
-    </div>
-    <div class="collapse-content">
-        <!-- Range Filters -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <!-- Encumbrance Range -->
-            <div class="form-control">
-                <label class="label py-1">
-                    <span class="label-text text-[10px] uppercase opacity-50">{{
-                        'items.columns.encumbrance' | transloco
-                    }}</span>
-                </label>
-                <div class="join w-full">
-                    <input
-                        type="number"
-                        class="input input-bordered input-xs join-item w-full"
-                        placeholder="Min"
-                        [value]="filters().encumbrance?.min ?? ''"
-                        (input)="
-                            onRangeFilter(
-                                'encumbrance',
-                                'min',
-                                $any($event.target).value
-                            )
-                        "
-                    />
-                    <input
-                        type="number"
-                        class="input input-bordered input-xs join-item w-full"
-                        placeholder="Max"
-                        [value]="filters().encumbrance?.max ?? ''"
-                        (input)="
-                            onRangeFilter(
-                                'encumbrance',
-                                'max',
-                                $any($event.target).value
-                            )
-                        "
-                    />
-                </div>
-            </div>
-
-            <!-- Price Range -->
-            <div class="form-control">
-                <label class="label py-1">
-                    <span class="label-text text-[10px] uppercase opacity-50">{{
-                        'items.columns.price' | transloco
-                    }}</span>
-                </label>
-                <div class="join w-full">
-                    <input
-                        type="number"
-                        class="input input-bordered input-xs join-item w-full"
-                        placeholder="Min"
-                        [value]="filters().price?.min ?? ''"
-                        (input)="
-                            onRangeFilter(
-                                'price',
-                                'min',
-                                $any($event.target).value
-                            )
-                        "
-                    />
-                    <input
-                        type="number"
-                        class="input input-bordered input-xs join-item w-full"
-                        placeholder="Max"
-                        [value]="filters().price?.max ?? ''"
-                        (input)="
-                            onRangeFilter(
-                                'price',
-                                'max',
-                                $any($event.target).value
-                            )
-                        "
-                    />
-                </div>
-            </div>
+    <!-- Header Trigger -->
+    <div
+        (click)="toggleAdvancedSearch()"
+        class="flex items-center justify-between p-4 cursor-pointer hover:bg-base-200/50 transition-colors"
+    >
+        <div class="text-sm font-medium flex items-center gap-2">
+            <i-lucide name="layers" class="h-4 w-4 opacity-50"></i-lucide>
+            {{ 'items.advancedSearch' | transloco }}
         </div>
+        <i-lucide
+            name="chevron-down"
+            class="h-4 w-4 transition-transform duration-200"
+            [class.rotate-180]="showAdvancedSearch()"
+        ></i-lucide>
+    </div>
 
-        <div
-            class="flex flex-wrap items-center justify-between gap-4 border-t border-base-300 pt-4"
-        >
-            <!-- Exact Match Filters -->
-            <div class="flex flex-wrap gap-4">
-                <label class="label cursor-pointer gap-2 py-0">
-                    <input
-                        type="checkbox"
-                        class="checkbox checkbox-xs checkbox-primary"
-                        [checked]="filters().canRespawnWith === true"
-                        (change)="
-                            onExactFilter(
-                                'canRespawnWith',
-                                $any($event.target).checked ? true : undefined
-                            )
-                        "
-                    />
-                    <span class="label-text text-xs">{{
-                        'weapons.filters.canRespawnWith' | transloco
-                    }}</span>
-                </label>
+    <!-- Animated Content Area -->
+    <div [@expandCollapse]="showAdvancedSearch() ? 'expanded' : 'collapsed'">
+        <div class="p-4 border-t border-base-300 overflow-visible">
+            <!-- Range Filters -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <!-- Encumbrance Range -->
+                <div class="form-control">
+                    <label class="label py-1">
+                        <span
+                            class="label-text text-[10px] uppercase opacity-50"
+                            >{{ 'items.columns.encumbrance' | transloco }}</span
+                        >
+                    </label>
+                    <div class="join w-full">
+                        <input
+                            type="number"
+                            class="input input-bordered input-xs join-item w-full"
+                            placeholder="Min"
+                            [value]="filters().encumbrance?.min ?? ''"
+                            (input)="
+                                onRangeFilter(
+                                    'encumbrance',
+                                    'min',
+                                    $any($event.target).value
+                                )
+                            "
+                        />
+                        <input
+                            type="number"
+                            class="input input-bordered input-xs join-item w-full"
+                            placeholder="Max"
+                            [value]="filters().encumbrance?.max ?? ''"
+                            (input)="
+                                onRangeFilter(
+                                    'encumbrance',
+                                    'max',
+                                    $any($event.target).value
+                                )
+                            "
+                        />
+                    </div>
+                </div>
 
-                <label class="label cursor-pointer gap-2 py-0">
-                    <input
-                        type="checkbox"
-                        class="checkbox checkbox-xs checkbox-primary"
-                        [checked]="filters().inStock === true"
-                        (change)="
-                            onExactFilter(
-                                'inStock',
-                                $any($event.target).checked ? true : undefined
-                            )
-                        "
-                    />
-                    <span class="label-text text-xs">{{
-                        'weapons.details.inStock' | transloco
-                    }}</span>
-                </label>
+                <!-- Price Range -->
+                <div class="form-control">
+                    <label class="label py-1">
+                        <span
+                            class="label-text text-[10px] uppercase opacity-50"
+                            >{{ 'items.columns.price' | transloco }}</span
+                        >
+                    </label>
+                    <div class="join w-full">
+                        <input
+                            type="number"
+                            class="input input-bordered input-xs join-item w-full"
+                            placeholder="Min"
+                            [value]="filters().price?.min ?? ''"
+                            (input)="
+                                onRangeFilter(
+                                    'price',
+                                    'min',
+                                    $any($event.target).value
+                                )
+                            "
+                        />
+                        <input
+                            type="number"
+                            class="input input-bordered input-xs join-item w-full"
+                            placeholder="Max"
+                            [value]="filters().price?.max ?? ''"
+                            (input)="
+                                onRangeFilter(
+                                    'price',
+                                    'max',
+                                    $any($event.target).value
+                                )
+                            "
+                        />
+                    </div>
+                </div>
             </div>
 
-            <!-- Clear Filters Button -->
-            <button
-                class="btn btn-ghost btn-xs text-error"
-                (click)="onClearFilters()"
+            <div
+                class="flex flex-wrap items-center justify-between gap-4 border-t border-base-300 pt-4"
             >
-                <i-lucide name="trash-2" class="h-3 w-3"></i-lucide>
-                {{ 'items.clearFilters' | transloco }}
-            </button>
+                <!-- Exact Match Filters -->
+                <div class="flex flex-wrap gap-4">
+                    <label class="label cursor-pointer gap-2 py-0">
+                        <input
+                            type="checkbox"
+                            class="checkbox checkbox-xs checkbox-primary"
+                            [checked]="filters().canRespawnWith === true"
+                            (change)="
+                                onExactFilter(
+                                    'canRespawnWith',
+                                    $any($event.target).checked
+                                        ? true
+                                        : undefined
+                                )
+                            "
+                        />
+                        <span class="label-text text-xs">{{
+                            'weapons.filters.canRespawnWith' | transloco
+                        }}</span>
+                    </label>
+
+                    <label class="label cursor-pointer gap-2 py-0">
+                        <input
+                            type="checkbox"
+                            class="checkbox checkbox-xs checkbox-primary"
+                            [checked]="filters().inStock === true"
+                            (change)="
+                                onExactFilter(
+                                    'inStock',
+                                    $any($event.target).checked
+                                        ? true
+                                        : undefined
+                                )
+                            "
+                        />
+                        <span class="label-text text-xs">{{
+                            'weapons.details.inStock' | transloco
+                        }}</span>
+                    </label>
+                </div>
+
+                <!-- Clear Filters Button -->
+                <button
+                    class="btn btn-ghost btn-xs text-error"
+                    (click)="onClearFilters()"
+                >
+                    <i-lucide name="trash-2" class="h-3 w-3"></i-lucide>
+                    {{ 'items.clearFilters' | transloco }}
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -281,71 +297,78 @@
 }
 
 <!-- Items Table -->
-<div
-    class="border border-base-300 rounded-box bg-base-100"
-    [class]="
-        isTableOnlyMode() ? 'h-[600px] overflow-y-auto' : 'overflow-x-auto'
-    "
->
-    <table class="table table-xs table-zebra table-pin-rows">
-        <thead>
-            <tr>
-                @for (col of getVisibleColumns(); track col.key) {
-                    <th
-                        [class.text-right]="col.alignment === 'right'"
-                        class="cursor-pointer hover:bg-base-200 transition-colors py-3 px-4"
-                        [title]="
-                            'items.sort.' +
-                                (getColumnSortDirection(col.key) || 'unsorted')
-                                | transloco
-                        "
-                        (click)="onColumnClick(col.key)"
-                    >
-                        <div
-                            class="flex items-center gap-1"
-                            [class.justify-end]="col.alignment === 'right'"
-                        >
-                            <span
-                                class="uppercase tracking-wider text-[10px] opacity-60"
-                                >{{ col.i18nKey | transloco }}</span
-                            >
-                            @if (getColumnSortDirection(col.key) === 'asc') {
-                                <i-lucide
-                                    name="chevron-up"
-                                    class="h-3 w-3 text-primary"
-                                ></i-lucide>
-                            } @else if (
-                                getColumnSortDirection(col.key) === 'desc'
-                            ) {
-                                <i-lucide
-                                    name="chevron-down"
-                                    class="h-3 w-3 text-primary"
-                                ></i-lucide>
-                            }
-                        </div>
-                    </th>
-                }
-            </tr>
-        </thead>
-        <tbody>
-            @if (itemCount() === 0) {
+<div class="border border-base-300 rounded-box bg-base-100 overflow-x-auto">
+    <cdk-virtual-scroll-viewport
+        #itemsViewport
+        class="h-[calc(100vh-380px)] w-full"
+        [itemSize]="rowHeight"
+        [minBufferPx]="rowHeight * 8"
+        [maxBufferPx]="rowHeight * 30"
+    >
+        <table class="table table-xs table-zebra table-pin-rows w-full">
+            <thead>
                 <tr>
-                    <td
-                        [colSpan]="getVisibleColumns().length"
-                        class="text-center py-20"
-                    >
-                        <div class="flex flex-col items-center opacity-20">
-                            <i-lucide
-                                name="inbox"
-                                class="h-12 w-12 mb-2"
-                            ></i-lucide>
-                            <p>{{ 'items.noItems' | transloco }}</p>
-                        </div>
-                    </td>
+                    @for (col of getVisibleColumns(); track col.key) {
+                        <th
+                            [class.text-right]="col.alignment === 'right'"
+                            class="cursor-pointer hover:bg-base-200 transition-colors py-3 px-4"
+                            [title]="
+                                'items.sort.' +
+                                    (getColumnSortDirection(col.key) ||
+                                        'unsorted') | transloco
+                            "
+                            (click)="onColumnClick(col.key)"
+                        >
+                            <div
+                                class="flex items-center gap-1"
+                                [class.justify-end]="col.alignment === 'right'"
+                            >
+                                <span
+                                    class="uppercase tracking-wider text-[10px] opacity-60"
+                                    >{{ col.i18nKey | transloco }}</span
+                                >
+                                @if (
+                                    getColumnSortDirection(col.key) === 'asc'
+                                ) {
+                                    <i-lucide
+                                        name="chevron-up"
+                                        class="h-3 w-3 text-primary"
+                                    ></i-lucide>
+                                } @else if (
+                                    getColumnSortDirection(col.key) === 'desc'
+                                ) {
+                                    <i-lucide
+                                        name="chevron-down"
+                                        class="h-3 w-3 text-primary"
+                                    ></i-lucide>
+                                }
+                            </div>
+                        </th>
+                    }
                 </tr>
-            } @else {
-                @for (item of paginatedItems(); track item.id) {
+            </thead>
+            <tbody>
+                @if (itemCount() === 0) {
+                    <tr>
+                        <td
+                            [colSpan]="getVisibleColumns().length"
+                            class="text-center py-20"
+                        >
+                            <div class="flex flex-col items-center opacity-20">
+                                <i-lucide
+                                    name="inbox"
+                                    class="h-12 w-12 mb-2"
+                                ></i-lucide>
+                                <p>{{ 'items.noItems' | transloco }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                } @else {
                     <tr
+                        *cdkVirtualFor="
+                            let item of paginatedItems();
+                            trackBy: trackByItemId
+                        "
                         class="cursor-pointer hover:bg-base-200 transition-colors group"
                         [class.bg-base-300]="selectedItem()?.key === item.key"
                         [class.border-l-2]="selectedItem()?.key === item.key"
@@ -361,10 +384,13 @@
                                 [class.text-left]="col.alignment === 'left'"
                             >
                                 @if (col.key === 'image') {
-                                    @if (getItemIconUrl(item)) {
-                                        <div
-                                            class="w-10 h-10 bg-base-200/50 rounded flex items-center justify-center p-1"
-                                        >
+                                    <div
+                                        class="w-10 h-10 bg-base-200/50 rounded flex items-center justify-center p-1"
+                                        [class.skeleton]="
+                                            loadingIcons().has(item.key || '')
+                                        "
+                                    >
+                                        @if (getItemIconUrl(item)) {
                                             <img
                                                 [src]="getItemIconUrl(item)"
                                                 [alt]="item.name"
@@ -372,17 +398,15 @@
                                                 loading="lazy"
                                                 (error)="onItemImageError()"
                                             />
-                                        </div>
-                                    } @else {
-                                        <div
-                                            class="w-10 h-10 bg-base-200/50 rounded flex items-center justify-center"
-                                        >
+                                        } @else if (
+                                            !loadingIcons().has(item.key || '')
+                                        ) {
                                             <i-lucide
                                                 name="image-off"
                                                 class="w-5 h-5 opacity-20"
                                             />
-                                        </div>
-                                    }
+                                        }
+                                    </div>
                                 } @else if (col.field === 'filePath') {
                                     <div
                                         class="flex items-center gap-1 group/path"
@@ -568,9 +592,9 @@
                         }
                     </tr>
                 }
-            }
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </cdk-virtual-scroll-viewport>
 </div>
 
 <!-- Pagination Controls -->
@@ -648,21 +672,22 @@
             <!-- First row: Image + Basic Info -->
             <div class="flex gap-6 mb-8">
                 <div class="flex-shrink-0">
-                    @if (getItemIconUrl(selectedItem()!)) {
-                        <div
-                            class="w-32 h-32 bg-base-200 rounded-xl shadow-inner border border-base-300 flex items-center justify-center p-4"
-                        >
+                    <div
+                        class="w-32 h-32 bg-base-200 rounded-xl shadow-inner border border-base-300 flex items-center justify-center p-4"
+                        [class.skeleton]="
+                            loadingIcons().has(selectedItem()?.key || '')
+                        "
+                    >
+                        @if (getItemIconUrl(selectedItem()!)) {
                             <img
                                 [src]="getItemIconUrl(selectedItem()!)"
                                 [alt]="selectedItem()!.name"
                                 class="max-w-full max-h-full object-contain"
                                 (error)="onItemImageError()"
                             />
-                        </div>
-                    } @else {
-                        <div
-                            class="w-32 h-32 bg-base-200 rounded-xl shadow-inner border border-base-300 flex items-center justify-center"
-                        >
+                        } @else if (
+                            !loadingIcons().has(selectedItem()?.key || '')
+                        ) {
                             <i-lucide
                                 [name]="
                                     getIconForItemType(
@@ -671,8 +696,8 @@
                                 "
                                 class="w-16 h-16 text-primary/40"
                             ></i-lucide>
-                        </div>
-                    }
+                        }
+                    </div>
                 </div>
 
                 <div class="flex-1 min-w-0 grid grid-cols-1 gap-4">

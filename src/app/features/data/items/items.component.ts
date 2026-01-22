@@ -1,4 +1,18 @@
-import { Component, inject, computed, signal, effect } from '@angular/core';
+import {
+    Component,
+    inject,
+    computed,
+    signal,
+    effect,
+    AfterViewInit,
+    ViewChild,
+    DestroyRef,
+} from '@angular/core';
+import {
+    CdkVirtualScrollViewport,
+    ScrollingModule,
+} from '@angular/cdk/scrolling';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { invoke } from '@tauri-apps/api/core';
 import { LucideAngularModule } from 'lucide-angular';
@@ -12,7 +26,15 @@ import {
 import { ITEM_COLUMNS } from './item-columns';
 import { ScrollingModeService } from '../../shared/services/scrolling-mode.service';
 import type { PaginationState } from '../../../shared/models/common.models';
-import { animate, style, transition, trigger } from '@angular/animations';
+import {
+    animate,
+    state,
+    style,
+    transition,
+    trigger,
+} from '@angular/animations';
+
+import { yieldToMain } from '../../../core/utils/performance.utils';
 
 /**
  * Items table component with search, filters, column visibility, and sorting
@@ -22,10 +44,33 @@ import { animate, style, transition, trigger } from '@angular/animations';
  */
 @Component({
     selector: 'app-items',
-    imports: [TranslocoPipe, LucideAngularModule],
+    imports: [TranslocoPipe, LucideAngularModule, ScrollingModule],
     templateUrl: './items.component.html',
     styleUrl: './items.component.scss',
     animations: [
+        trigger('expandCollapse', [
+            state(
+                'collapsed',
+                style({
+                    height: '0',
+                    opacity: 0,
+                    overflow: 'hidden',
+                    visibility: 'hidden',
+                }),
+            ),
+            state(
+                'expanded',
+                style({
+                    height: '*',
+                    opacity: 1,
+                    overflow: 'hidden',
+                    visibility: 'visible',
+                }),
+            ),
+            transition('collapsed <=> expanded', [
+                animate('250ms cubic-bezier(0.4, 0, 0.2, 1)'),
+            ]),
+        ]),
         trigger('slideIn', [
             transition(':enter', [
                 style({ transform: 'translateX(100%)' }),
@@ -43,11 +88,20 @@ import { animate, style, transition, trigger } from '@angular/animations';
         ]),
     ],
 })
-export class ItemsComponent {
+export class ItemsComponent implements AfterViewInit {
     private itemService = inject(ItemService);
     private directoryService = inject(DirectoryService);
     private transloco = inject(TranslocoService);
     private scrollingModeService = inject(ScrollingModeService);
+    private destroyRef = inject(DestroyRef);
+
+    @ViewChild('itemsViewport')
+    private itemsViewport?: CdkVirtualScrollViewport;
+
+    readonly rowHeight = 44;
+    private iconLoadToken = 0;
+
+    trackByItemId = (_: number, item: GenericItem) => item.id;
 
     // Readonly signals from service
     readonly items = this.itemService.filteredItems;
@@ -123,6 +177,9 @@ export class ItemsComponent {
     // Image URL cache: item.key -> image URL
     readonly itemIconUrls = signal<Map<string, string>>(new Map());
 
+    // T014: Track loading state for icons: item.key -> boolean
+    readonly loadingIcons = signal<Set<string>>(new Set());
+
     // Bug fix: Track if we've already attempted loading to avoid duplicate load attempts
     private hasAttemptedLoad = signal<boolean>(false);
 
@@ -153,7 +210,6 @@ export class ItemsComponent {
         const { currentPage, pageSize } = this.pagination();
         const start = (currentPage - 1) * pageSize;
         const end = start + pageSize;
-        console.log('filtered paginatedItems', filtered);
         return filtered.slice(start, end);
     });
 
@@ -178,13 +234,8 @@ export class ItemsComponent {
             }
         }
 
-        // T004: Auto-load images when paginated items change
-        effect(() => {
-            const items = this.paginatedItems();
-            for (const item of items) {
-                this.loadItemIcon(item);
-            }
-        });
+        // NOTE: Icon loading is driven by the virtual-scroll viewport so we only
+        // request icons for visible rows (plus a small buffer).
 
         // Bug fix: Auto-load items when valid directories become available after initialization
         effect(() => {
@@ -218,6 +269,44 @@ export class ItemsComponent {
                 this.loadItems();
             }
         });
+    }
+
+    ngAfterViewInit(): void {
+        const viewport = this.itemsViewport;
+        if (!viewport) return;
+
+        viewport.renderedRangeStream
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((range) => {
+                void this.loadVisibleItemIcons(range.start, range.end);
+            });
+
+        // Ensure the viewport calculates its initial range.
+        queueMicrotask(() => viewport.checkViewportSize());
+    }
+
+    private async loadVisibleItemIcons(
+        startIndex: number,
+        endIndex: number,
+    ): Promise<void> {
+        const token = ++this.iconLoadToken;
+        const items = this.paginatedItems();
+        const end = Math.min(endIndex, items.length);
+
+        for (let i = startIndex; i < end; i++) {
+            if (token !== this.iconLoadToken) return;
+
+            const item = items[i];
+            await this.loadItemIcon(item);
+
+            if (i > startIndex && (i - startIndex) % 6 === 0) {
+                await yieldToMain();
+            }
+        }
+    }
+
+    private scrollViewportToTop(): void {
+        this.itemsViewport?.scrollToIndex(0);
     }
 
     toggleScrollingMode(): void {
@@ -449,6 +538,8 @@ export class ItemsComponent {
             currentPage: 1, // Reset to page 1
         }));
         localStorage.setItem('items-page-size', String(newSize));
+        this.scrollViewportToTop();
+        this.itemsViewport?.checkViewportSize();
     }
 
     /** Load item icon URL and cache the result */
@@ -458,10 +549,19 @@ export class ItemsComponent {
         if (
             item.itemType !== 'carry_item' ||
             !item.hudIcon ||
-            this.itemIconUrls().has(itemKey)
+            this.itemIconUrls().has(itemKey) ||
+            this.loadingIcons().has(itemKey)
         ) {
             return;
         }
+
+        // T014: Set loading state
+        this.loadingIcons.update((set) => {
+            const newSet = new Set(set);
+            newSet.add(itemKey);
+            return newSet;
+        });
+
         try {
             const url = await this.itemService.getIconUrl(item);
             if (url) {
@@ -473,6 +573,13 @@ export class ItemsComponent {
             }
         } catch {
             // Icon loading failed - silently skip
+        } finally {
+            // T014: Clear loading state
+            this.loadingIcons.update((set) => {
+                const newSet = new Set(set);
+                newSet.delete(itemKey);
+                return newSet;
+            });
         }
     }
 
@@ -611,6 +718,8 @@ export class ItemsComponent {
     /** T079: Handle page changes */
     onPageChange(page: number): void {
         this.pagination.update((p) => ({ ...p, currentPage: page }));
+        this.scrollViewportToTop();
+        this.itemsViewport?.checkViewportSize();
     }
 
     /** T079: Get page numbers for pagination */

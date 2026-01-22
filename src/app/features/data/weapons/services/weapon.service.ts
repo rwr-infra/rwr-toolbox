@@ -1,5 +1,5 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
-import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+import { Injectable, signal, computed, inject, OnDestroy } from '@angular/core';
+import { invoke, convertFileSrc, Channel } from '@tauri-apps/api/core';
 import { TranslocoService } from '@jsverse/transloco';
 import {
     Weapon,
@@ -10,13 +10,18 @@ import {
 } from '../../../../shared/models/weapons.models';
 import { SortState } from '../../../../shared/models/sort.models';
 
+import { yieldToMain } from '../../../../core/utils/performance.utils';
+
 /**
  * Manages weapon data state and communicates with Rust backend via Tauri commands.
  * Uses Angular v20 Signals pattern for reactive state management.
+ * Iteration 3: Zero-Blockage Architecture using Web Workers and Tauri Channels.
  */
 @Injectable({ providedIn: 'root' })
-export class WeaponService {
+export class WeaponService implements OnDestroy {
     private transloco = inject(TranslocoService);
+    private worker: Worker | null = null;
+    private currentRequestId: string | null = null;
 
     // Private writable signals
     private weapons = signal<Weapon[]>([]);
@@ -28,6 +33,84 @@ export class WeaponService {
         this.getDefaultColumns(),
     );
     private sortState = signal<SortState>({ columnKey: null, direction: null });
+
+    // Buffering for Signal updates
+    private weaponBuffer: Weapon[] = [];
+    private lastFlushTime = 0;
+    private readonly FLUSH_THRESHOLD = 100;
+    private readonly FLUSH_INTERVAL = 16; // ms
+
+    constructor() {
+        this.initializeWorker();
+    }
+
+    ngOnDestroy() {
+        this.terminateWorker();
+    }
+
+    private initializeWorker() {
+        if (typeof Worker !== 'undefined') {
+            this.worker = new Worker(
+                new URL(
+                    '../../../../core/workers/data-processor.worker',
+                    import.meta.url,
+                ),
+            );
+            this.worker.onmessage = ({ data }) => {
+                const { type, payload, requestId } = data;
+                if (requestId !== this.currentRequestId) return;
+
+                if (type === 'DATA_CHUNK') {
+                    this.handleDataChunk(payload);
+                }
+            };
+
+            this.worker.onerror = (e) => {
+                console.error('[WeaponService] Worker error, falling back:', e);
+                this.terminateWorker();
+            };
+
+            this.worker.onmessageerror = (e) => {
+                console.error(
+                    '[WeaponService] Worker message error, falling back:',
+                    e,
+                );
+                this.terminateWorker();
+            };
+        } else {
+            console.warn(
+                'Web Workers are not supported in this environment. Falling back to main thread processing.',
+            );
+        }
+    }
+
+    private terminateWorker() {
+        if (this.worker) {
+            this.worker.terminate();
+            this.worker = null;
+        }
+    }
+
+    private handleDataChunk(chunk: Weapon[]) {
+        this.weaponBuffer.push(...chunk);
+        const now = Date.now();
+
+        if (
+            this.weaponBuffer.length >= this.FLUSH_THRESHOLD ||
+            now - this.lastFlushTime >= this.FLUSH_INTERVAL
+        ) {
+            this.flushBuffer();
+        }
+    }
+
+    private flushBuffer() {
+        if (this.weaponBuffer.length === 0) return;
+
+        const chunk = [...this.weaponBuffer];
+        this.weaponBuffer = [];
+        this.lastFlushTime = Date.now();
+        this.weapons.update((current) => [...current, ...chunk]);
+    }
 
     // Private signals for processing
     private filteredWeaponsSig = computed(() => {
@@ -74,93 +157,184 @@ export class WeaponService {
         if (!append) {
             this.loading.set(true);
             this.error.set(null);
+            this.weapons.set([]);
+            this.weaponBuffer = [];
         }
 
-        try {
-            const result = await invoke<WeaponScanResult>('scan_weapons', {
+        this.currentRequestId = crypto.randomUUID();
+        const onEvent = new Channel<any>();
+        const collectedWeapons: Weapon[] = [];
+
+        const debugScan = localStorage.getItem('rwr.debug.scan') === '1';
+        if (debugScan) {
+            console.log('[WeaponService] scanWeapons start', {
                 gamePath,
-                directory: directory || null,
+                directory,
+                append,
+                requestId: this.currentRequestId,
             });
-
-            const weaponsWithSource = result.weapons;
-
-            if (append) {
-                this.weapons.update((current) => [
-                    ...current,
-                    ...weaponsWithSource,
-                ]);
-            } else {
-                this.weapons.set(weaponsWithSource);
-            }
-
-            // Report errors if any (only if not appending, or handle differently)
-            if (result.errors.length > 0) {
-                const errorMsg = this.transloco.translate('weapons.scanError', {
-                    error: `${result.errors.length} files failed`,
-                });
-                console.log('Touch errors', result.errors);
-                this.error.set(errorMsg);
-            }
-
-            return weaponsWithSource;
-        } catch (e) {
-            const errorMsg = this.transloco.translate('weapons.scanError', {
-                error: String(e),
-            });
-            this.error.set(errorMsg);
-            return [];
-        } finally {
-            if (!append) {
-                this.loading.set(false);
-            }
         }
+
+        return new Promise<Weapon[]>((resolve, reject) => {
+            let settled = false;
+
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                this.flushBuffer();
+                this.loading.set(false);
+                resolve(collectedWeapons);
+            };
+
+            const fail = (e: unknown) => {
+                if (settled) return;
+                settled = true;
+                this.loading.set(false);
+                reject(e);
+            };
+
+            const normalizeMessage = (
+                raw: any,
+            ): { event: string; data?: any } | null => {
+                if (!raw) return null;
+
+                // Common Tauri shapes (depends on API version): payload/message/data wrappers.
+                if (typeof raw === 'object') {
+                    if (typeof raw.event === 'string') return raw;
+                    if (raw.payload && typeof raw.payload.event === 'string')
+                        return raw.payload;
+                    if (raw.message && typeof raw.message.event === 'string')
+                        return raw.message;
+                    if (raw.data && typeof raw.data.event === 'string')
+                        return raw.data;
+                }
+
+                // Some event systems pass [eventType, data]
+                if (Array.isArray(raw) && typeof raw[0] === 'string') {
+                    return { event: raw[0], data: raw[1] };
+                }
+
+                return null;
+            };
+
+            onEvent.onmessage = (raw) => {
+                const msg = normalizeMessage(raw);
+                if (!msg) {
+                    if (debugScan) {
+                        console.log(
+                            '[WeaponService] channel event (unrecognized)',
+                            raw,
+                        );
+                    }
+                    return;
+                }
+
+                const { event: eventType, data } = msg;
+                if (debugScan) {
+                    console.log('[WeaponService] channel event', {
+                        eventType,
+                        dataLen: Array.isArray(data) ? data.length : undefined,
+                    });
+                }
+
+                if (eventType === 'chunk') {
+                    collectedWeapons.push(...data);
+                    if (this.worker) {
+                        try {
+                            this.worker.postMessage({
+                                type: 'PROCESS_WEAPONS',
+                                payload: data,
+                                requestId: this.currentRequestId,
+                            });
+                        } catch (e) {
+                            console.error(
+                                '[WeaponService] Worker postMessage failed, falling back:',
+                                e,
+                            );
+                            this.terminateWorker();
+                            this.handleDataChunk(data);
+                        }
+                    } else {
+                        this.handleDataChunk(data);
+                    }
+                } else if (eventType === 'error') {
+                    this.error.set(data);
+                } else if (eventType === 'finished') {
+                    finish();
+                }
+            };
+
+            invoke<WeaponScanResult>('scan_weapons_collect', {
+                gamePath,
+                game_path: gamePath,
+                directory: directory || null,
+            })
+                .then(async (result) => {
+                    const CHUNK_SIZE = 200;
+                    for (
+                        let i = 0;
+                        i < result.weapons.length;
+                        i += CHUNK_SIZE
+                    ) {
+                        const chunk = result.weapons.slice(i, i + CHUNK_SIZE);
+                        collectedWeapons.push(...chunk);
+
+                        if (this.worker) {
+                            try {
+                                this.worker.postMessage({
+                                    type: 'PROCESS_WEAPONS',
+                                    payload: chunk,
+                                    requestId: this.currentRequestId,
+                                });
+                            } catch (e) {
+                                this.terminateWorker();
+                                this.handleDataChunk(chunk);
+                            }
+                        } else {
+                            this.handleDataChunk(chunk);
+                        }
+
+                        await yieldToMain();
+                    }
+
+                    finish();
+                })
+                .catch((e) => {
+                    const errorMsg = this.transloco.translate(
+                        'weapons.scanError',
+                        {
+                            error: String(e),
+                        },
+                    );
+                    this.error.set(errorMsg);
+                    fail(e);
+                });
+        });
     }
 
     /**
-     * Batch scan multiple directories and update signals ONCE
+     * Batch scan multiple directories
      */
     async batchScanWeapons(paths: string[]): Promise<Weapon[]> {
         if (paths.length === 0) return [];
 
         this.loading.set(true);
         this.error.set(null);
+        this.weapons.set([]);
+        this.weaponBuffer = [];
 
-        try {
-            // Fetch all in parallel
-            const scanPromises = paths.map((path) =>
-                invoke<WeaponScanResult>('scan_weapons', {
-                    gamePath: path,
-                    directory: path,
-                }).catch((e) => {
-                    console.error(`Batch scan failed for ${path}:`, e);
-                    return {
-                        weapons: [],
-                        errors: [e],
-                        duplicateKeys: [],
-                        scanTime: 0,
-                    } as WeaponScanResult;
-                }),
-            );
-
-            const results = await Promise.all(scanPromises);
-            const allWeapons = results.flatMap((r) => r.weapons);
-            const allErrors = results.flatMap((r) => r.errors);
-
-            // Single update to the signal
-            this.weapons.set(allWeapons);
-
-            if (allErrors.length > 0) {
-                this.error.set(
-                    this.transloco.translate('weapons.scanError', {
-                        error: `${allErrors.length} issues detected across directories`,
-                    }),
-                );
+        const allWeapons: Weapon[] = [];
+        for (const path of paths) {
+            try {
+                const weapons = await this.scanWeapons(path, path, true);
+                allWeapons.push(...weapons);
+            } catch (e) {
+                console.error(`Batch scan failed for ${path}:`, e);
             }
-
-            return allWeapons;
-        } finally {
-            this.loading.set(false);
         }
+
+        this.loading.set(false);
+        return allWeapons;
     }
 
     /** Clear weapons */
@@ -195,14 +369,13 @@ export class WeaponService {
     /** Set column visibility */
     setColumnVisibility(columns: ColumnVisibility[]): void {
         this._visibleColumns.set(columns);
-        // Persist to localStorage
         try {
             localStorage.setItem(
                 'weapons.column.visibility',
                 JSON.stringify(columns),
             );
         } catch {
-            // Ignore localStorage errors
+            /* ignore */
         }
     }
 
@@ -228,56 +401,41 @@ export class WeaponService {
 
     /**
      * Get icon URL for a weapon using Tauri's convertFileSrc
-     * Resolves icon from textures/ folder relative to weapon file
-     * @param weapon Weapon with hudIcon property
-     * @returns Icon URL for use in <img> src attribute, or empty string if no icon
      */
     async getIconUrl(weapon: Weapon): Promise<string> {
-        if (!weapon.hudIcon) {
-            return '';
-        }
-
-        // Use the get_texture_path Tauri command to resolve the icon path
-        // The command navigates from weapon file to textures/ folder and returns absolute path
+        if (!weapon.hudIcon) return '';
         try {
             const iconPath = await invoke<string>('get_texture_path', {
                 weaponFilePath: weapon.sourceFile,
                 iconFilename: weapon.hudIcon,
             });
-            // Convert absolute path to Tauri asset URL
             return convertFileSrc(iconPath);
         } catch {
-            // Icon not found - silently return empty string
             return '';
         }
     }
 
-    /** Check if weapon matches search term */
     private matchesSearch(weapon: Weapon, term: string): boolean {
         if (!term) return true;
         const lowerTerm = term.toLowerCase();
-        const matches =
+        return (
             weapon.name.toLowerCase().includes(lowerTerm) ||
             (weapon.key?.toLowerCase().includes(lowerTerm) ?? false) ||
-            (weapon.tag?.toLowerCase().includes(lowerTerm) ?? false);
-        return matches;
+            (weapon.tag?.toLowerCase().includes(lowerTerm) ?? false)
+        );
     }
 
-    /** Check if weapon matches advanced filters */
     private matchesFilters(weapon: Weapon, filters: AdvancedFilters): boolean {
-        // Range filters
         if (filters.damage) {
             const dmg = weapon.killProbability;
             if (dmg < filters.damage.min || dmg > filters.damage.max)
                 return false;
         }
-
         if (filters.fireRate) {
             const rate = weapon.retriggerTime;
             if (rate < filters.fireRate.min || rate > filters.fireRate.max)
                 return false;
         }
-
         if (filters.magazineSize) {
             const mag = weapon.magazineSize;
             if (
@@ -286,115 +444,65 @@ export class WeaponService {
             )
                 return false;
         }
-
         if (filters.encumbrance) {
             const enc = weapon.encumbrance ?? 0;
             if (enc < filters.encumbrance.min || enc > filters.encumbrance.max)
                 return false;
         }
-
         if (filters.price) {
             const price = weapon.price ?? 0;
             if (price < filters.price.min || price > filters.price.max)
                 return false;
         }
-
-        // Stance accuracy filters
-        if (filters.stanceAccuracies) {
-            for (const [stance, range] of Object.entries(
-                filters.stanceAccuracies,
-            ) as [string, { min: number; max: number }][]) {
-                const accuracy = weapon.stanceAccuracies.find(
-                    (sa: StanceAccuracy) => sa.stance === stance,
-                );
-                if (!accuracy) return false;
-                if (
-                    accuracy.accuracy < range.min ||
-                    accuracy.accuracy > range.max
-                )
-                    return false;
-            }
-        }
-
-        // Exact match filters
-        if (filters.tag && weapon.tag !== filters.tag) {
-            return false;
-        }
-
+        if (filters.tag && weapon.tag !== filters.tag) return false;
         if (
             filters.suppressed !== undefined &&
             weapon.suppressed !== filters.suppressed
-        ) {
+        )
             return false;
-        }
-
         if (
             filters.canRespawnWith !== undefined &&
             weapon.canRespawnWith !== filters.canRespawnWith
-        ) {
+        )
             return false;
-        }
-
         return true;
     }
 
-    /** Sort weapons by column with stable sort */
     private sortWeapons(
         weapons: Weapon[],
         columnKey: string,
         direction: 'asc' | 'desc',
     ): Weapon[] {
-        // Create a copy with original indices for stable sort
         const indexed = weapons.map((w, i) => ({
             weapon: w,
             originalIndex: i,
         }));
-
         indexed.sort((a, b) => {
             const comparison = this.compareValues(
                 a.weapon[columnKey as keyof Weapon],
                 b.weapon[columnKey as keyof Weapon],
             );
-            // Apply direction
             const result = direction === 'asc' ? comparison : -comparison;
-            // Use original index as tiebreaker for stable sort
             return result !== 0 ? result : a.originalIndex - b.originalIndex;
         });
-
         return indexed.map((item) => item.weapon);
     }
 
-    /** Compare two values for sorting with null-safe comparison */
     private compareValues(a: unknown, b: unknown): number {
-        // Handle null/undefined
         if (a == null && b == null) return 0;
-        if (a == null) return 1; // Nulls last
-        if (b == null) return -1; // Nulls last
-
-        // Number comparison
-        if (typeof a === 'number' && typeof b === 'number') {
-            return a - b;
-        }
-
-        // String comparison
-        const aStr = String(a);
-        const bStr = String(b);
-        return aStr.localeCompare(bStr);
+        if (a == null) return 1;
+        if (b == null) return -1;
+        if (typeof a === 'number' && typeof b === 'number') return a - b;
+        return String(a).localeCompare(String(b));
     }
 
-    /** Get default column visibility */
     private getDefaultColumns(): ColumnVisibility[] {
-        // Try to load from localStorage
         try {
             const stored = localStorage.getItem('weapons.column.visibility');
-            if (stored) {
-                return JSON.parse(stored) as ColumnVisibility[];
-            }
+            if (stored) return JSON.parse(stored);
         } catch {
-            // Use defaults
+            /* ignore */
         }
-
-        // Default columns
         return [
             { columnId: 'key', visible: true, order: 0 },
             { columnId: 'name', visible: true, order: 1 },

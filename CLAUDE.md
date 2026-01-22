@@ -37,6 +37,12 @@ Auto-generated from all feature plans. Last updated: 2026-01-14
 - Tauri plugin-store (settings.json), localStorage (UI preferences) (001-fix-data-scanning)
 - TypeScript 5.8.3 (Angular 20.3.15 frontend), Rust edition 2021 (Tauri 2.x backend) + Angular v20.3.15, Tauri 2.x, quick-xml 0.37 (Rust XML parsing), Transloco 8.x (i18n), DaisyUI 5.5.14, Tailwind CSS 4.1.18 (001-fix-data-scanning)
 - File-based XML game data + Tauri plugin-store (settings.json) (001-fix-data-scanning)
+- TypeScript 5.8.3 + Angular v20.3.15 (frontend), Rust edition 2021 + Tauri 2.x (backend) + Lucide Angular v0.562.0, Transloco v8.x, Tailwind CSS v4.1.18, DaisyUI v5.5.14, Angular CDK v20.2.14 (for virtual scrolling fallback) (001-ui-layout-optimization)
+- Tauri plugin-store (settings.json for preferences) (001-ui-layout-optimization)
+- TypeScript 5.8.3 (strict mode) + Angular v20.3.15 (frontend), Rust edition 2021 + Tauri 2.x (backend) (001-ui-layout-optimization)
+- Tauri plugin-store (file-based key-value persistence in `settings.json` for user preferences) (001-ui-layout-optimization)
+- TypeScript 5.8.3 (strict mode), Angular v20.3.15 + Tailwind CSS v4.1.18, DaisyUI v5.5.14, Lucide Angular v0.562.0, Transloco v8.x (001-ui-layout-optimization)
+- Tauri plugin-store (settings.json for user preferences) (001-ui-layout-optimization)
 
 - TypeScript 5.8.3 (frontend), Rust (backend via Tauri 2.x) + Angular 20.3.15, Tauri 2.x, quick-xml (Rust), Transloco 8.x, Tailwind CSS 4.x, DaisyUI 5.x (001-weapons-directory-scanner)
 
@@ -56,9 +62,9 @@ cargo test [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECH
 TypeScript 5.8.3 (frontend), Rust (backend via Tauri 2.x): Follow standard conventions
 
 ## Recent Changes
-- 001-fix-data-scanning: Added TypeScript 5.8.3 (Angular 20.3.15 frontend), Rust edition 2021 (Tauri 2.x backend) + Angular v20.3.15, Tauri 2.x, quick-xml 0.37 (Rust XML parsing), Transloco 8.x (i18n), DaisyUI 5.5.14, Tailwind CSS 4.1.18
-- 001-fix-data-scanning: Added Rust edition 2021 (backend), TypeScript 5.8.3 (frontend) + quick-xml 0.37, walkdir 2.5, serde 1, rayon 1.10 (NEW), Angular v20.3.15, Tauri 2.x
-- 001-tauri-ci-release: Added YAML (GitHub Actions), Rust edition 2021, Node.js LTS + auri-apps/tauri-action@v1, actions/checkout@v4, actions/setup-node@v4, dtolnay/rust-toolchain@stable
+- 001-ui-layout-optimization: Added TypeScript 5.8.3 (strict mode), Angular v20.3.15 + Tailwind CSS v4.1.18, DaisyUI v5.5.14, Lucide Angular v0.562.0, Transloco v8.x
+- 001-ui-layout-optimization: Added TypeScript 5.8.3 (strict mode) + Angular v20.3.15 (frontend), Rust edition 2021 + Tauri 2.x (backend)
+- 001-ui-layout-optimization: Added TypeScript 5.8.3 + Angular v20.3.15 (frontend), Rust edition 2021 + Tauri 2.x (backend) + Lucide Angular v0.562.0, Transloco v8.x, Tailwind CSS v4.1.18, DaisyUI v5.5.14, Angular CDK v20.2.14 (for virtual scrolling fallback)
 
 
 <!-- MANUAL ADDITIONS START -->

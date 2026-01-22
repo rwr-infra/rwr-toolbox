@@ -3,11 +3,61 @@
 //! Scans RWR game directory for item XML files (.carry_item, .visual_item, etc.),
 //! parses them, and returns structured item data to the frontend.
 
+use crate::ScanEvent;
 use quick_xml::de::from_str;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use tauri::ipc::Channel;
 use walkdir::WalkDir;
+
+const BATCH_SIZE: usize = 50;
+
+fn resolve_packages_dirs(base: &Path) -> Vec<PathBuf> {
+    if base.ends_with("packages") {
+        return vec![base.to_path_buf()];
+    }
+
+    let mut roots: Vec<PathBuf> = Vec::new();
+
+    // macOS Steam installs often keep base game resources inside the app bundle.
+    let app_bundle_packages = base
+        .join("RunningWithRifles.app")
+        .join("Contents")
+        .join("Resources")
+        .join("media")
+        .join("packages");
+    if app_bundle_packages.exists() {
+        roots.push(app_bundle_packages);
+    }
+
+    // Workshop/custom content is typically under `media/packages` next to the executable.
+    let media_packages = base.join("media").join("packages");
+    if media_packages.exists() {
+        roots.push(media_packages);
+    }
+
+    // Some setups pass a game root where `packages/` exists directly.
+    let direct_packages = base.join("packages");
+    if direct_packages.exists() {
+        roots.push(direct_packages);
+    }
+
+    if roots.is_empty() {
+        // Fallback: keep the previous behavior even if the path doesn't exist.
+        roots.push(base.join("packages"));
+    }
+
+    // De-dupe while keeping order.
+    let mut deduped: Vec<PathBuf> = Vec::new();
+    for root in roots {
+        if !deduped.contains(&root) {
+            deduped.push(root);
+        }
+    }
+
+    deduped
+}
 
 /// Unified item structure (all item types)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -109,7 +159,7 @@ pub struct ItemCommonness {
 }
 
 /// Error during item scanning
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct ScanError {
     pub file: String,
     pub error: String,
@@ -235,113 +285,230 @@ struct RawEffect {
     effect_ref: Option<String>,
 }
 
-/// Scan items from game directory
-/// If `directory` is provided, scan that directory directly (it's expected to already be the packages directory)
+/// Scan items from a game/workshop directory.
+///
+/// `directory` / `game_path` may be either:
+/// - the `packages` directory
+/// - the game/workshop root that contains `media/` (we'll scan `media/packages`)
 #[tauri::command]
 pub async fn scan_items(
     game_path: String,
     directory: Option<String>,
-) -> Result<ItemScanResult, String> {
-    use std::sync::Mutex;
-    use std::collections::HashMap;
+    on_event: Channel<ScanEvent<Item>>,
+) -> Result<(), String> {
+    let source_directory = directory.clone().unwrap_or_else(|| game_path.clone());
+    let package_roots = resolve_packages_dirs(Path::new(&source_directory));
 
-    let start_time = std::time::Instant::now();
-
-    // Use provided directory if available, otherwise fall back to game_path/packages
-    let scan_path = if let Some(dir) = &directory {
-        dir.clone()
-    } else {
-        format!("{}/packages", game_path)
-    };
-    let input_path = Path::new(&scan_path);
-
-    if !input_path.exists() {
-        return Err(format!("Directory not found: {}", scan_path));
+    #[cfg(debug_assertions)]
+    {
+        eprintln!(
+            "[scan_items] source_directory={} roots={}",
+            source_directory,
+            package_roots
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect::<Vec<_>>()
+                .join(" | ")
+        );
     }
 
-    let input_path = input_path.to_path_buf();
+    if package_roots.iter().all(|p| !p.exists()) {
+        let paths = package_roots
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(format!("Directory not found (tried: {paths})"));
+    }
 
-    // Discover relevant files first to get an indexed iterator
-    let entries: Vec<walkdir::DirEntry> = WalkDir::new(&input_path)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().is_some_and(|ext| ext == "carry_item" || ext == "visual_item"))
+    // Collect all relevant files across possible packages roots (macOS app bundle + external media).
+    let mut files: Vec<(PathBuf, PathBuf)> = Vec::new();
+    for root in &package_roots {
+        if !root.exists() {
+            continue;
+        }
+        for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if path
+                .extension()
+                .is_some_and(|ext| ext == "carry_item" || ext == "visual_item")
+            {
+                files.push((root.clone(), path.to_path_buf()));
+            }
+        }
+    }
+
+    let send_event = |evt: ScanEvent<Item>| -> Result<(), String> {
+        on_event
+            .send(evt)
+            .map_err(|e| format!("Failed to send scan event: {e}"))
+    };
+
+    #[cfg(debug_assertions)]
+    {
+        eprintln!("[scan_items] discovered_files={}", files.len());
+    }
+
+    if files.is_empty() {
+        // Nothing to scan, but still notify the frontend so it can stop loading.
+        send_event(ScanEvent::Finished)?;
+        return Ok(());
+    }
+
+    let total = files.len();
+    send_event(ScanEvent::Progress { current: 0, total })?;
+
+    // Parallel processing using rayon.
+    // Note: carry_item files may contain multiple <carry_item> elements, so we return Vec<Item>.
+    let all_results: Vec<Result<Vec<Item>, String>> = files
+        .into_par_iter()
+        .enumerate()
+        .map(|(index, (packages_root, path))| {
+            let file_str = path.to_string_lossy().to_string();
+            let is_carry_item = path.extension().is_some_and(|ext| ext == "carry_item");
+            let base_id = format!("{}_{}", file_str, index);
+
+            if is_carry_item {
+                parse_carry_item(&path, &packages_root, base_id, &source_directory)
+            } else {
+                parse_visual_item(&path, &packages_root, base_id, &source_directory)
+                    .map(|i| vec![i])
+            }
+        })
         .collect();
 
-    if entries.is_empty() {
+    #[cfg(debug_assertions)]
+    {
+        let ok_count = all_results.iter().filter(|r| r.is_ok()).count();
+        let err_count = all_results.len() - ok_count;
+        let item_count: usize = all_results
+            .iter()
+            .filter_map(|r| r.as_ref().ok())
+            .map(|v| v.len())
+            .sum();
+        eprintln!(
+            "[scan_items] parsed_ok={} parsed_err={} parsed_items={}",
+            ok_count, err_count, item_count
+        );
+    }
+
+    // Send in batches
+    for (i, chunk) in all_results.chunks(BATCH_SIZE).enumerate() {
+        let items: Vec<Item> = chunk
+            .iter()
+            .filter_map(|r| r.as_ref().ok())
+            .flat_map(|v| v.iter().cloned())
+            .collect();
+        let errors: Vec<String> = chunk
+            .iter()
+            .filter_map(|r| r.as_ref().err().cloned())
+            .collect();
+
+        if !items.is_empty() {
+            send_event(ScanEvent::Chunk(items))?;
+        }
+
+        for error in errors {
+            send_event(ScanEvent::Error(error))?;
+        }
+
+        send_event(ScanEvent::Progress {
+            current: ((i + 1) * BATCH_SIZE).min(total),
+            total,
+        })?;
+    }
+
+    send_event(ScanEvent::Finished)?;
+
+    Ok(())
+}
+
+/// Fallback scan API (no IPC `Channel`).
+#[tauri::command]
+pub async fn scan_items_collect(
+    game_path: String,
+    directory: Option<String>,
+) -> Result<ItemScanResult, String> {
+    let started = std::time::Instant::now();
+
+    let source_directory = directory.clone().unwrap_or_else(|| game_path.clone());
+    let package_roots = resolve_packages_dirs(Path::new(&source_directory));
+
+    if package_roots.iter().all(|p| !p.exists()) {
+        let paths = package_roots
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(format!("Directory not found (tried: {paths})"));
+    }
+
+    let mut files: Vec<(PathBuf, PathBuf)> = Vec::new();
+    for root in &package_roots {
+        if !root.exists() {
+            continue;
+        }
+        for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if path
+                .extension()
+                .is_some_and(|ext| ext == "carry_item" || ext == "visual_item")
+            {
+                files.push((root.clone(), path.to_path_buf()));
+            }
+        }
+    }
+
+    if files.is_empty() {
         return Ok(ItemScanResult {
             items: vec![],
             errors: vec![],
             duplicate_keys: vec![],
-            scan_time: start_time.elapsed().as_millis() as u64,
+            scan_time: started.elapsed().as_millis() as u64,
         });
     }
 
-    // Thread-safe collections for parallel processing
-    let items = Mutex::new(Vec::new());
-    let errors = Mutex::new(Vec::new());
-    let all_keys: Mutex<HashMap<String, i32>> = Mutex::new(HashMap::new());
+    let all_results: Vec<Result<Vec<Item>, ScanError>> = files
+        .into_par_iter()
+        .enumerate()
+        .map(|(index, (packages_root, path))| {
+            let file_str = path.to_string_lossy().to_string();
+            let is_carry_item = path.extension().is_some_and(|ext| ext == "carry_item");
+            let base_id = format!("{}_{}", file_str, index);
 
-    // Parallel processing using rayon
-    entries.into_par_iter().enumerate().for_each(|(index, entry)| {
-        let path = entry.path();
-        let file_str = path.to_string_lossy().to_string();
-        let is_carry_item = path.extension().is_some_and(|ext| ext == "carry_item");
-        let base_id = format!("{}_{}", file_str, index);
+            let parsed = if is_carry_item {
+                parse_carry_item(&path, &packages_root, base_id, &source_directory)
+            } else {
+                parse_visual_item(&path, &packages_root, base_id, &source_directory)
+                    .map(|i| vec![i])
+            };
 
-        let result = if is_carry_item {
-            parse_carry_item(path, &input_path, base_id, &scan_path)
-                .map(|items_from_file| {
-                    items_from_file.into_iter().map(|i| (i, true)).collect::<Vec<_>>()
-                })
-        } else {
-            parse_visual_item(path, &input_path, base_id, &scan_path)
-                .map(|item| vec![(item, false)])
-        };
-
-        match result {
-            Ok(item_entries) => {
-                for (item, _is_carry) in item_entries {
-                    // Check for duplicate keys
-                    if let Some(ref key) = item.key {
-                        let mut keys = all_keys.lock().unwrap();
-                        let entry = keys.entry(key.clone()).or_insert(0);
-                        *entry += 1;
-                    }
-                    items.lock().unwrap().push(item);
-                }
-            }
-            Err(e) => {
-                errors.lock().unwrap().push(ScanError {
-                    file: file_str,
-                    error: e,
-                    severity: "error".to_string(),
-                });
-            }
-        }
-    });
-
-    // Extract results from mutex
-    let items = items.into_inner().unwrap();
-    let errors = errors.into_inner().unwrap();
-    let all_keys = all_keys.into_inner().unwrap();
-
-    // Find duplicate keys
-    let duplicate_keys: Vec<String> = all_keys
-        .into_iter()
-        .filter(|(_, count)| *count > 1)
-        .map(|(key, _)| key)
+            parsed.map_err(|e| ScanError {
+                file: file_str,
+                error: e,
+                severity: "error".to_string(),
+            })
+        })
         .collect();
 
-    let scan_time = start_time.elapsed().as_millis() as u64;
+    let items: Vec<Item> = all_results
+        .iter()
+        .filter_map(|r| r.as_ref().ok())
+        .flat_map(|v| v.iter().cloned())
+        .collect();
+    let errors: Vec<ScanError> = all_results
+        .iter()
+        .filter_map(|r| r.as_ref().err().cloned())
+        .collect();
 
     Ok(ItemScanResult {
         items,
         errors,
-        duplicate_keys,
-        scan_time,
+        duplicate_keys: vec![],
+        scan_time: started.elapsed().as_millis() as u64,
     })
 }
+
 
 /// Parse a carry_item XML file (may contain multiple carry_item elements)
 fn parse_carry_item(

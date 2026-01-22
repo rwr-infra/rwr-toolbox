@@ -3,6 +3,16 @@
  * Feature: 007-settings-persistence-detail-ux
  */
 
+:host {
+    display: block;
+
+    // T014: GPU acceleration for smooth collapse animations
+    ::ng-deep .collapse .collapse-content {
+        will-change: transform, opacity;
+        transform: translateZ(0);
+    }
+}
+
 table {
     tr.hover {
         cursor: pointer;

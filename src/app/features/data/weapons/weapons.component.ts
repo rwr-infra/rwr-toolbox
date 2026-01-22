@@ -1,14 +1,35 @@
-import { Component, inject, computed, signal, effect } from '@angular/core';
+import {
+    Component,
+    inject,
+    computed,
+    signal,
+    effect,
+    AfterViewInit,
+    ViewChild,
+    DestroyRef,
+} from '@angular/core';
+import {
+    CdkVirtualScrollViewport,
+    ScrollingModule,
+} from '@angular/cdk/scrolling';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { invoke } from '@tauri-apps/api/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { WeaponService } from './services/weapon.service';
 import { DirectoryService } from '../../settings/services/directory.service';
 import { Weapon, AdvancedFilters } from '../../../shared/models/weapons.models';
+import { yieldToMain } from '../../../core/utils/performance.utils';
 import { WEAPON_COLUMNS } from './weapon-columns';
 import { ScrollingModeService } from '../../shared/services/scrolling-mode.service';
 import type { PaginationState } from '../../../shared/models/common.models';
-import { animate, style, transition, trigger } from '@angular/animations';
+import {
+    animate,
+    state,
+    style,
+    transition,
+    trigger,
+} from '@angular/animations';
 
 /**
  * Weapons table component with search, filters, and column visibility
@@ -17,10 +38,33 @@ import { animate, style, transition, trigger } from '@angular/animations';
  */
 @Component({
     selector: 'app-weapons',
-    imports: [TranslocoPipe, LucideAngularModule],
+    imports: [TranslocoPipe, LucideAngularModule, ScrollingModule],
     templateUrl: './weapons.component.html',
     styleUrl: './weapons.component.scss',
     animations: [
+        trigger('expandCollapse', [
+            state(
+                'collapsed',
+                style({
+                    height: '0',
+                    opacity: 0,
+                    overflow: 'hidden',
+                    visibility: 'hidden',
+                }),
+            ),
+            state(
+                'expanded',
+                style({
+                    height: '*',
+                    opacity: 1,
+                    overflow: 'hidden',
+                    visibility: 'visible',
+                }),
+            ),
+            transition('collapsed <=> expanded', [
+                animate('250ms cubic-bezier(0.4, 0, 0.2, 1)'),
+            ]),
+        ]),
         trigger('slideIn', [
             transition(':enter', [
                 style({ transform: 'translateX(100%)' }),
@@ -38,11 +82,20 @@ import { animate, style, transition, trigger } from '@angular/animations';
         ]),
     ],
 })
-export class WeaponsComponent {
+export class WeaponsComponent implements AfterViewInit {
     private weaponService = inject(WeaponService);
     private directoryService = inject(DirectoryService);
     private transloco = inject(TranslocoService);
     private scrollingModeService = inject(ScrollingModeService);
+    private destroyRef = inject(DestroyRef);
+
+    @ViewChild('weaponsViewport')
+    private weaponsViewport?: CdkVirtualScrollViewport;
+
+    readonly rowHeight = 44;
+    private iconLoadToken = 0;
+
+    trackByWeaponId = (_: number, weapon: Weapon) => weapon.id;
 
     // Readonly signals from service
     readonly weapons = this.weaponService.filteredWeapons;
@@ -113,6 +166,9 @@ export class WeaponsComponent {
     // T004: Image URL cache: weapon.key -> image URL
     readonly weaponIconUrls = signal<Map<string, string>>(new Map());
 
+    // T013: Track loading state for icons: weapon.key -> boolean
+    readonly loadingIcons = signal<Set<string>>(new Set());
+
     // Bug fix: Track if we've already attempted loading to avoid duplicate load attempts
     private hasAttemptedLoad = signal<boolean>(false);
 
@@ -172,13 +228,8 @@ export class WeaponsComponent {
             }
         }
 
-        // T004: Auto-load images when paginated weapons change
-        effect(() => {
-            const weapons = this.paginatedWeapons();
-            for (const weapon of weapons) {
-                this.loadWeaponIcon(weapon);
-            }
-        });
+        // NOTE: Icon loading is driven by the virtual-scroll viewport so we only
+        // request icons for visible rows (plus a small buffer).
 
         // Bug fix: Auto-load weapons when valid directories become available after initialization
         effect(() => {
@@ -212,6 +263,42 @@ export class WeaponsComponent {
                 this.loadWeapons();
             }
         });
+    }
+
+    ngAfterViewInit(): void {
+        const viewport = this.weaponsViewport;
+        if (!viewport) return;
+
+        viewport.renderedRangeStream
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((range) => {
+                void this.loadVisibleWeaponIcons(range.start, range.end);
+            });
+
+        queueMicrotask(() => viewport.checkViewportSize());
+    }
+
+    private async loadVisibleWeaponIcons(
+        startIndex: number,
+        endIndex: number,
+    ): Promise<void> {
+        const token = ++this.iconLoadToken;
+        const weapons = this.paginatedWeapons();
+        const end = Math.min(endIndex, weapons.length);
+
+        for (let i = startIndex; i < end; i++) {
+            if (token !== this.iconLoadToken) return;
+
+            await this.loadWeaponIcon(weapons[i]);
+
+            if (i > startIndex && (i - startIndex) % 6 === 0) {
+                await yieldToMain();
+            }
+        }
+    }
+
+    private scrollViewportToTop(): void {
+        this.weaponsViewport?.scrollToIndex(0);
     }
 
     toggleScrollingMode(): void {
@@ -252,12 +339,9 @@ export class WeaponsComponent {
             return;
         }
 
-        const weapons = await this.weaponService.scanWeapons(
-            directory.path,
-            directory.path,
-        );
+        await this.weaponService.scanWeapons(directory.path, directory.path);
 
-        console.log('Touch weapons render', weapons.slice(0, 20));
+        this.scrollViewportToTop();
     }
 
     /** Handle search input */
@@ -410,11 +494,8 @@ export class WeaponsComponent {
             return;
         }
 
-        const weapons = await this.weaponService.refreshWeapons(
-            directory.path,
-            directory.path,
-        );
-        console.log('Touch refresh weapons', weapons.slice(0, 20));
+        await this.weaponService.refreshWeapons(directory.path, directory.path);
+        this.scrollViewportToTop();
     }
 
     /** Handle page size dropdown change */
@@ -427,6 +508,8 @@ export class WeaponsComponent {
             currentPage: 1, // Reset to page 1
         }));
         localStorage.setItem('weapons-page-size', String(newSize));
+        this.scrollViewportToTop();
+        this.weaponsViewport?.checkViewportSize();
     }
 
     /** Handle weapon row click - show details */
@@ -532,9 +615,20 @@ export class WeaponsComponent {
     /** T004: Load weapon icon URL and cache the result */
     async loadWeaponIcon(weapon: Weapon): Promise<void> {
         const weaponKey = weapon.key || '';
-        if (!weapon.hudIcon || this.weaponIconUrls().has(weaponKey)) {
+        if (
+            !weapon.hudIcon ||
+            this.weaponIconUrls().has(weaponKey) ||
+            this.loadingIcons().has(weaponKey)
+        ) {
             return;
         }
+
+        this.loadingIcons.update((set) => {
+            const next = new Set(set);
+            next.add(weaponKey);
+            return next;
+        });
+
         try {
             const url = await this.weaponService.getIconUrl(weapon);
             if (url) {
@@ -546,6 +640,12 @@ export class WeaponsComponent {
             }
         } catch {
             // Icon loading failed - silently skip
+        } finally {
+            this.loadingIcons.update((set) => {
+                const next = new Set(set);
+                next.delete(weaponKey);
+                return next;
+            });
         }
     }
 
@@ -590,6 +690,8 @@ export class WeaponsComponent {
     /** T063: Handle page changes */
     onPageChange(page: number): void {
         this.pagination.update((p) => ({ ...p, currentPage: page }));
+        this.scrollViewportToTop();
+        this.weaponsViewport?.checkViewportSize();
     }
 
     /** T064: Get page numbers for pagination */

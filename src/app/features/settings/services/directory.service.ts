@@ -343,17 +343,17 @@ export class DirectoryService {
 
             // Execute batch scans which handle parallel backend calls and single signal updates
             const [weapons, items] = await Promise.all([
-                this.weaponService.batchScanWeapons(paths),
-                this.itemService.batchScanItems(paths),
+                this.weaponService.batchScanWeapons(paths) as Promise<any[]>,
+                this.itemService.batchScanItems(paths) as Promise<any[]>,
             ]);
 
             // Update directory metadata based on the loaded data
             const updated = this.directoriesState().map((d) => {
                 const dirWeaponCount = weapons.filter(
-                    (w) => w.sourceDirectory === d.path,
+                    (w: any) => w.sourceDirectory === d.path,
                 ).length;
                 const dirItemCount = items.filter(
-                    (i) => i.sourceDirectory === d.path,
+                    (i: any) => i.sourceDirectory === d.path,
                 ).length;
 
                 return {
