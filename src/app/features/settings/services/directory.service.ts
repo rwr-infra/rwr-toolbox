@@ -555,6 +555,7 @@ export class DirectoryService {
             access_denied: 'settings.errors.accessDenied',
             missing_media_subdirectory:
                 'settings.errors.missingMediaSubdirectory',
+            packages_not_found: 'settings.errors.packagesNotFound',
             duplicate_directory: 'settings.errors.duplicateDirectory',
         };
         return messages[errorCode] || 'settings.errors.unknown';
@@ -584,5 +585,24 @@ export class DirectoryService {
      */
     getFirstValidDirectory(): ScanDirectory | null {
         return this.getValidDirectories()[0] || null;
+    }
+
+    /**
+     * Roots used by Data pages: game install directory + all valid scan directories.
+     */
+    getCombinedScanRoots(): string[] {
+        const roots: string[] = [];
+
+        const gameDir = this.settingsService.getGameInstallDirectory();
+        if (gameDir) {
+            roots.push(gameDir);
+        }
+
+        // Include all valid/active scan directories.
+        for (const dir of this.getValidDirectories()) {
+            roots.push(dir.path);
+        }
+
+        return Array.from(new Set(roots));
     }
 }

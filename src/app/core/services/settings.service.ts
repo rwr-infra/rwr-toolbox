@@ -1,4 +1,8 @@
 import { Injectable, signal, computed } from '@angular/core';
+import type {
+    DirectoryErrorCode,
+    ValidationResult,
+} from '../../shared/models/directory.models';
 import {
     AppSettings,
     ApiEndpoint,
@@ -13,6 +17,7 @@ import { DEFAULT_SERVER_COLUMN_VISIBILITY } from '../../features/servers/server-
  */
 const DEFAULT_SETTINGS: AppSettings = {
     apiEndpoint: 'global',
+    gameInstallDirectory: null,
     serverPageSize: 100,
     playerPageSize: 100,
     enablePing: true,
@@ -44,6 +49,27 @@ const AVAILABLE_ENDPOINTS: ApiEndpoint[] = [
 export class SettingsService {
     // Reactive settings using signals
     private settingsState = signal<AppSettings>(DEFAULT_SETTINGS);
+
+    private getDirectoryErrorMessageKey(errorCode: DirectoryErrorCode): string {
+        const messages: Record<DirectoryErrorCode, string> = {
+            path_not_found: 'settings.errors.pathNotFound',
+            not_a_directory: 'settings.errors.notADirectory',
+            access_denied: 'settings.errors.accessDenied',
+            missing_media_subdirectory:
+                'settings.errors.missingMediaSubdirectory',
+            packages_not_found: 'settings.errors.packagesNotFound',
+            duplicate_directory: 'settings.errors.duplicateDirectory',
+        };
+
+        return messages[errorCode] || 'settings.errors.unknown';
+    }
+
+    private gameDirValidationState = signal<ValidationResult | null>(null);
+
+    /** Latest validation for game install directory */
+    readonly gameInstallDirectoryValidation = computed(() =>
+        this.gameDirValidationState(),
+    );
 
     /** Current settings */
     readonly settings = computed(() => this.settingsState());
@@ -118,66 +144,39 @@ export class SettingsService {
         }
 
         if (stored) {
-            // T010: One-time migration from gamePath to scanDirectories
+            // T010: Legacy migration (pre-001-game-path-setup)
+            // Previously we used a single `gamePath` which later got migrated into `scanDirectories`.
+            // Keep this migration for backwards compatibility, but store it as `gameInstallDirectory`
+            // (the dedicated base-game setting) instead of a scan directory.
             if (stored.gamePath && stored.gamePath.trim() !== '') {
-                // Check if scanDirectories is empty or missing
-                if (
-                    !stored.scanDirectories ||
-                    stored.scanDirectories.length === 0
-                ) {
-                    // Create ScanDirectory from gamePath
-                    const migratedDirectory: ScanDirectory = {
-                        id: crypto.randomUUID(),
-                        path: stored.gamePath.trim(),
-                        status: 'pending',
-                        displayName:
-                            stored.gamePath
-                                .split(/[/\\]/)
-                                .filter(Boolean)
-                                .pop() || stored.gamePath,
-                        addedAt: Date.now(),
-                        lastScannedAt: 0,
-                        type: 'game',
-                    };
-                    stored.scanDirectories = [migratedDirectory];
-                    console.log(
-                        `[SettingsService] Migrated gamePath to scan directory: ${stored.gamePath}`,
-                    );
-                }
-                // Remove gamePath from settings after migration
+                stored.gameInstallDirectory = stored.gamePath.trim();
                 delete stored.gamePath;
             }
 
             this.settingsState.set({ ...DEFAULT_SETTINGS, ...stored });
 
-            // Persist migrated settings if we made changes
-            if (
-                !stored.gamePath &&
-                stored.scanDirectories &&
-                stored.scanDirectories.length > 0
-            ) {
-                if (store) {
-                    try {
-                        await store.set(this.LOCAL_STORAGE_KEY, stored);
-                        await store.save();
-                    } catch (error) {
-                        console.error(
-                            'Failed to save migrated settings to Tauri Store:',
-                            error,
-                        );
-                    }
-                } else {
-                    try {
-                        localStorage.setItem(
-                            this.LOCAL_STORAGE_KEY,
-                            JSON.stringify(stored),
-                        );
-                    } catch (error) {
-                        console.error(
-                            'Failed to save migrated settings to localStorage:',
-                            error,
-                        );
-                    }
+            // Persist if we made migration changes.
+            if (store) {
+                try {
+                    await store.set(this.LOCAL_STORAGE_KEY, stored);
+                    await store.save();
+                } catch (error) {
+                    console.error(
+                        'Failed to save migrated settings to Tauri Store:',
+                        error,
+                    );
+                }
+            } else {
+                try {
+                    localStorage.setItem(
+                        this.LOCAL_STORAGE_KEY,
+                        JSON.stringify(stored),
+                    );
+                } catch (error) {
+                    console.error(
+                        'Failed to save migrated settings to localStorage:',
+                        error,
+                    );
                 }
             }
         }
@@ -435,5 +434,67 @@ export class SettingsService {
      */
     async updateScanDirectories(directories: ScanDirectory[]): Promise<void> {
         await this.updateSettings({ scanDirectories: directories });
+    }
+
+    getGameInstallDirectory(): string | null {
+        return this.settingsState().gameInstallDirectory;
+    }
+
+    async setGameInstallDirectory(path: string | null): Promise<void> {
+        await this.updateSettings({ gameInstallDirectory: path });
+    }
+
+    async validateGameInstallDirectory(
+        path?: string | null,
+    ): Promise<ValidationResult> {
+        const value = (path ?? this.getGameInstallDirectory())?.trim() ?? '';
+        if (!value) {
+            const result: ValidationResult = {
+                valid: false,
+                errorCode: null,
+                message: 'settings.errors.gamePathNotSet',
+            };
+            this.gameDirValidationState.set(result);
+            return result;
+        }
+
+        try {
+            // Dynamic import keeps web builds working.
+            const mod = await import('@tauri-apps/api/core');
+            const raw = await mod.invoke<any>(
+                'validate_game_install_directory',
+                {
+                    path: value,
+                },
+            );
+
+            const errorCode = (raw.errorCode ??
+                null) as DirectoryErrorCode | null;
+            const result: ValidationResult = {
+                valid: raw.valid,
+                errorCode,
+                message: errorCode
+                    ? this.getDirectoryErrorMessageKey(errorCode)
+                    : 'settings.pathValid',
+                details: raw.details ?? undefined,
+                packageCount: raw.packageCount,
+            };
+
+            this.gameDirValidationState.set(result);
+            return result;
+        } catch (e) {
+            console.error(
+                '[SettingsService] validateGameInstallDirectory failed:',
+                e,
+            );
+
+            const result: ValidationResult = {
+                valid: false,
+                errorCode: 'access_denied',
+                message: 'settings.errors.accessDenied',
+            };
+            this.gameDirValidationState.set(result);
+            return result;
+        }
     }
 }

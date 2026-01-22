@@ -242,22 +242,18 @@ export class ItemsComponent implements AfterViewInit {
             // Ensure DirectoryService initialization is kicked off (it is idempotent).
             void this.directoryService.ensureInitialized();
 
-            const initialized = this.directoryService.initializedSig();
-            const validDirCount =
-                this.directoryService.validDirectoryCountSig();
+            const roots = this.directoryService.getCombinedScanRoots();
             const scanState = this.directoryService.scanProgressSig().state;
             const hasAttempted = this.hasAttemptedLoad();
-            const hasItems = this.items().length > 0;
+            const hasItems = this.itemService.itemsSig().length > 0;
 
             // Only trigger load when:
-            // 1. Service is initialized
-            // 2. Valid directories are available
-            // 3. Not currently running a multi-directory scan (avoid races/duplicate scans)
+            // 1. At least one scan root exists (game install dir OR extra scan dirs)
+            // 2. Not currently running a multi-directory scan (avoid races/duplicate scans)
             // 3. Haven't attempted loading yet
             // 4. No items loaded yet
             if (
-                initialized &&
-                validDirCount > 0 &&
+                roots.length > 0 &&
                 scanState !== 'scanning' &&
                 !hasAttempted &&
                 !hasItems
@@ -323,12 +319,9 @@ export class ItemsComponent implements AfterViewInit {
             return;
         }
 
-        // T004: Use selected directory or fall back to first valid directory
-        const directory =
-            this.directoryService.getSelectedDirectory() ||
-            this.directoryService.getFirstValidDirectory();
+        const roots = this.directoryService.getCombinedScanRoots();
 
-        if (!directory) {
+        if (roots.length === 0) {
             // Bug fix: Don't set error if directories are still being validated or if service is not initialized yet
             const isAnyValidating = this.directoryService.isAnyValidatingSig();
             const initialized = this.directoryService.initializedSig();
@@ -345,7 +338,7 @@ export class ItemsComponent implements AfterViewInit {
             return;
         }
 
-        await this.itemService.scanItems(directory.path, directory.path);
+        await this.itemService.batchScanItems(roots);
     }
 
     /** Handle search input */
@@ -512,12 +505,9 @@ export class ItemsComponent implements AfterViewInit {
 
     /** Refresh items from game directory */
     async onRefresh(): Promise<void> {
-        // T004: Use selected directory or fall back to first valid directory
-        const directory =
-            this.directoryService.getSelectedDirectory() ||
-            this.directoryService.getFirstValidDirectory();
+        const roots = this.directoryService.getCombinedScanRoots();
 
-        if (!directory) {
+        if (roots.length === 0) {
             const errorMsg = this.transloco.translate(
                 'items.errors.noGamePath',
             );
@@ -525,7 +515,7 @@ export class ItemsComponent implements AfterViewInit {
             return;
         }
 
-        await this.itemService.refreshItems(directory.path, directory.path);
+        await this.itemService.batchScanItems(roots);
     }
 
     /** Handle page size dropdown change */

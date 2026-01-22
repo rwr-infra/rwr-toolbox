@@ -1,4 +1,22 @@
 <div class="space-y-4" *transloco="let t">
+    @if (!systemStatus().gamePathConfigured) {
+        <div class="alert alert-warning border border-warning/20">
+            <i-lucide name="alert-triangle" class="h-4 w-4"></i-lucide>
+            <div>
+                <h3 class="font-bold text-sm">
+                    {{ t('dashboard.gameDirMissingTitle') }}
+                </h3>
+                <div class="text-xs">
+                    {{ t('dashboard.gameDirMissingDesc') }}
+                </div>
+            </div>
+            <a class="btn btn-sm btn-outline" routerLink="/settings">
+                <i-lucide name="settings" class="h-4 w-4"></i-lucide>
+                {{ t('dashboard.gameDirMissingCta') }}
+            </a>
+        </div>
+    }
+
     <!-- Stats Grid -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Active Servers -->
@@ -23,14 +41,14 @@
                             <span
                                 class="w-1.5 h-1.5 rounded-full bg-success"
                             ></span>
-                            Online
+                            {{ t('dashboard.statusOnline') }}
                         </span>
                     } @else {
                         <span class="text-error flex items-center gap-1">
                             <span
                                 class="w-1.5 h-1.5 rounded-full bg-error"
                             ></span>
-                            Offline
+                            {{ t('dashboard.statusOffline') }}
                         </span>
                     }
                 </div>
@@ -51,7 +69,9 @@
                 <div class="stat-value text-2xl text-secondary">
                     {{ stats().playerCount }}
                 </div>
-                <div class="stat-desc text-xs mt-1 truncate">Total global</div>
+                <div class="stat-desc text-xs mt-1 truncate">
+                    {{ t('dashboard.playersScope') }}
+                </div>
             </div>
         </div>
 
@@ -64,12 +84,14 @@
                 <div
                     class="stat-title text-xs uppercase tracking-wider font-semibold"
                 >
-                    Local Mods
+                    {{ t('dashboard.localModsTitle') }}
                 </div>
                 <div class="stat-value text-2xl text-accent">
                     {{ stats().modCount }}
                 </div>
-                <div class="stat-desc text-xs mt-1 truncate">Installed</div>
+                <div class="stat-desc text-xs mt-1 truncate">
+                    {{ t('dashboard.localModsDesc') }}
+                </div>
             </div>
         </div>
 
@@ -99,10 +121,14 @@
                 <div class="stat-value text-lg">
                     @if (stats().apiStatus === 'online') {
                         <span class="text-success">{{
-                            stats().apiPing ? stats().apiPing + 'ms' : 'Online'
+                            stats().apiPing
+                                ? stats().apiPing + 'ms'
+                                : t('dashboard.statusOnline')
                         }}</span>
                     } @else {
-                        <span class="text-error">Offline</span>
+                        <span class="text-error">{{
+                            t('dashboard.statusOffline')
+                        }}</span>
                     }
                 </div>
                 <div class="stat-desc text-xs mt-1 truncate">
@@ -122,7 +148,7 @@
                 <h2
                     class="card-title text-xs uppercase opacity-50 font-bold mb-2"
                 >
-                    Quick Actions
+                    {{ t('dashboard.quickActions') }}
                 </h2>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-1">
                     <button
@@ -168,10 +194,10 @@
                     <h2
                         class="card-title text-xs uppercase opacity-50 font-bold"
                     >
-                        Data Sync
+                        {{ t('dashboard.dataSyncTitle') }}
                     </h2>
                     <p class="text-xs opacity-60 hidden lg:block">
-                        Force manual refresh
+                        {{ t('dashboard.dataSyncDesc') }}
                     </p>
                 </div>
                 <button
@@ -179,7 +205,7 @@
                     (click)="refresh()"
                 >
                     <i-lucide name="refresh-cw" class="h-4 w-4"></i-lucide>
-                    Refresh
+                    {{ t('dashboard.refresh') }}
                 </button>
             </div>
         </div>
@@ -199,7 +225,7 @@
                         name="inbox"
                         class="h-10 w-10 mx-auto mb-2 opacity-20"
                     ></i-lucide>
-                    No activity recorded
+                    {{ t('dashboard.noActivity') }}
                 </div>
             } @else {
                 <div class="max-h-56 overflow-y-auto mt-2 pr-2">

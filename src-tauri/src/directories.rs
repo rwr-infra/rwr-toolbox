@@ -30,6 +30,7 @@ pub enum DirectoryErrorCode {
     NotADirectory,
     AccessDenied,
     MissingMediaSubdirectory,
+    PackagesNotFound,
 }
 
 /// Detailed validation information
@@ -123,7 +124,7 @@ pub fn validate_directory(path: String) -> DirectoryValidationResult {
     }
 
     // Count package subdirectories in media/
-    let package_count = count_packages(&media_path);
+    let package_count = count_subdirs(&media_path);
 
     // All checks passed
     DirectoryValidationResult {
@@ -140,10 +141,9 @@ pub fn validate_directory(path: String) -> DirectoryValidationResult {
     }
 }
 
-/// Count package subdirectories in the media folder
-/// Packages are immediate subdirectories of media/
-fn count_packages(media_path: &Path) -> usize {
-    match std::fs::read_dir(media_path) {
+/// Count immediate subdirectories.
+fn count_subdirs(path: &Path) -> usize {
+    match std::fs::read_dir(path) {
         Ok(entries) => entries
             .filter_map(|entry| entry.ok())
             .filter(|entry| entry.path().is_dir())
@@ -153,6 +153,158 @@ fn count_packages(media_path: &Path) -> usize {
 }
 
 /// Check if a path is readable (platform-specific)
+fn candidate_packages_dirs(base: &Path) -> Vec<std::path::PathBuf> {
+    use std::path::PathBuf;
+
+    if base.ends_with("packages") {
+        return vec![base.to_path_buf()];
+    }
+
+    let mut roots: Vec<PathBuf> = Vec::new();
+
+    // Common layouts
+    roots.push(base.join("media").join("packages"));
+    roots.push(base.join("packages"));
+
+    // macOS Steam install: base points to a Steam folder containing the app bundle.
+    roots.push(
+        base.join("RunningWithRifles.app")
+            .join("Contents")
+            .join("Resources")
+            .join("media")
+            .join("packages"),
+    );
+
+    // If base is the app bundle itself.
+    if base
+        .file_name()
+        .is_some_and(|n| n.to_string_lossy() == "RunningWithRifles.app")
+    {
+        roots.push(
+            base.join("Contents")
+                .join("Resources")
+                .join("media")
+                .join("packages"),
+        );
+    }
+
+    // If base is already inside the app bundle resources.
+    if base.ends_with("Resources") {
+        roots.push(base.join("media").join("packages"));
+    }
+
+    // If base is media/ inside the app bundle.
+    if base.ends_with("media") {
+        roots.push(base.join("packages"));
+    }
+
+    // De-dupe while preserving order
+    let mut deduped: Vec<PathBuf> = Vec::new();
+    for r in roots {
+        if !deduped.contains(&r) {
+            deduped.push(r);
+        }
+    }
+
+    deduped
+}
+
+/// Validate a game installation directory (base game) for loading content.
+///
+/// Unlike `validate_directory`, this accepts multiple layouts:
+/// - `<dir>/media/packages`
+/// - `<dir>/packages`
+/// - `<dir>/RunningWithRifles.app/Contents/Resources/media/packages` (macOS)
+///
+/// It is considered valid if we can locate at least one existing `packages` root.
+#[tauri::command]
+pub fn validate_game_install_directory(path: String) -> DirectoryValidationResult {
+    let path_obj = Path::new(&path);
+
+    if !path_obj.exists() {
+        return DirectoryValidationResult {
+            valid: false,
+            error_code: Some(DirectoryErrorCode::PathNotFound),
+            message: "The specified path does not exist".to_string(),
+            details: Some(ValidationDetails {
+                path_exists: false,
+                is_directory: false,
+                is_readable: false,
+                has_media_subdirectory: false,
+            }),
+            package_count: None,
+        };
+    }
+
+    if !path_obj.is_dir() {
+        return DirectoryValidationResult {
+            valid: false,
+            error_code: Some(DirectoryErrorCode::NotADirectory),
+            message: "The path is not a directory".to_string(),
+            details: Some(ValidationDetails {
+                path_exists: true,
+                is_directory: false,
+                is_readable: false,
+                has_media_subdirectory: false,
+            }),
+            package_count: None,
+        };
+    }
+
+    let readable = is_readable(path_obj);
+    if !readable {
+        return DirectoryValidationResult {
+            valid: false,
+            error_code: Some(DirectoryErrorCode::AccessDenied),
+            message: "Access to the directory is denied".to_string(),
+            details: Some(ValidationDetails {
+                path_exists: true,
+                is_directory: true,
+                is_readable: false,
+                has_media_subdirectory: false,
+            }),
+            package_count: None,
+        };
+    }
+
+    let candidates = candidate_packages_dirs(path_obj);
+    let existing: Vec<std::path::PathBuf> = candidates
+        .into_iter()
+        .filter(|p| p.exists() && p.is_dir())
+        .collect();
+
+    if existing.is_empty() {
+        return DirectoryValidationResult {
+            valid: false,
+            error_code: Some(DirectoryErrorCode::PackagesNotFound),
+            message: "No packages folder found under the selected directory".to_string(),
+            details: Some(ValidationDetails {
+                path_exists: true,
+                is_directory: true,
+                is_readable: true,
+                // Not applicable here, but keep the shape consistent for the frontend.
+                has_media_subdirectory: false,
+            }),
+            package_count: None,
+        };
+    }
+
+    let package_count: usize = existing.iter().map(|p| count_subdirs(p)).sum();
+
+    DirectoryValidationResult {
+        valid: true,
+        error_code: None,
+        message: "Directory is valid".to_string(),
+        details: Some(ValidationDetails {
+            path_exists: true,
+            is_directory: true,
+            is_readable: true,
+            has_media_subdirectory: true,
+        }),
+        package_count: Some(package_count),
+    }
+}
+
 fn is_readable(path: &Path) -> bool {
     #[cfg(unix)]
     {

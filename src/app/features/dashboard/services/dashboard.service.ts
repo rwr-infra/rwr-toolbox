@@ -9,6 +9,9 @@ import { SettingsService } from '../../../core/services/settings.service';
 import { PingService } from '../../../core/services/ping.service';
 import { DirectoryService } from '../../settings/services/directory.service';
 
+// Derived from SettingsService.settings()
+const isTruthy = (v: unknown) => Boolean(v);
+
 /**
  * Dashboard statistics
  */
@@ -56,6 +59,10 @@ export class DashboardService {
     private settingsService = inject(SettingsService);
     private pingService = inject(PingService);
     private directoryService = inject(DirectoryService);
+
+    private gameDirConfiguredSig = computed(() =>
+        isTruthy(this.settingsService.settings().gameInstallDirectory),
+    );
 
     private transloco = inject(TranslocoService);
 
@@ -118,13 +125,13 @@ export class DashboardService {
         return combineLatest([
             toObservable(this.apiStatusSig),
             toObservable(this.apiPingSig),
-            toObservable(this.directoryService.validDirectoryCountSig),
+            toObservable(this.gameDirConfiguredSig),
         ]).pipe(
-            map(([apiStatus, apiPing, validDirCount]) => ({
+            map(([apiStatus, apiPing, gameDirConfigured]) => ({
                 apiConnected: apiStatus === 'online',
                 apiPing,
                 cacheEnabled: true,
-                gamePathConfigured: validDirCount > 0,
+                gamePathConfigured: gameDirConfigured,
                 lastUpdate: Date.now(),
             })),
         );

@@ -34,6 +34,21 @@
         "about": "关于",
         "about_desc": "关于 RWR 工具箱"
     },
+    "dashboard": {
+        "gameDirMissingTitle": "未配置游戏安装目录",
+        "gameDirMissingDesc": "请先在设置中配置游戏安装目录，以启用本地模组相关功能和基础数据功能。",
+        "gameDirMissingCta": "前往设置",
+        "statusOnline": "在线",
+        "statusOffline": "离线",
+        "playersScope": "全局",
+        "localModsTitle": "本地模组",
+        "localModsDesc": "已安装",
+        "quickActions": "快捷操作",
+        "dataSyncTitle": "数据同步",
+        "dataSyncDesc": "强制手动刷新",
+        "refresh": "刷新",
+        "noActivity": "暂无活动"
+    },
     "about_page": {
         "title": "关于 RWR 工具箱",
         "description": "一个为《小兵步枪》(Running With Rifles) 玩家和模组开发者提供的强大桌面工具。轻松扫描、搜索和探索游戏数据，包括武器、物品和服务器信息。",
@@ -49,7 +64,7 @@
         "api_connected": "API 已连接",
         "cache": "缓存",
         "active": "启用",
-        "game_path": "游戏路径",
+        "game_path": "游戏安装目录",
         "not_set": "未设置",
         "quick_stats": "快速统计",
         "active_servers": "活跃服务器",
@@ -82,19 +97,21 @@
         "themeDark": "深色",
         "paths": "路径",
         "coming_soon": "即将推出...",
-        "gamePath": "游戏目录",
-        "gamePathHint": "RWR 安装路径（例如：/Applications/RWR.app/Contents/Resources/media）",
+        "gamePath": "游戏安装目录",
+        "gamePathHint": "RWR 安装目录（例如：包含 'media' 文件夹的目录，或包含 RunningWithRifles.app 的 Steam 目录）",
         "validatePath": "保存并验证",
         "pathValid": "有效的游戏目录 - 发现 {{ count }} 个包",
         "pathInvalid": "无效的游戏目录",
-        "directoryList": "扫描目录",
-        "addDirectory": "添加目录",
+        "directoryList": "额外扫描目录",
+        "selectGameInstallDirectory": "选择",
+        "clearGameInstallDirectory": "清除",
+        "addDirectory": "添加额外目录",
         "removeDirectory": "删除",
         "revalidate": "重新验证",
         "validDirectory": "有效",
         "invalidDirectory": "无效",
         "validatingDirectories": "正在验证目录...",
-        "noDirectories": "尚未配置目录",
+        "noDirectories": "尚未配置额外扫描目录",
         "lastScanned": "上次扫描：{{ date }}",
         "packageCount": "{{ count }} 个包",
         "packageCount_one": "{{ count }} 个包",
@@ -106,14 +123,21 @@
             "notADirectory": "该路径不是目录",
             "accessDenied": "无访问权限",
             "missingMediaSubdirectory": "目录必须包含 media 子目录",
+            "packagesNotFound": "在该目录中未找到游戏 packages",
             "duplicateDirectory": "该目录已在列表中",
-            "unknown": "发生未知错误"
+            "unknown": "发生未知错误",
+            "gamePathNotSet": "未设置游戏安装目录"
+        },
+        "dialog": {
+            "selectGameInstallDirectoryTitle": "选择游戏安装目录",
+            "selectScanDirectoryTitle": "选择额外扫描目录"
         },
         "errorResolution": {
             "path_not_found": "请检查路径是否正确，以及该路径是否在您的电脑上存在。",
             "not_a_directory": "请选择一个文件夹，而不是文件。",
             "access_denied": "请检查您是否拥有该文件夹的读取权限。",
             "missing_media_subdirectory": "有效的 RWR 游戏或创意工坊目录必须包含一个 'media' 文件夹。",
+            "packages_not_found": "在所选游戏安装目录下未找到 'packages' 文件夹。",
             "duplicate_directory": "该目录已经添加到列表中。",
             "null": "未检测到错误。"
         },
@@ -303,9 +327,9 @@
         }
     },
     "hotkeys": {
-        "game_path": "游戏路径",
-        "no_game_path": "未配置游戏路径",
-        "no_game_path_desc": "请先在设置中设置游戏路径。",
+        "game_path": "游戏安装目录",
+        "no_game_path": "未配置游戏安装目录",
+        "no_game_path_desc": "请先在设置中设置游戏安装目录。",
         "tab_read": "读取",
         "tab_profiles": "配置方案",
         "read_title": "从游戏读取热键",
@@ -430,7 +454,8 @@
             "copyPath": "复制路径"
         },
         "errors": {
-            "noGamePath": "未配置游戏路径",
+            "noGamePath": "未配置游戏安装目录",
+            "noGameInstallDir": "请先在设置中配置游戏安装目录",
             "invalidPath": "无效的游戏目录",
             "scanFailed": "扫描武器失败",
             "duplicateKeys": "检测到重复的武器键：{{keys}}",
@@ -495,7 +520,8 @@
             "copyPath": "复制路径"
         },
         "errors": {
-            "noGamePath": "未配置游戏路径",
+            "noGamePath": "未配置游戏安装目录",
+            "noGameInstallDir": "请先在设置中配置游戏安装目录",
             "invalidPath": "无效的游戏目录",
             "scanFailed": "扫描物品失败",
             "duplicateKeys": "检测到重复的物品键：{{keys}}",

@@ -290,13 +290,11 @@ export class ModService {
     }
 
     /**
-     * Get the first valid scan directory for game path
+     * Get the configured game installation directory.
      * @returns Game path or undefined
      */
     getGamePath(): string | undefined {
-        const directories = this.settingsService.getScanDirectories();
-        const firstValid = directories.find((d) => d.status === 'valid');
-        return firstValid?.path;
+        return this.settingsService.getGameInstallDirectory() ?? undefined;
     }
 
     /**

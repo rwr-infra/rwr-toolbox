@@ -109,7 +109,18 @@ export class WeaponService implements OnDestroy {
         const chunk = [...this.weaponBuffer];
         this.weaponBuffer = [];
         this.lastFlushTime = Date.now();
-        this.weapons.update((current) => [...current, ...chunk]);
+
+        // De-dupe by key (mods can override base game entries).
+        this.weapons.update((current) => {
+            const map = new Map<string, Weapon>();
+            for (const w of current) {
+                map.set(w.key || w.id, w);
+            }
+            for (const w of chunk) {
+                map.set(w.key || w.id, w);
+            }
+            return Array.from(map.values());
+        });
     }
 
     // Private signals for processing
@@ -148,13 +159,14 @@ export class WeaponService implements OnDestroy {
         gamePath: string,
         directory?: string,
         append: boolean = false,
+        manageLoading: boolean = true,
     ): Promise<Weapon[]> {
         // Prevent duplicate scans if not appending
         if (this.loading() && !append) {
             return [];
         }
 
-        if (!append) {
+        if (!append && manageLoading) {
             this.loading.set(true);
             this.error.set(null);
             this.weapons.set([]);
@@ -182,14 +194,18 @@ export class WeaponService implements OnDestroy {
                 if (settled) return;
                 settled = true;
                 this.flushBuffer();
-                this.loading.set(false);
+                if (manageLoading) {
+                    this.loading.set(false);
+                }
                 resolve(collectedWeapons);
             };
 
             const fail = (e: unknown) => {
                 if (settled) return;
                 settled = true;
-                this.loading.set(false);
+                if (manageLoading) {
+                    this.loading.set(false);
+                }
                 reject(e);
             };
 
@@ -326,13 +342,14 @@ export class WeaponService implements OnDestroy {
         const allWeapons: Weapon[] = [];
         for (const path of paths) {
             try {
-                const weapons = await this.scanWeapons(path, path, true);
+                const weapons = await this.scanWeapons(path, path, true, false);
                 allWeapons.push(...weapons);
             } catch (e) {
                 console.error(`Batch scan failed for ${path}:`, e);
             }
         }
 
+        this.flushBuffer();
         this.loading.set(false);
         return allWeapons;
     }

@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { DirectoryService } from '../../features/settings/services/directory.service';
+import { SettingsService } from '../../core/services/settings.service';
 import { invoke } from '@tauri-apps/api/core';
 
 /**
@@ -11,29 +11,30 @@ import { invoke } from '@tauri-apps/api/core';
  */
 export const pathDetectedGuard: CanActivateFn = async (route, state) => {
     const router = inject(Router);
-    const directoryService = inject(DirectoryService);
+    const settingsService = inject(SettingsService);
 
-    // 1. Check in-memory signal state first (Fastest)
-    const validDirectories = directoryService.getValidDirectories();
+    // 1. Check in-memory settings first
+    const gameDir = settingsService.getGameInstallDirectory();
 
-    if (validDirectories.length === 0) {
-        console.warn('[Guard] No valid directories configured, redirecting...');
+    if (!gameDir) {
+        console.warn(
+            '[Guard] Game install directory not configured, redirecting...',
+        );
         return router.createUrlTree(['/settings'], {
-            queryParams: { returnUrl: state.url, reason: 'no_path' },
+            queryParams: { returnUrl: state.url, reason: 'no_game_dir' },
         });
     }
 
-    // 2. Perform a physical check on at least one path to handle external deletions
-    // We only check the first one for performance
+    // 2. Physical existence check to handle external deletions
     try {
         const pathExists = await invoke<boolean>('check_path_exists', {
-            path: validDirectories[0].path,
+            path: gameDir,
         });
 
         if (!pathExists) {
             console.error(
-                '[Guard] Configured path no longer exists on disk:',
-                validDirectories[0].path,
+                '[Guard] Configured game install directory no longer exists on disk:',
+                gameDir,
             );
             return router.createUrlTree(['/settings'], {
                 queryParams: { returnUrl: state.url, reason: 'path_missing' },

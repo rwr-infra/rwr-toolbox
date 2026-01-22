@@ -65,6 +65,116 @@
     <!-- Directory Management (Full Width) -->
     <div class="card bg-base-100 shadow-sm border border-base-300/50">
         <div class="card-body">
+            <!-- Game install directory -->
+            <div class="flex justify-between items-start gap-4">
+                <div class="min-w-0">
+                    <h2 class="card-title text-sm uppercase opacity-50">
+                        {{ t('settings.gamePath') }}
+                    </h2>
+                    <p class="text-[11px] opacity-60 mt-1">
+                        {{ t('settings.gamePathHint') }}
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button
+                        class="btn btn-primary btn-sm"
+                        (click)="onSelectGameInstallDirectory()"
+                    >
+                        <i-lucide name="folder-open" class="h-4 w-4"></i-lucide>
+                        {{ t('settings.selectGameInstallDirectory') }}
+                    </button>
+                    <button
+                        class="btn btn-ghost btn-sm"
+                        (click)="onClearGameInstallDirectory()"
+                        [disabled]="!gameInstallDirectorySig()"
+                    >
+                        <i-lucide name="trash-2" class="h-4 w-4"></i-lucide>
+                        {{ t('settings.clearGameInstallDirectory') }}
+                    </button>
+                    <button
+                        class="btn btn-outline btn-sm"
+                        (click)="onValidateGameInstallDirectory()"
+                        [disabled]="validatingGameInstallDirSig()"
+                    >
+                        @if (validatingGameInstallDirSig()) {
+                            <span
+                                class="loading loading-spinner loading-xs"
+                            ></span>
+                        }
+                        <i-lucide name="refresh-cw" class="h-4 w-4"></i-lucide>
+                        {{ t('settings.validatePath') }}
+                    </button>
+                </div>
+            </div>
+
+            <div
+                class="mt-3 p-3 bg-base-200/40 rounded-lg border border-base-300/40"
+            >
+                <div class="flex items-center gap-3 min-w-0">
+                    <p
+                        class="text-[11px] font-mono truncate opacity-80 flex-1 min-w-0"
+                        [title]="gameInstallDirectorySig() || ''"
+                    >
+                        {{ gameInstallDirectorySig() || t('common.not_set') }}
+                    </p>
+
+                    @if (gameInstallDirectoryValidationSig(); as v) {
+                        <div
+                            class="badge badge-xs gap-1 border-none px-1.5"
+                            [class.bg-success]="v.valid"
+                            [class.text-success-content]="v.valid"
+                            [class.bg-error]="!v.valid"
+                            [class.text-error-content]="!v.valid"
+                        >
+                            @if (v.valid) {
+                                <i-lucide
+                                    name="check"
+                                    class="h-2.5 w-2.5"
+                                ></i-lucide>
+                                <span class="text-[10px]">{{
+                                    t('settings.validDirectory')
+                                }}</span>
+                            } @else {
+                                <i-lucide
+                                    name="x"
+                                    class="h-2.5 w-2.5"
+                                ></i-lucide>
+                                <span class="text-[10px]">{{
+                                    t('settings.invalidDirectory')
+                                }}</span>
+                            }
+                        </div>
+
+                        @if (!v.valid && v.errorCode) {
+                            <div
+                                class="tooltip tooltip-error"
+                                [attr.data-tip]="
+                                    t('settings.errorResolution.' + v.errorCode)
+                                "
+                            >
+                                <i-lucide
+                                    name="alert-circle"
+                                    class="h-4 w-4 text-error"
+                                ></i-lucide>
+                            </div>
+                        }
+                    }
+                </div>
+
+                @if (gameInstallDirectoryValidationSig(); as v) {
+                    <p class="mt-2 text-[11px] opacity-70">
+                        @if (v.valid) {
+                            {{ t(v.message, { count: v.packageCount ?? 0 }) }}
+                        } @else {
+                            {{ t(v.message) }}
+                        }
+                    </p>
+                }
+            </div>
+
+            <div class="divider my-5"></div>
+
             <div class="flex justify-between items-center mb-4">
                 <h2 class="card-title text-sm uppercase opacity-50">
                     {{ t('settings.directoryList') }}

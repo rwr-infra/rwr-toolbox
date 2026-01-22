@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, computed } from '@angular/core';
+import { Component, inject, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
     TranslocoDirective,
@@ -40,6 +40,16 @@ export class SettingsComponent implements OnInit {
     private settingsService = inject(SettingsService);
     private datePipe = inject(DatePipe);
 
+    private readonly validatingGameInstallDir = signal(false);
+    readonly validatingGameInstallDirSig =
+        this.validatingGameInstallDir.asReadonly();
+
+    readonly gameInstallDirectorySig = computed(
+        () => this.settingsService.settings().gameInstallDirectory,
+    );
+    readonly gameInstallDirectoryValidationSig =
+        this.settingsService.gameInstallDirectoryValidation;
+
     /** Available locales */
     readonly locales = LOCALES;
 
@@ -72,6 +82,11 @@ export class SettingsComponent implements OnInit {
         // Ensure directories are loaded/revalidated even if the user navigated here first.
         // DirectoryService also auto-initializes on first injection, so this is mostly a no-op.
         void this.directoryService.ensureInitialized();
+
+        // Validate current game install directory (if any) in the background.
+        if (this.gameInstallDirectorySig()) {
+            void this.onValidateGameInstallDirectory();
+        }
     }
 
     /**
@@ -133,13 +148,51 @@ export class SettingsComponent implements OnInit {
             const selected = await open({
                 directory: true,
                 multiple: false,
-                title: 'Select Game Directory',
+                title: this.translocoService.translate(
+                    'settings.dialog.selectScanDirectoryTitle',
+                ),
             });
             if (selected && typeof selected === 'string') {
                 await this.directoryService.addDirectory(selected);
             }
         } catch (e) {
             console.error('Failed to open directory dialog:', e);
+        }
+    }
+
+    async onSelectGameInstallDirectory(): Promise<void> {
+        try {
+            const selected = await open({
+                directory: true,
+                multiple: false,
+                title: this.translocoService.translate(
+                    'settings.dialog.selectGameInstallDirectoryTitle',
+                ),
+            });
+            if (!selected || typeof selected !== 'string') {
+                return;
+            }
+
+            await this.settingsService.setGameInstallDirectory(selected);
+            await this.onValidateGameInstallDirectory();
+        } catch (e) {
+            console.error('Failed to select game install directory:', e);
+        }
+    }
+
+    async onClearGameInstallDirectory(): Promise<void> {
+        await this.settingsService.setGameInstallDirectory(null);
+        await this.onValidateGameInstallDirectory();
+    }
+
+    async onValidateGameInstallDirectory(): Promise<void> {
+        if (this.validatingGameInstallDir()) return;
+
+        this.validatingGameInstallDir.set(true);
+        try {
+            await this.settingsService.validateGameInstallDirectory();
+        } finally {
+            this.validatingGameInstallDir.set(false);
         }
     }
 

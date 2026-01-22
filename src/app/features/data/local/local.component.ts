@@ -4,6 +4,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { WeaponsComponent } from '../weapons/weapons.component';
 import { ItemsComponent } from '../items/items.component';
 import { DirectoryService } from '../../settings/services/directory.service';
+import { SettingsService } from '../../../core/services/settings.service';
 
 /**
  * Local data component with Weapons and Items tabs
@@ -18,6 +19,7 @@ import { DirectoryService } from '../../settings/services/directory.service';
 })
 export class LocalComponent {
     private directoryService = inject(DirectoryService);
+    private settingsService = inject(SettingsService);
 
     readonly activeTab = signal<'weapons' | 'items'>('weapons');
     readonly scanProgressSig = this.directoryService.scanProgressSig;
@@ -27,13 +29,24 @@ export class LocalComponent {
         { key: 'items' as const, label: 'items.title' },
     ] as const;
 
-    /** T042: Check if no directories are configured */
+    /** T042: Check if no scan sources are configured */
     hasNoDirectories(): boolean {
         const dirs = this.directoryService.directoriesSig();
         const progress = this.directoryService.scanProgressSig();
         const initialized = this.directoryService.initializedSig();
-        // Only show empty state if service is initialized AND truly no directories AND not currently scanning
-        return initialized && dirs.length === 0 && progress.state === 'idle';
+        const gameDir = this.settingsService.getGameInstallDirectory();
+
+        // Empty state only when:
+        // - initialized
+        // - not scanning
+        // - no extra scan directories
+        // - AND no game install directory
+        return (
+            initialized &&
+            progress.state === 'idle' &&
+            dirs.length === 0 &&
+            !gameDir
+        );
     }
 
     /**

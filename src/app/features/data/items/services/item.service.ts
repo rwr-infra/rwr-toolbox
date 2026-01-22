@@ -118,7 +118,18 @@ export class ItemService implements OnDestroy {
         const chunk = [...this.itemBuffer];
         this.itemBuffer = [];
         this.lastFlushTime = Date.now();
-        this.items.update((current) => [...current, ...chunk]);
+
+        // De-dupe by key (mods can override base game entries).
+        this.items.update((current) => {
+            const map = new Map<string, GenericItem>();
+            for (const i of current) {
+                map.set(i.key || i.id, i);
+            }
+            for (const i of chunk) {
+                map.set(i.key || i.id, i);
+            }
+            return Array.from(map.values());
+        });
     }
 
     // Private signals for processing
@@ -156,12 +167,13 @@ export class ItemService implements OnDestroy {
         gamePath: string,
         directory?: string,
         append: boolean = false,
+        manageLoading: boolean = true,
     ): Promise<GenericItem[]> {
         if (this.loading() && !append) {
             return [];
         }
 
-        if (!append) {
+        if (!append && manageLoading) {
             this.loading.set(true);
             this.error.set(null);
             this.items.set([]);
@@ -189,14 +201,18 @@ export class ItemService implements OnDestroy {
                 if (settled) return;
                 settled = true;
                 this.flushBuffer();
-                this.loading.set(false);
+                if (manageLoading) {
+                    this.loading.set(false);
+                }
                 resolve(collectedItems);
             };
 
             const fail = (e: unknown) => {
                 if (settled) return;
                 settled = true;
-                this.loading.set(false);
+                if (manageLoading) {
+                    this.loading.set(false);
+                }
                 reject(e);
             };
 
@@ -329,13 +345,14 @@ export class ItemService implements OnDestroy {
         const allItems: GenericItem[] = [];
         for (const path of paths) {
             try {
-                const items = await this.scanItems(path, path, true);
+                const items = await this.scanItems(path, path, true, false);
                 allItems.push(...items);
             } catch (e) {
                 console.error(`Batch scan failed for ${path}:`, e);
             }
         }
 
+        this.flushBuffer();
         this.loading.set(false);
         return allItems;
     }

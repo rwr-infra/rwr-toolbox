@@ -298,7 +298,8 @@ pub fn run() {
             items::scan_items_collect,
             items::get_item_texture_path,
             items::get_item_icon_base64,
-            directories::validate_directory
+            directories::validate_directory,
+            directories::validate_game_install_directory
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

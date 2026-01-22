@@ -1,2 +1,22 @@
-<!-- Simple router outlet container for mods routes -->
-<router-outlet></router-outlet>
+<div class="p-2 sm:p-4" *transloco="let t">
+    <div class="tabs tabs-boxed mb-3">
+        <a
+            class="tab"
+            routerLink="/mods/install"
+            routerLinkActive="tab-active"
+            [routerLinkActiveOptions]="{ exact: true }"
+        >
+            {{ t('menu.install') }}
+        </a>
+        <a
+            class="tab"
+            routerLink="/mods/bundle"
+            routerLinkActive="tab-active"
+            [routerLinkActiveOptions]="{ exact: true }"
+        >
+            {{ t('menu.bundle') }}
+        </a>
+    </div>
+
+    <router-outlet></router-outlet>
+</div>

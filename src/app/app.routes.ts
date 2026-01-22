@@ -110,7 +110,6 @@ export const routes: Routes = [
             import('./features/mods/mods-layout/mods-layout.component').then(
                 (m) => m.ModsLayoutComponent,
             ),
-        canActivate: [pathDetectedGuard],
         children: [
             {
                 path: '',
@@ -146,7 +145,6 @@ export const routes: Routes = [
             title: 'Mods',
             icon: 'package',
             description: 'Mod management tools',
-            requiresPathDetection: true,
         },
     },
 

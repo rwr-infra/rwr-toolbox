@@ -21,6 +21,8 @@ Auto-generated from all feature plans. Last updated: 2026-01-15
 - Tauri plugin-store (for settings), local XML game files (001-ui-layout-optimization)
 - TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x) + Web Workers, Tauri IPC Channels, Angular Animations, DaisyUI v5 (001-ui-layout-optimization)
 - Tauri plugin-store, local XML game files (001-ui-layout-optimization)
+- TypeScript 5.8.3 + Rust (edition 2021) + Angular v20.3.15, Transloco, TailwindCSS v4 + DaisyUI v5, Lucide Angular, Tauri 2.x, Tauri plugin-store (001-game-path-setup)
+- Tauri plugin-store（settings.json） (001-game-path-setup)
 
 - TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x) + Angular 20.3.15, Transloco 8.x, Tailwind CSS 4.x, DaisyUI 5.x, Tauri 2.x, quick-xml (001-multi-directory-support)
 
@@ -40,9 +42,9 @@ cargo test [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECH
 TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x): Follow standard conventions
 
 ## Recent Changes
+- 001-game-path-setup: Added TypeScript 5.8.3 + Rust (edition 2021) + Angular v20.3.15, Transloco, TailwindCSS v4 + DaisyUI v5, Lucide Angular, Tauri 2.x, Tauri plugin-store
 - 001-ui-layout-optimization: Added TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x) + Web Workers, Tauri IPC Channels, Angular Animations, DaisyUI v5
 - 001-ui-layout-optimization: Added TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x) + Tailwind CSS v4, DaisyUI v5, Lucide Angular, Transloco, Angular Animations
-- 001-ui-layout-optimization: Added TypeScript 5.8.3, Angular v20.3.15 + Tailwind CSS v4, DaisyUI v5, Lucide Angular, Angular Animations
 
 
 <!-- MANUAL ADDITIONS START -->

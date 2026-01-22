@@ -34,6 +34,21 @@
         "about": "About",
         "about_desc": "About RWR Toolbox"
     },
+    "dashboard": {
+        "gameDirMissingTitle": "Game install directory not configured",
+        "gameDirMissingDesc": "Set the game installation directory in Settings to enable local mod workflows and base-game data features.",
+        "gameDirMissingCta": "Open Settings",
+        "statusOnline": "Online",
+        "statusOffline": "Offline",
+        "playersScope": "Total global",
+        "localModsTitle": "Local Mods",
+        "localModsDesc": "Installed",
+        "quickActions": "Quick Actions",
+        "dataSyncTitle": "Data Sync",
+        "dataSyncDesc": "Force manual refresh",
+        "refresh": "Refresh",
+        "noActivity": "No activity recorded"
+    },
     "about_page": {
         "title": "About RWR Toolbox",
         "description": "A powerful desktop utility for Running With Rifles players and modders. Easily scan, search, and explore game data including weapons, items, and servers.",
@@ -49,7 +64,7 @@
         "api_connected": "API Connected",
         "cache": "Cache",
         "active": "Active",
-        "game_path": "Game Path",
+        "game_path": "Game Install Directory",
         "not_set": "Not Set",
         "quick_stats": "Quick Stats",
         "active_servers": "Active Servers",
@@ -82,19 +97,21 @@
         "themeDark": "Dark",
         "paths": "Paths",
         "coming_soon": "Coming soon...",
-        "gamePath": "Game Directory",
-        "gamePathHint": "RWR installation path (e.g., /Applications/RWR.app/Contents/Resources/media)",
+        "gamePath": "Game Install Directory",
+        "gamePathHint": "RWR installation directory (e.g., a folder that contains 'media', or a Steam folder containing RunningWithRifles.app)",
         "validatePath": "Save & Validate",
         "pathValid": "Valid game directory - {{ count }} packages found",
         "pathInvalid": "Invalid game directory",
-        "directoryList": "Scan Directories",
-        "addDirectory": "Add Directory",
+        "directoryList": "Extra Scan Directories",
+        "selectGameInstallDirectory": "Select",
+        "clearGameInstallDirectory": "Clear",
+        "addDirectory": "Add Extra Directory",
         "removeDirectory": "Remove",
         "revalidate": "Revalidate",
         "validDirectory": "Valid",
         "invalidDirectory": "Invalid",
         "validatingDirectories": "Validating directories...",
-        "noDirectories": "No directories configured yet",
+        "noDirectories": "No extra scan directories configured yet",
         "lastScanned": "Last scanned: {{ date }}",
         "packageCount": "{{ count }} packages",
         "packageCount_one": "{{ count }} package",
@@ -106,14 +123,21 @@
             "notADirectory": "The path is not a directory",
             "accessDenied": "Access to the directory is denied",
             "missingMediaSubdirectory": "Directory must contain a 'media' subdirectory",
+            "packagesNotFound": "No game packages found in this directory",
             "duplicateDirectory": "This directory is already in the list",
-            "unknown": "An unknown error occurred"
+            "unknown": "An unknown error occurred",
+            "gamePathNotSet": "Game install directory is not set"
+        },
+        "dialog": {
+            "selectGameInstallDirectoryTitle": "Select Game Install Directory",
+            "selectScanDirectoryTitle": "Select Extra Scan Directory"
         },
         "errorResolution": {
             "path_not_found": "Please check if the path is correct and exists on your computer.",
             "not_a_directory": "Please select a folder, not a file.",
             "access_denied": "Please check if you have read permissions for this folder.",
             "missing_media_subdirectory": "A valid RWR game or workshop directory must contain a 'media' folder.",
+            "packages_not_found": "No 'packages' folder found under the selected game installation directory.",
             "duplicate_directory": "This directory has already been added to the list.",
             "null": "No errors detected."
         },
@@ -303,9 +327,9 @@
         }
     },
     "hotkeys": {
-        "game_path": "Game Path",
-        "no_game_path": "Game Path Not Configured",
-        "no_game_path_desc": "Please set the game path in Settings first.",
+        "game_path": "Game Install Directory",
+        "no_game_path": "Game Install Directory Not Configured",
+        "no_game_path_desc": "Please set the game installation directory in Settings first.",
         "tab_read": "Read",
         "tab_profiles": "Profiles",
         "read_title": "Read Hotkeys from Game",
@@ -430,7 +454,8 @@
             "copyPath": "Copy path"
         },
         "errors": {
-            "noGamePath": "Game path not configured",
+            "noGamePath": "Game install directory not configured",
+            "noGameInstallDir": "Please set the game installation directory in Settings",
             "invalidPath": "Invalid game directory",
             "scanFailed": "Failed to scan weapons",
             "duplicateKeys": "Duplicate weapon keys detected: {{keys}}",
@@ -495,7 +520,8 @@
             "copyPath": "Copy path"
         },
         "errors": {
-            "noGamePath": "Game path not configured",
+            "noGamePath": "Game install directory not configured",
+            "noGameInstallDir": "Please set the game installation directory in Settings",
             "invalidPath": "Invalid game directory",
             "scanFailed": "Failed to scan items",
             "duplicateKeys": "Duplicate item keys detected: {{keys}}",

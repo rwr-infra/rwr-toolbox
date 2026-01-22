@@ -90,6 +90,7 @@ export type DirectoryErrorCode =
     | 'not_a_directory' // Path exists but is not a directory
     | 'access_denied' // Directory exists but cannot be read
     | 'missing_media_subdirectory' // Directory exists but lacks media subdirectory
+    | 'packages_not_found' // Base game packages folder not found
     | 'duplicate_directory'; // Directory already in configured list
 
 /**

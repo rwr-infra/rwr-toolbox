@@ -40,6 +40,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
         initialValue: [],
     });
 
+    systemStatus = toSignal(this.dashboardService.getSystemStatus$(), {
+        initialValue: {
+            apiConnected: false,
+            apiPing: null,
+            cacheEnabled: true,
+            gamePathConfigured: false,
+            lastUpdate: Date.now(),
+        },
+    });
+
     ngOnInit(): void {
         this.dashboardService.initialize();
     }

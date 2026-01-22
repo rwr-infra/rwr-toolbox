@@ -38,6 +38,9 @@ export interface ApiEndpoint {
 export interface AppSettings {
     /** Selected API endpoint key */
     apiEndpoint: string;
+
+    /** Game installation directory path (base game). */
+    gameInstallDirectory: string | null;
     /** Server page size for pagination */
     serverPageSize: number;
     /** Player page size for pagination */
