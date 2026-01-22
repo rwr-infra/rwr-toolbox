@@ -171,6 +171,14 @@ export class ItemsComponent implements AfterViewInit {
         );
     });
 
+    readonly tableWidthPx = computed(() => {
+        // Make header/body tables the exact same width to avoid subtle drift.
+        return this.visibleColumnsForDisplay().reduce((sum, col) => {
+            const widthPx = this.getColumnWidthPx(col.key) ?? 160;
+            return sum + widthPx;
+        }, 0);
+    });
+
     getColumnWidthPx(columnKey: string): number | null {
         return this.columnWidthPxByKey[columnKey] ?? null;
     }

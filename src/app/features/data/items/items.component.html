@@ -303,6 +303,8 @@
         <div class="table-header-clip overflow-hidden">
             <table
                 class="table table-xs w-max table-fixed table-header-table"
+                [style.width.px]="tableWidthPx()"
+                [style.minWidth.px]="tableWidthPx()"
                 [style.transform]="headerTransform()"
             >
                 <colgroup>
@@ -370,7 +372,11 @@
         [minBufferPx]="rowHeight * 8"
         [maxBufferPx]="rowHeight * 30"
     >
-        <table class="table table-xs table-zebra w-max table-fixed">
+        <table
+            class="table table-xs table-zebra w-max table-fixed"
+            [style.width.px]="tableWidthPx()"
+            [style.minWidth.px]="tableWidthPx()"
+        >
             <colgroup>
                 @for (col of visibleColumnsForDisplay(); track col.key) {
                     <col [style.width.px]="getColumnWidthPx(col.key)" />
