@@ -85,7 +85,7 @@
                         {{ t('settings.selectGameInstallDirectory') }}
                     </button>
                     <button
-                        class="btn btn-ghost btn-sm"
+                        class="btn btn-ghost btn-sm transition-all duration-150 ease"
                         (click)="onClearGameInstallDirectory()"
                         [disabled]="!gameInstallDirectorySig()"
                     >
@@ -224,7 +224,7 @@
                 >
                     @for (dir of directoriesSig(); track dir.id) {
                         <div
-                            class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-transparent hover:border-base-300 hover:bg-base-200 transition-all"
+                            class="directory-item flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-transparent hover:border-base-300 hover:bg-base-200 transition-all duration-150 ease-in-out hover:-translate-y-[-1px] hover:shadow-lg"
                         >
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-3">
@@ -378,7 +378,7 @@
 
                             <div class="flex gap-1 ml-4 items-center">
                                 <button
-                                    class="btn btn-ghost btn-xs btn-square"
+                                    class="btn btn-ghost btn-xs btn-square transition-all duration-150 ease"
                                     (click)="onToggleActive(dir.id)"
                                     [class.text-primary]="dir.active ?? true"
                                     [class.opacity-40]="!(dir.active ?? true)"
@@ -417,7 +417,7 @@
                                 </button>
 
                                 <button
-                                    class="btn btn-ghost btn-xs btn-square text-error/60 hover:text-error hover:bg-error/10"
+                                    class="btn btn-ghost btn-xs btn-square text-error/60 hover:text-error hover:bg-error/10 transition-all duration-150 ease"
                                     (click)="onRemoveDirectory(dir.id)"
                                     title="{{ t('settings.removeDirectory') }}"
                                 >

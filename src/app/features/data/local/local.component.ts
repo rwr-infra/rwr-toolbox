@@ -15,7 +15,6 @@ import { SettingsService } from '../../../core/services/settings.service';
     selector: 'app-local',
     imports: [TranslocoPipe, WeaponsComponent, ItemsComponent, RouterLink],
     templateUrl: './local.component.html',
-    styleUrl: './local.component.css',
 })
 export class LocalComponent {
     private directoryService = inject(DirectoryService);

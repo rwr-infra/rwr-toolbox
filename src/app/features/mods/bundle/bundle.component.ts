@@ -26,7 +26,6 @@ const CONFIG_EXAMPLE: ModBundleInfo = {
         TranslocoDirective,
     ],
     templateUrl: './bundle.component.html',
-    styleUrl: './bundle.component.css',
 })
 export class BundleComponent {
     private modService = inject(ModService);

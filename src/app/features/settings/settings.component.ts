@@ -31,7 +31,6 @@ import { DatePipe } from '@angular/common';
     ],
     providers: [DatePipe],
     templateUrl: './settings.component.html',
-    styleUrl: './settings.component.css',
 })
 export class SettingsComponent implements OnInit {
     private translocoService = inject(TranslocoService);

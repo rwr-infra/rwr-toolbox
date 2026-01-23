@@ -19,7 +19,6 @@ import {
         TranslocoDirective,
     ],
     templateUrl: './dashboard.component.html',
-    styleUrl: './dashboard.component.css',
 })
 export class DashboardComponent implements OnInit, OnDestroy {
     private dashboardService = inject(DashboardService);

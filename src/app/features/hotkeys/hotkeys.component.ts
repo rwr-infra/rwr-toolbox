@@ -15,7 +15,6 @@ import { IHotkeyConfigItem } from '../../shared/models/hotkeys.models';
         TranslocoDirective,
     ],
     templateUrl: './hotkeys.component.html',
-    styleUrl: './hotkeys.component.css',
 })
 export class HotkeysComponent implements OnInit {
     private hotkeyService = inject(HotkeyService);

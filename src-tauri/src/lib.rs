@@ -4,6 +4,7 @@ mod hotkeys;
 mod items;
 mod ping;
 mod rwrmi;
+mod utils;
 mod weapons;
 
 pub use events::ScanEvent;
@@ -141,7 +142,7 @@ fn detect_theme_macos() -> Result<String, String> {
     use std::process::Command;
 
     let output = Command::new("defaults")
-        .args(&["read", "-g", "AppleInterfaceStyle"])
+        .args(["read", "-g", "AppleInterfaceStyle"])
         .output();
 
     match output {
@@ -156,7 +157,7 @@ fn detect_theme_linux() -> Result<String, String> {
     use std::process::Command;
 
     let output = Command::new("gsettings")
-        .args(&["get", "org.gnome.desktop.interface", "gtk-theme"])
+        .args(["get", "org.gnome.desktop.interface", "gtk-theme"])
         .output();
 
     match output {

@@ -4,6 +4,7 @@
 //! parses them, and returns structured item data to the frontend.
 
 use crate::ScanEvent;
+use crate::utils::resolve_packages_dirs;
 use quick_xml::de::from_str;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -12,52 +13,6 @@ use tauri::ipc::Channel;
 use walkdir::WalkDir;
 
 const BATCH_SIZE: usize = 50;
-
-fn resolve_packages_dirs(base: &Path) -> Vec<PathBuf> {
-    if base.ends_with("packages") {
-        return vec![base.to_path_buf()];
-    }
-
-    let mut roots: Vec<PathBuf> = Vec::new();
-
-    // macOS Steam installs often keep base game resources inside the app bundle.
-    let app_bundle_packages = base
-        .join("RunningWithRifles.app")
-        .join("Contents")
-        .join("Resources")
-        .join("media")
-        .join("packages");
-    if app_bundle_packages.exists() {
-        roots.push(app_bundle_packages);
-    }
-
-    // Workshop/custom content is typically under `media/packages` next to the executable.
-    let media_packages = base.join("media").join("packages");
-    if media_packages.exists() {
-        roots.push(media_packages);
-    }
-
-    // Some setups pass a game root where `packages/` exists directly.
-    let direct_packages = base.join("packages");
-    if direct_packages.exists() {
-        roots.push(direct_packages);
-    }
-
-    if roots.is_empty() {
-        // Fallback: keep the previous behavior even if the path doesn't exist.
-        roots.push(base.join("packages"));
-    }
-
-    // De-dupe while keeping order.
-    let mut deduped: Vec<PathBuf> = Vec::new();
-    for root in roots {
-        if !deduped.contains(&root) {
-            deduped.push(root);
-        }
-    }
-
-    deduped
-}
 
 /// Unified item structure (all item types)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -193,6 +148,7 @@ struct RawCarryItem {
     #[serde(rename = "@draggable", default)]
     draggable: Option<String>,
     #[serde(rename = "@player_death_drop_owner_lock_time", default)]
+    #[allow(dead_code)]
     player_death_drop_owner_lock_time: Option<f64>,
     #[serde(rename = "hud_icon", default)]
     hud_icon: Option<RawHudIcon>,
@@ -266,6 +222,7 @@ struct RawModel {
 #[derive(Debug, Deserialize, Default)]
 struct RawVisualItem {
     #[serde(rename = "@key", default)]
+    #[allow(dead_code)]
     key: Option<String>,
     #[serde(rename = "model", default)]
     models: Vec<RawVisualModel>,
@@ -533,8 +490,7 @@ fn parse_carry_item(
     let package_name = path
         .ancestors()
         .skip_while(|p| *p != input_path)
-        .skip(1)
-        .next()
+        .nth(1)
         .and_then(|p| p.file_name())
         .and_then(|n| n.to_str())
         .unwrap_or("unknown")
@@ -656,8 +612,7 @@ fn parse_visual_item(
     let package_name = path
         .ancestors()
         .skip_while(|p| *p != input_path)
-        .skip(1)
-        .next()
+        .nth(1)
         .and_then(|p| p.file_name())
         .and_then(|n| n.to_str())
         .unwrap_or("unknown")

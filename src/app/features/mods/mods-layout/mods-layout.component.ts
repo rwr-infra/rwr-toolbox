@@ -6,6 +6,5 @@ import { TranslocoDirective } from '@jsverse/transloco';
     selector: 'app-mods-layout',
     imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslocoDirective],
     templateUrl: './mods-layout.component.html',
-    styleUrl: './mods-layout.component.css',
 })
 export class ModsLayoutComponent {}

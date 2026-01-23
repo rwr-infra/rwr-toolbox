@@ -4,58 +4,13 @@
 //! and returns structured weapon data to the frontend.
 
 use crate::ScanEvent;
+use crate::utils::resolve_packages_dirs;
 use quick_xml::de::from_str;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-fn resolve_packages_dirs(base: &Path) -> Vec<PathBuf> {
-    if base.ends_with("packages") {
-        return vec![base.to_path_buf()];
-    }
-
-    let mut roots: Vec<PathBuf> = Vec::new();
-
-    // macOS Steam installs often keep base game resources inside the app bundle.
-    let app_bundle_packages = base
-        .join("RunningWithRifles.app")
-        .join("Contents")
-        .join("Resources")
-        .join("media")
-        .join("packages");
-    if app_bundle_packages.exists() {
-        roots.push(app_bundle_packages);
-    }
-
-    // Workshop/custom content is typically under `media/packages` next to the executable.
-    let media_packages = base.join("media").join("packages");
-    if media_packages.exists() {
-        roots.push(media_packages);
-    }
-
-    // Some setups pass a game root where `packages/` exists directly.
-    let direct_packages = base.join("packages");
-    if direct_packages.exists() {
-        roots.push(direct_packages);
-    }
-
-    if roots.is_empty() {
-        roots.push(base.join("packages"));
-    }
-
-    // De-dupe while keeping order.
-    let mut deduped: Vec<PathBuf> = Vec::new();
-    for root in roots {
-        if !deduped.contains(&root) {
-            deduped.push(root);
-        }
-    }
-
-    deduped
-}
-
-use std::sync::Mutex;
 use tauri::ipc::Channel;
 use tauri_plugin_opener::OpenerExt;
 use walkdir::WalkDir;
@@ -163,6 +118,7 @@ struct RawWeapon {
     #[serde(rename = "projectile", default)]
     projectile: Option<RawProjectile>,
     #[serde(rename = "modifier", default)]
+    #[allow(dead_code)]
     modifiers: Vec<RawModifier>,
     #[serde(rename = "nextInChain", default)]
     chain_variants: Vec<String>,
@@ -217,6 +173,7 @@ struct RawInventory {
 #[derive(Debug, Deserialize, Default)]
 struct RawProjectile {
     #[serde(rename = "@file", default)]
+    #[allow(dead_code)]
     file: Option<String>,
     #[serde(rename = "result", default)]
     result: Option<RawProjectileResult>,
@@ -225,20 +182,25 @@ struct RawProjectile {
 #[derive(Debug, Deserialize, Default)]
 struct RawProjectileResult {
     #[serde(rename = "@class", default)]
+    #[allow(dead_code)]
     class: Option<String>,
     #[serde(rename = "@kill_probability", default)]
     kill_probability: Option<f64>,
     #[serde(rename = "@kill_decay_start_time", default)]
+    #[allow(dead_code)]
     kill_decay_start_time: Option<f64>,
     #[serde(rename = "@kill_decay_end_time", default)]
+    #[allow(dead_code)]
     kill_decay_end_time: Option<f64>,
 }
 
 #[derive(Debug, Deserialize, Default)]
 struct RawModifier {
     #[serde(rename = "@class", default)]
+    #[allow(dead_code)]
     class: Option<String>,
     #[serde(rename = "@value", default)]
+    #[allow(dead_code)]
     value: Option<f64>,
 }
 

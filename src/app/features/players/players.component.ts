@@ -32,7 +32,6 @@ import { ScrollingModeService } from '../shared/services/scrolling-mode.service'
         TranslocoPipe,
     ],
     templateUrl: './players.component.html',
-    styleUrl: './players.component.css',
 })
 export class PlayersComponent implements OnInit {
     private playerService = inject(PlayerService);

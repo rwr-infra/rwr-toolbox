@@ -29,7 +29,6 @@ import { ScrollingModeService } from '../shared/services/scrolling-mode.service'
         TranslocoPipe,
     ],
     templateUrl: './servers.component.html',
-    styleUrl: './servers.component.css',
 })
 export class ServersComponent implements OnInit {
     private serverService = inject(ServerService);

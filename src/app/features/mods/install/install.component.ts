@@ -21,7 +21,6 @@ import { MarkdownPipe } from '../../../shared/pipes/markdown.pipe';
         MarkdownPipe,
     ],
     templateUrl: './install.component.html',
-    styleUrl: './install.component.css',
 })
 export class InstallComponent implements OnInit {
     private modService = inject(ModService);

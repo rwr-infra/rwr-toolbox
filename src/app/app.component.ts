@@ -19,7 +19,6 @@ import { ThemeService } from './shared/services/theme.service';
         TranslocoDirective,
     ],
     templateUrl: './app.component.html',
-    styleUrl: './app.component.css',
 })
 export class AppComponent implements OnInit {
     private router = inject(Router);
