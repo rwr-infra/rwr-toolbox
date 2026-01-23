@@ -2,8 +2,11 @@
 
 <!--
 Sync Impact Report:
-- Version: 1.0.1 → 1.1.0 (minor update)
-- Modified: Added Principle VI - Icon Management (NON-NEGOTIABLE)
+- Version: 1.2.0 → 1.3.0 (minor update)
+- Modified: Principle V - Documentation-Driven Development (removed PROGRESS.md references)
+- Modified: Updated all documentation paths from `docs-ai/` to `docs/`
+- Modified: Governance section - removed PROGRESS.md technical debt tracking reference
+- Added: Reference to CONSTRUCTION.md for Signal state management guidance
 - Templates reviewed: No changes required (templates remain generic)
 - Follow-up TODOs: None
 -->
@@ -89,31 +92,30 @@ loading = this.itemService.loading;
 
 ### V. Documentation-Driven Development (NON-NEGOTIABLE)
 
-**Single Source of Truth**: The `docs-ai/` directory contains the authoritative project documentation. All development MUST align with these documents, and any changes to project state MUST be recorded.
+**Single Source of Truth**: The `docs/` directory contains the authoritative project documentation. All development MUST align with these documents.
 
 **Required Reading Order** (for any AI/developer joining):
-1. `docs-ai/STATUS.md` - Current tech stack, directory structure, feature completion snapshot
-2. `docs-ai/UI.md` - UI/UX principles, 800×600 constraints, component semantics
-3. `docs-ai/PLAN.APPENDIX.md` - Implementation references (Ping/parsing/hotkeys/mods)
-4. `docs-ai/PROGRESS.md` - Historical changes and uncompleted items
+1. `docs/STATUS.md` - Current tech stack, directory structure, feature completion snapshot
+2. `docs/UI.md` - UI/UX principles, 800×600 constraints, component semantics, design constraints
+3. `docs/PLAN.APPENDIX.md` - Implementation references (Ping/parsing/hotkeys/mods)
+4. `docs/CONSTRUCTION.md` - Angular v20 Signals pattern migration guidance
+5. `docs/AI_BOOTSTRAP_PROMPT.md` - Bootstrap prompt for AI agents
 
-**Progress Tracking**: Every independent change set MUST append a record to `docs-ai/PROGRESS.md` with:
-- Date and brief title
-- Objectives
-- High-level change summary
-- Affected files/modules
-- Done (completed)
-- Leftover (known issues)
-- TODO (next actions)
-- Risks and decisions
+**Status Updates**: `docs/STATUS.md` is updated ONLY when project state snapshot materially changes (new modules, completion status shifts, tech stack changes).
 
-**Status Updates**: `docs-ai/STATUS.md` is updated ONLY when project state snapshot materially changes (new modules, completion status shifts, tech stack changes).
+**Working Protocol** (from AI_BOOTSTRAP_PROMPT.md):
+1. Define task boundaries: What / Not What
+2. Small-step delivery: prioritize minimum viable product (MVP) then enhance
+3. Changes affecting user experience/data safety must explain backup/rollback strategy
+4. Output language: **Simplified Chinese** (简体中文)
 
 **Rationale**: The project uses AI-assisted development across multiple sessions. Documentation ensures continuity and prevents repeated work or conflicting decisions.
 
 ---
 
 ### VI. Icon Management (NON-NEGOTIABLE)
+
+**Lucide-Angular Components Only**: All icons MUST use lucide-angular components via the centralized registry. Manual SVG tags are PROHIBITED.
 
 **Centralized Icon Registry**: All Lucide icons MUST be registered in `src/app/shared/icons/index.ts` before use. This is the official recommended pattern for lucide-angular to enable tree-shaking and on-demand icon imports.
 
@@ -142,8 +144,38 @@ export const APP_ICONS = {
 - Direct import of icons in component files without registration
 - Using icons that are not registered in `APP_ICONS`
 - Bypassing the centralized icon registry
+- **Manual SVG tags (`<svg>`, `<path>`, etc.) in templates or components**
+- Using icon libraries other than lucide-angular
 
-**Rationale**: Centralized registration enables tree-shaking (only used icons are bundled), provides single source of truth for all icons used in the application, and follows lucide-angular's official best practices for optimal bundle size.
+**Rationale**: Centralized registration enables tree-shaking (only used icons are bundled), provides single source of truth for all icons used in the application, and follows lucide-angular's official best practices for optimal bundle size. Using lucide-angular components ensures consistent styling, automatic theme adaptation, and maintainability compared to manual SVG implementations.
+
+---
+
+### VII. Tailwind-First Styling (NON-NEGOTIABLE)
+
+**Tailwind Utility Classes Preferred**: For repeated styling patterns, prefer Tailwind CSS utility classes over creating custom CSS classes with multiple style properties.
+
+**Styling Hierarchy** (in order of preference):
+1. Tailwind utility classes directly in templates (e.g., `class="flex items-center gap-2 p-4"`)
+2. DaisyUI component classes (e.g., `class="btn btn-primary"`)
+3. Angular `@HostBinding` for dynamic style bindings
+4. Custom CSS classes ONLY when:
+   - The style cannot be expressed with Tailwind utilities
+   - The style involves complex pseudo-elements or animations
+   - The style is truly unique and not reusable
+
+**Prohibited Patterns**:
+- Creating custom CSS classes that replicate existing Tailwind utilities
+- Custom classes with many standard CSS properties (e.g., margin, padding, flexbox, grid)
+- `styles: []` arrays in component decorators for standard styling
+
+**Allowed Exceptions**:
+- CSS for DaisyUI theme customization (using CSS variables)
+- Complex animations and transitions
+- Third-party component overrides
+- Browser-specific workarounds
+
+**Rationale**: Tailwind CSS utilities provide a consistent design system, reduce bundle size through purging of unused styles, improve maintainability by making styles visible in templates, and prevent CSS bloat from custom classes. Custom CSS classes create hidden dependencies, naming conflicts, and increase the cognitive load of tracking styles across multiple files.
 
 ---
 
@@ -228,9 +260,9 @@ All Tauri command invocations MUST include error handling. User-facing error mes
 
 ### Compliance Review
 
-- All pull requests MUST verify compliance with Core Principles I-VI
+- All pull requests MUST verify compliance with Core Principles I-VII
 - Constitution violations MUST be explicitly justified with rationale
-- Technical debt related to constitution MUST be tracked in PROGRESS.md
+- Technical debt related to constitution SHOULD be tracked in issue tracker or project documentation
 
 ### Scope
 
@@ -239,12 +271,13 @@ This constitution governs all development activity for the RWR Toolbox project. 
 ### Runtime Guidance
 
 For implementation-specific guidance, see:
-- UI details: `docs-ai/UI.md`
-- Implementation references: `docs-ai/PLAN.APPENDIX.md`
-- Current status: `docs-ai/STATUS.md`
-- Progress tracking: `docs-ai/PROGRESS.md`
-- AI developer bootstrap: `docs-ai/AI_BOOTSTRAP_PROMPT.md`
+- UI/UX specification: `docs/UI.md`
+- Implementation references: `docs/PLAN.APPENDIX.md`
+- Current project status: `docs/STATUS.md`
+- Signals migration guidance: `docs/CONSTRUCTION.md`
+- Angular migration: `docs/MIGRATE_ANGULAR.md`
+- AI developer bootstrap: `docs/AI_BOOTSTRAP_PROMPT.md`
 
 ---
 
-**Version**: 1.1.0 | **Ratified**: 2026-01-15 | **Last Amended**: 2026-01-17
+**Version**: 1.3.0 | **Ratified**: 2026-01-15 | **Last Amended**: 2026-01-20

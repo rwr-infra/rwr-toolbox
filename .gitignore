@@ -59,6 +59,7 @@ Thumbs.db
 /.specify
 /.opencode
 /.cursor
+/.kilocode
 
 # spec-kit runtime / cache
 .speckit/

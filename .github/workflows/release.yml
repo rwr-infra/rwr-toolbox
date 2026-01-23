@@ -2,86 +2,86 @@ name: 'Release'
 
 # Triggered when ANY tag is pushed
 on:
-  push:
-    tags:
-      - '**'
+    push:
+        tags:
+            - '**'
 
 # Needs write permission to create GitHub releases
 permissions:
-  contents: write
+    contents: write
 
 jobs:
-  publish-tauri:
-    # Build on all target platforms in parallel
-    # fail-fast: false means continue all builds even if one fails
-    # This gives us complete results for debugging
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # macOS Universal
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
-          # Linux (Ubuntu-based)
-          - platform: 'ubuntu-22.04'
-            args: ''
-          # Windows 64-bit
-          - platform: 'windows-latest'
-            args: ''
+    publish-tauri:
+        # Build on all target platforms in parallel
+        # fail-fast: false means continue all builds even if one fails
+        # This gives us complete results for debugging
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    # macOS Universal
+                    - platform: 'macos-latest'
+                      args: '--target universal-apple-darwin'
+                    # Linux (Ubuntu-based)
+                    - platform: 'ubuntu-22.04'
+                      args: ''
+                    # Windows 64-bit
+                    - platform: 'windows-latest'
+                      args: ''
 
-    runs-on: ${{ matrix.platform }}
+        runs-on: ${{ matrix.platform }}
 
-    steps:
-      # Checkout repository code
-      - name: Checkout
-        uses: actions/checkout@v4
+        steps:
+            # Checkout repository code
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      # Setup Node.js for frontend dependencies
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
+            # Setup Node.js for frontend dependencies
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: lts/*
 
-      - name: Enable pnpm
-        run: corepack enable
+            - name: Enable pnpm
+              run: corepack enable
 
-      # Setup Rust toolchain
-      # macOS runners need both ARM64 and x86_64 targets for cross-compilation
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+            # Setup Rust toolchain
+            # macOS runners need both ARM64 and x86_64 targets for cross-compilation
+            - name: Install Rust stable
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      # Linux needs webkit libraries for WebView (Tauri dependency)
-      - name: Install dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+            # Linux needs webkit libraries for WebView (Tauri dependency)
+            - name: Install dependencies (Ubuntu only)
+              if: matrix.platform == 'ubuntu-22.04'
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      # Install frontend dependencies (pnpm for this project)
-      - name: Install frontend dependencies
-        run: pnpm install
+            # Install frontend dependencies (pnpm for this project)
+            - name: Install frontend dependencies
+              run: pnpm install
 
-      # Build and publish the application
-      # Creates GitHub release with all platform-specific artifacts
-      - name: Build and publish Tauri app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          # GITHUB_TOKEN is automatically provided by GitHub Actions
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # Tag name format - __VERSION__ is auto-replaced with version from Cargo.toml
-          tagName: v__VERSION__
-          # Release name format
-          releaseName: 'Version __VERSION__'
-          # Default release notes
-          releaseBody: 'See the assets to download this version and install.'
-          # Create as draft for manual review before publishing
-          releaseDraft: true
-          # This is a production release, not a pre-release
-          prerelease: false
-          # Generate updater.json for in-app update detection
-          uploadUpdaterJson: true
-          # Platform-specific build target
-          args: ${{ matrix.args }}
+            # Build and publish the application
+            # Creates GitHub release with all platform-specific artifacts
+            - name: Build and publish Tauri app
+              uses: tauri-apps/tauri-action@v0
+              env:
+                  # GITHUB_TOKEN is automatically provided by GitHub Actions
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  # Use the actual git tag name
+                  tagName: ${{ github.ref_name }}
+                  # Release name format
+                  releaseName: 'Version ${{ github.ref_name }}'
+                  # Default release notes
+                  releaseBody: 'See the assets to download this version and install.'
+                  # Create as draft for manual review before publishing
+                  releaseDraft: true
+                  # Mark as pre-release if tag contains beta, rc, or test
+                  prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') || contains(github.ref_name, 'test') }}
+                  # Generate updater.json for in-app update detection
+                  uploadUpdaterJson: true
+                  # Platform-specific build target
+                  args: ${{ matrix.args }}
