@@ -27,7 +27,7 @@ jobs:
                       args: ''
                     # Windows 64-bit
                     - platform: 'windows-latest'
-                      args: ''
+                      args: '--bundles exe,nsis'
 
         runs-on: ${{ matrix.platform }}
 
