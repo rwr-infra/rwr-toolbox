@@ -25,8 +25,6 @@ jobs:
     variables:
       # 参考 pnpm 官方 CI 文档：定义 pnpm 全局目录
       PNPM_CACHE_FOLDER: $(Pipeline.Workspace)/pnpm_cache
-      # Tauri CLI relies on platform-specific optionalDependencies; ensure they are not skipped in CI.
-      NPM_CONFIG_OPTIONAL: 'true'
 
     steps:
       - checkout: self
@@ -63,10 +61,18 @@ jobs:
           corepack prepare pnpm@10.28.1 --activate
           pnpm --version
           pnpm config set store-dir "$(PNPM_CACHE_FOLDER)"
-          pnpm config set optional true
-          pnpm install --frozen-lockfile --prod=false
+          pnpm install --frozen-lockfile
           pnpm exec tauri --version
         displayName: 'Install Dependencies'
+        workingDirectory: $(Build.SourcesDirectory)
+        env:
+          # pnpm/tauri cli uses platform-specific optionalDependencies (e.g. @tauri-apps/cli-win32-x64-msvc).
+          # Some CI environments set npm_config_optional=false; force it on explicitly.
+          npm_config_optional: 'true'
+          npm_config_no_optional: 'false'
+          # Ensure devDependencies are installed (where @tauri-apps/cli lives).
+          npm_config_production: 'false'
+          NODE_ENV: 'development'
 
       - script: |
           rustup toolchain install stable --profile minimal
@@ -86,3 +92,9 @@ jobs:
       # 4. 执行构建（通过 pnpm exec 确保正确解析 tauri CLI）
       - script: pnpm exec tauri build --debug $(TAURI_ARGS)
         displayName: 'Tauri Build'
+        workingDirectory: $(Build.SourcesDirectory)
+        env:
+          npm_config_optional: 'true'
+          npm_config_no_optional: 'false'
+          npm_config_production: 'false'
+          NODE_ENV: 'development'

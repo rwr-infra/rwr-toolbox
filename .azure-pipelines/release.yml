@@ -27,8 +27,6 @@ jobs:
 
     variables:
       PNPM_CACHE_FOLDER: $(Pipeline.Workspace)/pnpm_cache
-      # Tauri CLI relies on platform-specific optionalDependencies; ensure they are not skipped in CI.
-      NPM_CONFIG_OPTIONAL: 'true'
 
     steps:
       - checkout: self
@@ -62,10 +60,15 @@ jobs:
           corepack prepare pnpm@10.28.1 --activate
           pnpm --version
           pnpm config set store-dir "$(PNPM_CACHE_FOLDER)"
-          pnpm config set optional true
-          pnpm install --frozen-lockfile --prod=false
+          pnpm install --frozen-lockfile
           pnpm exec tauri --version
         displayName: 'Install Dependencies'
+        workingDirectory: $(Build.SourcesDirectory)
+        env:
+          npm_config_optional: 'true'
+          npm_config_no_optional: 'false'
+          npm_config_production: 'false'
+          NODE_ENV: 'development'
 
       - script: |
           rustup toolchain install stable --profile minimal
@@ -85,6 +88,12 @@ jobs:
       # 执行正式构建
       - script: pnpm exec tauri build $(TAURI_ARGS)
         displayName: 'Build Release'
+        workingDirectory: $(Build.SourcesDirectory)
+        env:
+          npm_config_optional: 'true'
+          npm_config_no_optional: 'false'
+          npm_config_production: 'false'
+          NODE_ENV: 'development'
 
       - task: PublishBuildArtifacts@1
         inputs:
