@@ -26,19 +26,20 @@ jobs:
     steps:
       - checkout: self
 
-      # 解决 macOS/Linux 缓存路径不存在的问题
-      - script: mkdir -p $(Pipeline.Workspace)/.pnpm-store
-        displayName: 'Create pnpm store directory'
+      # 使用 PowerShell 核心，全平台通用语法创建目录
+      - pwsh: |
+          $pnpmStore = "$(Pipeline.Workspace)/.pnpm-store"
+          if (!(Test-Path $pnpmStore)) { New-Item -ItemType Directory -Force -Path $pnpmStore }
+          
+          $cargoReg = "$(HOME)/.cargo"
+          if (!(Test-Path $cargoReg)) { New-Item -ItemType Directory -Force -Path $cargoReg }
+        displayName: 'Pre-create Cache Directories'
 
       - task: Cache@2
         inputs:
           key: 'pnpm | "$(Agent.OS)" | **/pnpm-lock.yaml'
           path: $(Pipeline.Workspace)/.pnpm-store
         displayName: 'Cache pnpm'
-
-      - script: mkdir -p $(HOME)/.cargo
-        displayName: 'Create Cargo directory'
-        condition: ne(variables['Agent.OS'], 'Windows_NT')
 
       - task: Cache@2
         inputs:
