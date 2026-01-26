@@ -45,7 +45,7 @@ jobs:
             displayName: Install Rust stable
 
           - script: |
-                rustup target add aarch64-apple-darwin x x86_64-apple-darwin
+                rustup target add aarch64-apple-darwin x86_64-apple-darwin
             displayName: Add macOS targets
             condition: eq(variables['vmImage'], 'macos-latest')
 
@@ -65,8 +65,7 @@ jobs:
             displayName: Install frontend dependencies
 
           # Build Tauri (release)
-          - script: |
-                cargo tauri build $(TAURI_ARGS)
+          - script: pnpm run tauri build $(TAURI_ARGS)
             displayName: Build Tauri app (release)
 
           # Collect artifacts

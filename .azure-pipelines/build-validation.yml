@@ -71,5 +71,5 @@ jobs:
             displayName: 'Install frontend dependencies'
 
           # Build Tauri app in debug mode (validation only)
-          - script: cargo tauri build --debug $(TAURI_ARGS)
+          - script: pnpm run tauri build --debug $(TAURI_ARGS)
             displayName: 'Build Tauri app (debug)'
