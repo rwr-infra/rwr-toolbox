@@ -51,30 +51,33 @@ jobs:
           path: $(CARGO_HOME)
         displayName: 'Cache Cargo'
 
+      # Cache Rust build outputs (similar to what GitHub Actions often achieves via action-level caching).
+      # This is typically the biggest win for Windows builds.
+      - task: Cache@2
+        inputs:
+          key: 'cargo-target | "$(Agent.OS)" | src-tauri/Cargo.lock'
+          restoreKeys: |
+            cargo-target | "$(Agent.OS)"
+          path: $(Build.SourcesDirectory)/src-tauri/target
+        displayName: 'Cache Cargo target/'
+
       - task: UseNode@1
         inputs:
           version: '24.x'
 
       # 3. 依赖安装（包含 tauri CLI）
-      # Use pwsh to get consistent logs across OSes (cmd.exe sometimes produces sparse logs).
       - pwsh: |
           $ErrorActionPreference = 'Stop'
-          Write-Host "pwd: $(Get-Location)"
-          node -v
-          corepack --version
           corepack enable
           corepack prepare pnpm@10.28.1 --activate
-          pnpm --version
           pnpm config set store-dir "$(PNPM_CACHE_FOLDER)"
-          pnpm config get store-dir
-          pnpm config get optional
-          pnpm config get production
-          pnpm install --frozen-lockfile
-          if (Test-Path "node_modules/.bin") {
-            Write-Host "node_modules/.bin (first 50):"
-            Get-ChildItem "node_modules/.bin" | Select-Object -First 50 | ForEach-Object { $_.Name }
-          } else {
-            Write-Host "node_modules/.bin not found"
+          pnpm config set prefer-offline true
+          # Warm the pnpm store from the lockfile, then install.
+          pnpm fetch --frozen-lockfile
+          pnpm install --frozen-lockfile --offline
+          if ($LASTEXITCODE -ne 0) {
+            # First run (cold cache) may not have everything in the store yet.
+            pnpm install --frozen-lockfile
           }
           pnpm exec tauri --version
         displayName: 'Install Dependencies'
@@ -89,7 +92,6 @@ jobs:
           NODE_ENV: 'development'
 
       - script: |
-          rustup toolchain install stable --profile minimal
           rustup default stable
         displayName: 'Setup Rust'
 
@@ -104,7 +106,8 @@ jobs:
         condition: eq(variables['Agent.OS'], 'Linux')
 
       # 4. 执行构建（通过 pnpm exec 确保正确解析 tauri CLI）
-      - script: pnpm exec tauri build --debug $(TAURI_ARGS)
+      # Build validation should compile fast; skip bundling/packaging.
+      - script: pnpm exec tauri build --debug --no-bundle $(TAURI_ARGS)
         displayName: 'Tauri Build'
         workingDirectory: $(Build.SourcesDirectory)
         env:
