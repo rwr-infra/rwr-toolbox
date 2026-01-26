@@ -7,6 +7,7 @@ pr:
 
 jobs:
   - job: build_validation
+    displayName: Build Validation
     strategy:
       matrix:
         macos:
@@ -25,12 +26,19 @@ jobs:
     steps:
       - checkout: self
 
-      # 缓存配置保持不变
+      # 解决 macOS/Linux 缓存路径不存在的问题
+      - script: mkdir -p $(Pipeline.Workspace)/.pnpm-store
+        displayName: 'Create pnpm store directory'
+
       - task: Cache@2
         inputs:
           key: 'pnpm | "$(Agent.OS)" | **/pnpm-lock.yaml'
           path: $(Pipeline.Workspace)/.pnpm-store
         displayName: 'Cache pnpm'
+
+      - script: mkdir -p $(HOME)/.cargo
+        displayName: 'Create Cargo directory'
+        condition: ne(variables['Agent.OS'], 'Windows_NT')
 
       - task: Cache@2
         inputs:
@@ -47,10 +55,12 @@ jobs:
       - task: UseNode@1
         inputs: { version: '20.x' }
 
-      - script: corepack enable && pnpm install
+      - script: |
+          corepack enable
+          pnpm config set store-dir $(Pipeline.Workspace)/.pnpm-store
+          pnpm install
         displayName: 'Install Frontend Deps'
 
-      # 修复点：分离 Rust 安装和 Target 添加，使用 condition 替代 Shell 判断
       - script: |
           rustup toolchain install stable --profile minimal
           rustup default stable

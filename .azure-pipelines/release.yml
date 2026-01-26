@@ -4,6 +4,7 @@ trigger:
 
 jobs:
   - job: publish_tauri
+    displayName: Publish Release
     strategy:
       matrix:
         macos:
@@ -29,11 +30,19 @@ jobs:
       - checkout: self
         fetchDepth: 0
 
+      # 预创建目录防止 tar 报错
+      - script: mkdir -p $(Pipeline.Workspace)/.pnpm-store
+        displayName: 'Pre-create pnpm store'
+
       - task: Cache@2
         inputs:
           key: 'pnpm | "$(Agent.OS)" | **/pnpm-lock.yaml'
           path: $(Pipeline.Workspace)/.pnpm-store
         displayName: 'Cache pnpm'
+
+      - script: mkdir -p $(HOME)/.cargo
+        displayName: 'Pre-create Cargo dir'
+        condition: ne(variables['Agent.OS'], 'Windows_NT')
 
       - task: Cache@2
         inputs:
@@ -50,7 +59,10 @@ jobs:
       - task: UseNode@1
         inputs: { version: '20.x' }
 
-      - script: corepack enable && pnpm install
+      - script: |
+          corepack enable
+          pnpm config set store-dir $(Pipeline.Workspace)/.pnpm-store
+          pnpm install
         displayName: 'Install Frontend Deps'
 
       - script: |
@@ -68,9 +80,11 @@ jobs:
         displayName: 'Install Linux Deps'
         condition: eq(variables['Agent.OS'], 'Linux')
 
+      # 正式构建 Release
       - script: pnpm tauri build $(TAURI_ARGS)
         displayName: 'Build Tauri App (Release)'
 
+      # 精确提取安装包
       - task: PublishBuildArtifacts@1
         displayName: 'Publish Release Bundles'
         inputs:
