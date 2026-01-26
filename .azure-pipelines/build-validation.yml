@@ -7,7 +7,6 @@ pr:
 
 jobs:
   - job: build_validation
-    displayName: Build Validation (Optimized)
     strategy:
       matrix:
         macos:
@@ -26,21 +25,19 @@ jobs:
     steps:
       - checkout: self
 
-      # 1. 前端 pnpm 缓存
+      # 缓存配置保持不变
       - task: Cache@2
         inputs:
           key: 'pnpm | "$(Agent.OS)" | **/pnpm-lock.yaml'
           path: $(Pipeline.Workspace)/.pnpm-store
         displayName: 'Cache pnpm'
 
-      # 2. Rust Cargo 注册表缓存 (加速依赖下载)
       - task: Cache@2
         inputs:
           key: 'cargo-reg | "$(Agent.OS)" | src-tauri/Cargo.lock'
           path: $(HOME)/.cargo
         displayName: 'Cache Cargo Registry'
 
-      # 3. Rust Target 增量编译缓存 (加速编译过程)
       - task: Cache@2
         inputs:
           key: 'cargo-target-debug | "$(Agent.OS)" | src-tauri/Cargo.lock'
@@ -48,27 +45,26 @@ jobs:
         displayName: 'Cache Rust Debug Target'
 
       - task: UseNode@1
-        inputs: { version: '24.x' }
-        displayName: 'Setup Node.js'
+        inputs: { version: '20.x' }
 
       - script: corepack enable && pnpm install
         displayName: 'Install Frontend Deps'
 
+      # 修复点：分离 Rust 安装和 Target 添加，使用 condition 替代 Shell 判断
       - script: |
           rustup toolchain install stable --profile minimal
           rustup default stable
-          # 仅在 macOS 下添加 target
-          if [ "$(Agent.OS)" = "Darwin" ]; then
-            rustup target add aarch64-apple-darwin x86_64-apple-darwin
-          fi
         displayName: 'Install Rust (Minimal)'
+
+      - script: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+        displayName: 'Add macOS targets'
+        condition: eq(variables['Agent.OS'], 'Darwin')
 
       - script: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-        condition: eq(variables['Agent.OS'], 'Linux')
         displayName: 'Install Linux Deps'
+        condition: eq(variables['Agent.OS'], 'Linux')
 
-      # 使用 --debug 快速校验编译逻辑
       - script: pnpm tauri build --debug $(TAURI_ARGS)
         displayName: 'Tauri Build (Debug Validation)'

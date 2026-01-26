@@ -4,14 +4,12 @@ trigger:
 
 jobs:
   - job: publish_tauri
-    displayName: Publish Release (Optimized)
     strategy:
       matrix:
         macos:
           vmImage: 'macos-latest'
           TAURI_ARGS: '--target universal-apple-darwin'
           OS_NAME: 'macos'
-          # macOS 通用二进制构建后的产物路径不同
           ARTIFACT_PATH: 'src-tauri/target/universal-apple-darwin/release/bundle'
         linux:
           vmImage: 'ubuntu-22.04'
@@ -29,9 +27,8 @@ jobs:
 
     steps:
       - checkout: self
-        fetchDepth: 0 # 确保 Tauri 能正确读取 Git Tag 作为版本号
+        fetchDepth: 0
 
-      # 缓存策略同上，但使用独立的 release 缓存 Key
       - task: Cache@2
         inputs:
           key: 'pnpm | "$(Agent.OS)" | **/pnpm-lock.yaml'
@@ -59,22 +56,21 @@ jobs:
       - script: |
           rustup toolchain install stable --profile minimal
           rustup default stable
-          if [ "$(Agent.OS)" = "Darwin" ]; then
-            rustup target add aarch64-apple-darwin x86_64-apple-darwin
-          fi
         displayName: 'Install Rust'
+
+      - script: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+        displayName: 'Add macOS targets'
+        condition: eq(variables['Agent.OS'], 'Darwin')
 
       - script: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-        condition: eq(variables['Agent.OS'], 'Linux')
         displayName: 'Install Linux Deps'
+        condition: eq(variables['Agent.OS'], 'Linux')
 
-      # 构建 Release 版本
       - script: pnpm tauri build $(TAURI_ARGS)
         displayName: 'Build Tauri App (Release)'
 
-      # 精确收集安装包，排除庞大的中间编译产物
       - task: PublishBuildArtifacts@1
         displayName: 'Publish Release Bundles'
         inputs:
