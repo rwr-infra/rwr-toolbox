@@ -28,6 +28,14 @@ export class ThemeService {
             );
             if (stored) {
                 this.themeSig.set(stored);
+                // Apply the loaded theme to DOM
+                if (stored.themeType === 'dark') {
+                    this.applyTheme('dark');
+                } else if (stored.themeType === 'light') {
+                    this.applyTheme('light');
+                } else if (stored.themeType === 'auto' && stored.autoDetectedTheme) {
+                    this.applyTheme(stored.autoDetectedTheme);
+                }
             } else {
                 await this.detectAndApplySystemTheme();
             }
