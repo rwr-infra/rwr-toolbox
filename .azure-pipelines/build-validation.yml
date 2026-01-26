@@ -26,13 +26,19 @@ jobs:
     steps:
       - checkout: self
 
-      # 使用 PowerShell 核心，全平台通用语法创建目录
+      # 修复点：使用 $env:HOME 处理跨平台用户目录路径
       - pwsh: |
           $pnpmStore = "$(Pipeline.Workspace)/.pnpm-store"
           if (!(Test-Path $pnpmStore)) { New-Item -ItemType Directory -Force -Path $pnpmStore }
           
-          $cargoReg = "$(HOME)/.cargo"
+          # 在 Windows 上 HOME 可能未定义，需兼容 USERPROFILE
+          $homePath = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }
+          $cargoReg = Join-Path $homePath ".cargo"
+          
           if (!(Test-Path $cargoReg)) { New-Item -ItemType Directory -Force -Path $cargoReg }
+          
+          # 将处理好的路径存入变量，方便后续 Cache 任务调用
+          Write-Host "##vso[task.setvariable variable=CARGO_HOME]$cargoReg"
         displayName: 'Pre-create Cache Directories'
 
       - task: Cache@2
@@ -44,7 +50,7 @@ jobs:
       - task: Cache@2
         inputs:
           key: 'cargo-reg | "$(Agent.OS)" | src-tauri/Cargo.lock'
-          path: $(HOME)/.cargo
+          path: $(CARGO_HOME)
         displayName: 'Cache Cargo Registry'
 
       - task: Cache@2

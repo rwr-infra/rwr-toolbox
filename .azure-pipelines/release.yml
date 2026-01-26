@@ -30,12 +30,15 @@ jobs:
       - checkout: self
         fetchDepth: 0
 
-      # 统一使用 pwsh 处理全平台路径创建
       - pwsh: |
-          $dirs = "$(Pipeline.Workspace)/.pnpm-store", "$(HOME)/.cargo"
-          foreach ($dir in $dirs) {
-            if (!(Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir }
-          }
+          $pnpmStore = "$(Pipeline.Workspace)/.pnpm-store"
+          if (!(Test-Path $pnpmStore)) { New-Item -ItemType Directory -Force -Path $pnpmStore }
+          
+          $homePath = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }
+          $cargoReg = Join-Path $homePath ".cargo"
+          if (!(Test-Path $cargoReg)) { New-Item -ItemType Directory -Force -Path $cargoReg }
+          
+          Write-Host "##vso[task.setvariable variable=CARGO_HOME]$cargoReg"
         displayName: 'Pre-create Cache Directories'
 
       - task: Cache@2
@@ -47,7 +50,7 @@ jobs:
       - task: Cache@2
         inputs:
           key: 'cargo-reg | "$(Agent.OS)" | src-tauri/Cargo.lock'
-          path: $(HOME)/.cargo
+          path: $(CARGO_HOME)
         displayName: 'Cache Cargo Registry'
 
       - task: Cache@2
