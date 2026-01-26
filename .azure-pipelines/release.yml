@@ -55,12 +55,26 @@ jobs:
       - task: UseNode@1
         inputs: { version: '24.x' }
 
-      - script: |
+      # Use pwsh to get consistent logs across OSes (cmd.exe sometimes produces sparse logs).
+      - pwsh: |
+          $ErrorActionPreference = 'Stop'
+          Write-Host "pwd: $(Get-Location)"
+          node -v
+          corepack --version
           corepack enable
           corepack prepare pnpm@10.28.1 --activate
           pnpm --version
           pnpm config set store-dir "$(PNPM_CACHE_FOLDER)"
+          pnpm config get store-dir
+          pnpm config get optional
+          pnpm config get production
           pnpm install --frozen-lockfile
+          if (Test-Path "node_modules/.bin") {
+            Write-Host "node_modules/.bin (first 50):"
+            Get-ChildItem "node_modules/.bin" | Select-Object -First 50 | ForEach-Object { $_.Name }
+          } else {
+            Write-Host "node_modules/.bin not found"
+          }
           pnpm exec tauri --version
         displayName: 'Install Dependencies'
         workingDirectory: $(Build.SourcesDirectory)
