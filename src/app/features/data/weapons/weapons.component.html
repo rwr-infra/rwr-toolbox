@@ -11,8 +11,8 @@
                 type="text"
                 [placeholder]="'weapons.search' | transloco"
                 class="input input-bordered input-sm join-item flex-1"
-                [value]="searchTerm()"
-                (input)="onSearch($any($event.target).value)"
+                [(ngModel)]="searchTerm"
+                (ngModelChange)="onSearch($event)"
             />
             <select
                 class="select select-bordered select-sm join-item w-40"

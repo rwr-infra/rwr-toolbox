@@ -8,6 +8,7 @@ import {
     ViewChild,
     DestroyRef,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import {
     CdkVirtualScrollViewport,
     ScrollingModule,
@@ -38,7 +39,7 @@ import {
  */
 @Component({
     selector: 'app-weapons',
-    imports: [TranslocoPipe, LucideAngularModule, ScrollingModule],
+    imports: [TranslocoPipe, LucideAngularModule, ScrollingModule, FormsModule],
     templateUrl: './weapons.component.html',
     styleUrl: './weapons.component.scss',
     animations: [
@@ -114,7 +115,7 @@ export class WeaponsComponent implements AfterViewInit {
     readonly sortState = this.weaponService.sortStateSig;
 
     // UI state signals
-    readonly searchTerm = signal<string>('');
+    searchTerm = signal<string>('');
     readonly selectedTag = signal<string | undefined>(undefined);
     readonly showAdvancedSearch = signal<boolean>(false);
     readonly advancedFilters = signal<AdvancedFilters>({});
@@ -406,8 +407,7 @@ export class WeaponsComponent implements AfterViewInit {
 
     /** Handle search input */
     onSearch(term: string): void {
-        this.searchTerm.set(term);
-        this.weaponService.setSearchTerm(term);
+        this.weaponService.setSearchTerm(term || '');
         // T066: Reset pagination to page 1 on search
         this.pagination.update((p) => ({ ...p, currentPage: 1 }));
     }
