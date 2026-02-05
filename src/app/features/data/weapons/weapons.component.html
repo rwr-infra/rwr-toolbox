@@ -629,7 +629,8 @@
                                     ></span>
                                 } @else if (col.field === 'key') {
                                     <span
-                                        class="text-xs"
+                                        class="text-xs truncate block"
+                                        [title]="weapon.key"
                                         [innerHTML]="highlight(weapon.key)"
                                     ></span>
                                 } @else {
