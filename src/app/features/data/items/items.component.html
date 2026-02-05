@@ -509,7 +509,8 @@
                                     ></span>
                                 } @else if (col.field === 'key') {
                                     <span
-                                        class="text-xs"
+                                        class="text-xs truncate block"
+                                        [title]="item.key"
                                         [innerHTML]="highlight(item.key)"
                                     ></span>
                                 } @else if (col.field === 'capacity.value') {

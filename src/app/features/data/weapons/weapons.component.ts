@@ -140,7 +140,7 @@ export class WeaponsComponent implements AfterViewInit {
     // Keep header/body column widths consistent when we render two separate tables.
     private readonly columnWidthPxByKey: Record<string, number> = {
         image: 56,
-        key: 180,
+        key: 220,
         name: 240,
         tag: 160,
         class: 120,

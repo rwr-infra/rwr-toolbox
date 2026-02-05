@@ -6,6 +6,7 @@ Auto-generated from all feature plans. Last updated: 2026-01-15
 
 - File-based configuration (Tauri settings store) (001-multi-directory-support)
 - TypeScript 5.8.3 (Angular v20.3.15), Rust Edition 2021 (Tauri 2.x) + Angular, Tailwind CSS v4.1.18, DaisyUI v5.5.14, Transloco v8.x, Tauri plugin-store, Lucide Angular v0.562.0 (001-ui-optimizations)
+- CSS truncation with native tooltips for table columns (001-optimize-table-column-width)
 - Tauri plugin-store for scan directories and scrolling mode preferences (001-ui-optimizations)
 - TypeScript 5.8.3 (Angular v20.3.15) + Angular Signals, Tauri 2.x, DaisyUI v5.5.14, Lucide Angular, Transloco v8.x, quick-xml (003-ux-improvements)
 - Tauri plugin-store for settings persistence (003-ux-improvements)
@@ -48,6 +49,7 @@ TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x): Follow standa
 
 ## Recent Changes
 
+- 001-optimize-table-column-width: Added CSS truncation with native tooltips for table columns (TypeScript 5.8.3, Angular v20.3.15, Tailwind CSS v4.1.18, DaisyUI v5.5.14)
 - 001-steam-launch-args: Added TypeScript 5.8.3 + Rust (edition 2021) + Angular 20.3.x, Tauri 2.x, @jsverse/transloco, Tailwind CSS 4.x + DaisyUI 5.x, lucide-angular
 - 001-i18n-table-changelog: Added TypeScript 5.8.3；Rust 2021 (用于 Tauri 侧，但本特性主要在前端) + Angular 20.3.x、@jsverse/transloco、Angular CDK（包含 virtual scroll）、Tailwind CSS、DaisyUI、lucide-angular、marked（用于 Markdown 渲染）
 - 001-game-path-setup: Added TypeScript 5.8.3 + Rust (edition 2021) + Angular v20.3.15, Transloco, TailwindCSS v4 + DaisyUI v5, Lucide Angular, Tauri 2.x, Tauri plugin-store
