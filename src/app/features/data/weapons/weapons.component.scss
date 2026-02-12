@@ -10,9 +10,11 @@
     }
 
     // Ensure the virtual-scroll wrapper contributes a precise scrollWidth.
+    // Feature 012: Added min-width to fix column alignment on 4K/high-DPI screens
     ::ng-deep .cdk-virtual-scroll-content-wrapper {
         display: inline-block;
         width: max-content;
+        min-width: 100%;
     }
 
     // The viewport is the only visible horizontal scrollbar.

@@ -43,6 +43,9 @@ Auto-generated from all feature plans. Last updated: 2026-01-14
 - Tauri plugin-store (file-based key-value persistence in `settings.json` for user preferences) (001-ui-layout-optimization)
 - TypeScript 5.8.3 (strict mode), Angular v20.3.15 + Tailwind CSS v4.1.18, DaisyUI v5.5.14, Lucide Angular v0.562.0, Transloco v8.x (001-ui-layout-optimization)
 - Tauri plugin-store (settings.json for user preferences) (001-ui-layout-optimization)
+- TypeScript 5.8.3 (Angular 20.3.15 frontend), Rust edition 2021 (Tauri 2.x backend) + Angular v20.3.15, Angular CDK v20.2.14 (virtual scrolling), Tailwind CSS v4.1.18, DaisyUI v5.5.14, Lucide Angular v0.562.0 (012-table-drawer-ux-fixes)
+- TypeScript 5.8.3 (Angular 20.3.15 frontend), Rust edition 2021 (Tauri 2.x backend) + Angular v20.3.15, Tauri 2.x, Transloco 8.x (i18n), DaisyUI v5.5.14, Tailwind CSS v4.1.18, Lucide Angular v0.562.0 (013-pagination-prev-next)
+- N/A (client-side state in Signals) (013-pagination-prev-next)
 
 - TypeScript 5.8.3 (frontend), Rust (backend via Tauri 2.x) + Angular 20.3.15, Tauri 2.x, quick-xml (Rust), Transloco 8.x, Tailwind CSS 4.x, DaisyUI 5.x (001-weapons-directory-scanner)
 
@@ -62,9 +65,9 @@ cargo test [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECH
 TypeScript 5.8.3 (frontend), Rust (backend via Tauri 2.x): Follow standard conventions
 
 ## Recent Changes
+- 013-pagination-prev-next: Added TypeScript 5.8.3 (Angular 20.3.15 frontend), Rust edition 2021 (Tauri 2.x backend) + Angular v20.3.15, Tauri 2.x, Transloco 8.x (i18n), DaisyUI v5.5.14, Tailwind CSS v4.1.18, Lucide Angular v0.562.0
+- 012-table-drawer-ux-fixes: Added TypeScript 5.8.3 (Angular 20.3.15 frontend), Rust edition 2021 (Tauri 2.x backend) + Angular v20.3.15, Angular CDK v20.2.14 (virtual scrolling), Tailwind CSS v4.1.18, DaisyUI v5.5.14, Lucide Angular v0.562.0
 - 001-ui-layout-optimization: Added TypeScript 5.8.3 (strict mode), Angular v20.3.15 + Tailwind CSS v4.1.18, DaisyUI v5.5.14, Lucide Angular v0.562.0, Transloco v8.x
-- 001-ui-layout-optimization: Added TypeScript 5.8.3 (strict mode) + Angular v20.3.15 (frontend), Rust edition 2021 + Tauri 2.x (backend)
-- 001-ui-layout-optimization: Added TypeScript 5.8.3 + Angular v20.3.15 (frontend), Rust edition 2021 + Tauri 2.x (backend) + Lucide Angular v0.562.0, Transloco v8.x, Tailwind CSS v4.1.18, DaisyUI v5.5.14, Angular CDK v20.2.14 (for virtual scrolling fallback)
 
 
 <!-- MANUAL ADDITIONS START -->

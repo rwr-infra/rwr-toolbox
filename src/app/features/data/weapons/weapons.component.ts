@@ -746,13 +746,14 @@ export class WeaponsComponent implements AfterViewInit {
         this.weaponsViewport?.checkViewportSize();
     }
 
-    /** T064: Get page numbers for pagination */
+    /** T064: Get page numbers for pagination with stable 5-slot window */
     getPageNumbers(): number[] {
         const totalPages = this.totalPages();
         const currentPage = this.pagination().currentPage;
         const pages: number[] = [];
 
-        if (totalPages <= 7) {
+        if (totalPages <= 5) {
+            // Show all pages if 5 or fewer
             for (let i = 1; i <= totalPages; i++) {
                 pages.push(i);
             }
@@ -760,25 +761,42 @@ export class WeaponsComponent implements AfterViewInit {
             // Always show first page
             pages.push(1);
 
-            if (currentPage > 3) {
+            // Calculate window start and end (5 slots, centered on current)
+            let windowStart = currentPage - 2;
+            let windowEnd = currentPage + 2;
+
+            // Adjust if window goes below 2
+            if (windowStart < 2) {
+                windowEnd += 2 - windowStart;
+                windowStart = 2;
+            }
+
+            // Adjust if window goes above totalPages - 1
+            if (windowEnd > totalPages - 1) {
+                windowStart -= windowEnd - (totalPages - 1);
+                windowEnd = totalPages - 1;
+            }
+
+            // Clamp windowStart to minimum 2
+            windowStart = this.max(2, windowStart);
+
+            // Add ellipsis before window if gap exists
+            if (windowStart > 2) {
                 pages.push(-1); // Ellipsis
             }
 
-            const start = this.max(2, currentPage - 1);
-            const end = this.min(totalPages - 1, currentPage + 1);
-
-            for (let i = start; i <= end; i++) {
+            // Add window pages
+            for (let i = windowStart; i <= windowEnd; i++) {
                 pages.push(i);
             }
 
-            if (currentPage < totalPages - 2) {
+            // Add ellipsis after window if gap exists
+            if (windowEnd < totalPages - 1) {
                 pages.push(-1); // Ellipsis
             }
 
             // Always show last page
-            if (totalPages > 1) {
-                pages.push(totalPages);
-            }
+            pages.push(totalPages);
         }
 
         return pages;

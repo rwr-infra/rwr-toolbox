@@ -32,13 +32,22 @@
 - **最小支持分辨率**: 800 × 600
 - **默认启动分辨率**: 800 × 600
 - **推荐分辨率**: 1280 × 720 或更高
+- **最大支持分辨率**: 3840 × 2160 (4K)
 
 ### 强制要求
 
 - UI 在 800 × 600 下 **完全可用**
+- UI 在 4K (3840 × 2160) 下 **布局正确、元素不拥挤**
 - 禁止出现横向滚动条
 - 禁止内容被裁剪或溢出窗口
 - 各区域允许 **独立纵向滚动**
+
+### 4K 适配策略
+
+- 对于 > 1920 × 1080 的显示器，考虑设置最大宽度约束
+- 表格列宽保持合理，避免在大屏幕上过度拉伸
+- 字体大小保持可读性（避免使用绝对 px，优先使用 rem/em 或 Tailwind 响应式类）
+- 模态框在大屏幕上应有最大宽度限制
 
 ---
 
@@ -246,11 +255,12 @@ AppShellComponent
 
 ```html
 <div class="drawer drawer-open h-screen">
-  <aside class="w-[200px] menu bg-base-200">
+  <aside class="w-[200px] menu bg-base-200 shrink-0">
     <!-- Sidebar -->
   </aside>
 
-  <main class="flex flex-col flex-1 overflow-hidden">
+  <main class="flex flex-col flex-1 overflow-hidden max-w-[2560px]">
+    <!-- max-w for 4K: prevent excessive stretching -->
     <header class="navbar bg-base-100">
       <!-- Toolbar -->
     </header>

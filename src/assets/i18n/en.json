@@ -88,6 +88,10 @@
         "fullPage": "Full Page Scroll",
         "toggleTooltip": "Toggle scrolling mode"
     },
+    "pagination": {
+        "prev": "Previous page",
+        "next": "Next page"
+    },
     "shortcuts": {
         "title": "Keyboard Shortcuts",
         "navigation": "Navigation",

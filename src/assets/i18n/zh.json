@@ -88,6 +88,10 @@
         "fullPage": "整页滚动",
         "toggleTooltip": "切换滚动模式"
     },
+    "pagination": {
+        "prev": "上一页",
+        "next": "下一页"
+    },
     "shortcuts": {
         "title": "键盘快捷键",
         "navigation": "导航",
