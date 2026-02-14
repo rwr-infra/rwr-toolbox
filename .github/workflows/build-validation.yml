@@ -22,7 +22,7 @@ jobs:
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
           # Linux (Ubuntu-based)
-          - platform: 'ubuntu-22.04'
+          - platform: 'blacksmith-2vcpu-ubuntu-2204'
             args: ''
           # Windows 64-bit
           - platform: 'windows-latest'
