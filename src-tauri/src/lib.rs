@@ -6,6 +6,7 @@ mod ping;
 mod rwrmi;
 mod steam_launch;
 mod utils;
+mod version_check;
 mod weapons;
 
 pub use events::ScanEvent;
@@ -303,7 +304,11 @@ pub fn run() {
             directories::validate_directory,
             directories::validate_game_install_directory,
             steam_launch::steam_check_rwr_available,
-            steam_launch::steam_launch_rwr
+            steam_launch::steam_launch_rwr,
+            version_check::get_update_status,
+            version_check::trigger_version_check,
+            version_check::dismiss_update,
+            version_check::open_releases_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

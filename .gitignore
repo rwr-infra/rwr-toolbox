@@ -60,6 +60,10 @@ Thumbs.db
 /.opencode
 /.cursor
 /.kilocode
+/.codex
+/.vscode
+/.trae
+/.augment
 
 # spec-kit runtime / cache
 .speckit/

@@ -1,59 +1,122 @@
 # rwr-toolbox Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-01-15
+Regenerated from `docs/` authoritative sources. Last updated: 2026-02-14
+
+## Source of Truth
+
+- Primary authority: `docs/` (Documentation-Driven Development)
+- Required reading order for new contributors/agents:
+    1. `docs/STATUS.md`
+    2. `docs/UI.md`
+    3. `docs/PLAN.md` (this file is currently titled `PLAN.APPENDIX`)
+    4. `docs/CONSTRUCTION.md`
+    5. `docs/AI_BOOTSTRAP_PROMPT.md`
+
+## Project Snapshot
+
+- Product: Desktop toolbox for Running With Rifles players/modders
+- App type: Angular + Tauri desktop application (not web/mobile-first)
+- Current app version: `0.1.0`
+- UI baseline: 800x600 minimum, 3840x2160 maximum supported
 
 ## Active Technologies
 
-- File-based configuration (Tauri settings store) (001-multi-directory-support)
-- TypeScript 5.8.3 (Angular v20.3.15), Rust Edition 2021 (Tauri 2.x) + Angular, Tailwind CSS v4.1.18, DaisyUI v5.5.14, Transloco v8.x, Tauri plugin-store, Lucide Angular v0.562.0 (001-ui-optimizations)
-- CSS truncation with native tooltips for table columns (001-optimize-table-column-width)
-- Tauri plugin-store for scan directories and scrolling mode preferences (001-ui-optimizations)
-- TypeScript 5.8.3 (Angular v20.3.15) + Angular Signals, Tauri 2.x, DaisyUI v5.5.14, Lucide Angular, Transloco v8.x, quick-xml (003-ux-improvements)
-- Tauri plugin-store for settings persistence (003-ux-improvements)
-- TypeScript 5.8.3 (Angular 20.3.15) + Rust (edition 2021; Tauri 2.x) + Angular CDK 20.2.14 (virtual scrolling), Tauri 2.x (desktop framework), quick-xml (Rust XML parsing), Transloco (i18n), Tailwind CSS 4.x + DaisyUI 5.x (003-ux-improvements)
-- Tauri plugin-store (file-based configuration) (003-ux-improvements)
-- TypeScript 5.8.3 (Angular v20.3.15) + Tailwind CSS v4.1.18, DaisyUI v5.5.14, Lucide Angular v0.562.0, Transloco v8.x (001-ui-style-optimization)
-- N/A (UI layout optimization) (001-ui-style-optimization)
-- TypeScript 5.8.3, Angular v20.3.15, Rust Edition 2021 (Tauri 2.x) + @jsverse/transloco, lucide-angular, DaisyUI, Tailwind CSS (008-ui-and-search-refinements)
-- Tauri settings store (plugin-store) (008-ui-and-search-refinements)
-- TypeScript 5.8.3, Angular v20, Rust, Tauri v2.x + `tauri-plugin-opener` (Tauri v2 native opener), `quick-xml` (Rust parsing), `lucide-angular` (009-fix-windows-editor-changelog)
-- Local `CHANGELOG.md` file (009-fix-windows-editor-changelog)
-- TypeScript 5.8.3, Angular v20.3.15 + Tailwind CSS v4, DaisyUI v5, Lucide Angular, Angular Animations (001-ui-layout-optimization)
-- TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x) + Tailwind CSS v4, DaisyUI v5, Lucide Angular, Transloco, Angular Animations (001-ui-layout-optimization)
-- Tauri plugin-store (for settings), local XML game files (001-ui-layout-optimization)
-- TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x) + Web Workers, Tauri IPC Channels, Angular Animations, DaisyUI v5 (001-ui-layout-optimization)
-- Tauri plugin-store, local XML game files (001-ui-layout-optimization)
-- TypeScript 5.8.3 + Rust (edition 2021) + Angular v20.3.15, Transloco, TailwindCSS v4 + DaisyUI v5, Lucide Angular, Tauri 2.x, Tauri plugin-store (001-game-path-setup)
-- Tauri plugin-store（settings.json） (001-game-path-setup)
-- TypeScript 5.8.3；Rust 2021 (用于 Tauri 侧，但本特性主要在前端) + Angular 20.3.x、@jsverse/transloco、Angular CDK（包含 virtual scroll）、Tailwind CSS、DaisyUI、lucide-angular、marked（用于 Markdown 渲染） (001-i18n-table-changelog)
-- 文件（`CHANGELOG.md`）+ 现有 i18n JSON（`src/assets/i18n/*.json`） (001-i18n-table-changelog)
-- TypeScript 5.8.3 + Rust (edition 2021) + Angular 20.3.x, Tauri 2.x, @jsverse/transloco, Tailwind CSS 4.x + DaisyUI 5.x, lucide-angular (001-steam-launch-args)
-- Tauri plugin-store (`settings.json`) + `tauri-plugin-opener` + `tauri-plugin-clipboard-manager` (001-steam-launch-args)
+- Frontend: Angular `20.3.15`, TypeScript `5.8.3`, Angular CLI `20.3.13`
+- Desktop/backend: Tauri `2.x`, Rust (edition `2021`)
+- Styling/UI: Tailwind CSS `4.1.18`, DaisyUI `5.5.14`
+- i18n: Transloco `8.2.0` (runtime i18n only)
+- Icons: Lucide Angular `0.562.0` via centralized registry
+- Data/parsing: `quick-xml` (Rust), `fast-xml-parser` (TypeScript)
+- Persistence/config: `tauri-plugin-store`
 
-- TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x) + Angular 20.3.15, Transloco 8.x, Tailwind CSS 4.x, DaisyUI 5.x, Tauri 2.x, quick-xml (001-multi-directory-support)
+## Core Principles (Non-Negotiable)
+
+1. Desktop-first UI design
+    - Must remain fully usable at `800x600`
+    - Must scale correctly up to `4K` without layout breakage
+2. Runtime i18n with Transloco
+    - No `@angular/localize` build-time i18n
+    - No hardcoded user-facing text in templates/components
+3. Theme adaptability
+    - Support both DaisyUI light/dark themes
+    - Use theme variables for custom colors
+4. Signal-based state management
+    - Service state uses Angular `signal()`
+    - RxJS is for async flows only
+    - Avoid BehaviorSubject as primary state source
+5. Documentation-driven development
+    - Align all implementation decisions with `docs/`
+6. Icon management
+    - Only `lucide-angular`
+    - Register icons in `src/app/shared/icons/index.ts` before use
+    - No manual SVG tags in templates/components
+7. Tailwind-first styling
+    - Prefer Tailwind utilities and DaisyUI semantics
+    - Only use custom CSS when utility/component patterns cannot express the requirement
 
 ## Project Structure
 
 ```text
 src/
-tests/
+  app/
+    core/
+    shared/
+    features/
+src-tauri/
+docs/
 ```
 
-## Commands
+## Development Commands
 
-cargo test [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] cargo clippy
+Use `pnpm` as the package manager baseline.
 
-## Code Style
+```bash
+pnpm install
+pnpm start          # Angular dev server
+pnpm tauri dev      # Tauri desktop development
+pnpm build          # Angular production build
+pnpm tauri build    # Tauri desktop production build
 
-TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x): Follow standard conventions
+cargo fmt           # Rust formatting
+cargo clippy        # Rust linting
+cargo test          # Rust tests
+```
 
-## Recent Changes
+## Engineering Standards
 
-- 001-optimize-table-column-width: Added CSS truncation with native tooltips for table columns (TypeScript 5.8.3, Angular v20.3.15, Tailwind CSS v4.1.18, DaisyUI v5.5.14)
-- 001-steam-launch-args: Added TypeScript 5.8.3 + Rust (edition 2021) + Angular 20.3.x, Tauri 2.x, @jsverse/transloco, Tailwind CSS 4.x + DaisyUI 5.x, lucide-angular
-- 001-i18n-table-changelog: Added TypeScript 5.8.3；Rust 2021 (用于 Tauri 侧，但本特性主要在前端) + Angular 20.3.x、@jsverse/transloco、Angular CDK（包含 virtual scroll）、Tailwind CSS、DaisyUI、lucide-angular、marked（用于 Markdown 渲染）
-- 001-game-path-setup: Added TypeScript 5.8.3 + Rust (edition 2021) + Angular v20.3.15, Transloco, TailwindCSS v4 + DaisyUI v5, Lucide Angular, Tauri 2.x, Tauri plugin-store
-- 001-ui-layout-optimization: Added TypeScript 5.8.3 (Angular 20.3.15), Rust Edition 2021 (Tauri 2.x) + Web Workers, Tauri IPC Channels, Angular Animations, DaisyUI v5
+- TypeScript
+    - Strict mode
+    - Prettier formatting
+    - No unused imports
+- Rust
+    - Keep `cargo fmt` clean
+    - Keep `cargo clippy` clean (or document intentional warnings)
+- i18n
+    - New keys must be added in both:
+        - `src/assets/i18n/en.json`
+        - `src/assets/i18n/zh.json`
+    - Use hierarchical key naming (for example: `menu.dashboard`, `common.yes`)
 
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->
+## Architecture Constraints
+
+- Service-layer state should expose signals directly to components (no `toSignal()` bridge for primary state)
+- Signal updates must follow immutable update patterns
+- Tauri command calls must include explicit error handling
+- User-facing error messages should be i18n keys, not hardcoded strings
+
+## Working Protocol
+
+- Define task boundaries clearly (`What` / `Not What`) before implementation
+- Deliver small, verifiable increments (MVP first)
+- For file overwrite/backup/risky operations, document rollback strategy
+- Keep docs updated when project snapshot, architecture guidance, or reusable implementation references change
+
+## Feature Status Snapshot
+
+- Completed: i18n migration, 800x600 layout optimization, servers, settings, dashboard, players, hotkeys
+- In progress: data management is partially complete (about 90% per `docs/STATUS.md`)
+
+## Known Documentation Notes
+
+- `docs/PLAN.md` content title uses `PLAN.APPENDIX`; treat this file as the implementation-reference appendix
+- Some historical docs still show `npm` command examples; preferred baseline is `pnpm` per `docs/CONSTRUCTION.md`

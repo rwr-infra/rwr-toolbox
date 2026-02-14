@@ -8,6 +8,8 @@ import { MAIN_MENU_ITEMS } from './shared/constants/menu-items';
 import { DirectoryService } from './features/settings/services/directory.service';
 import { ScrollingModeService } from './features/shared/services/scrolling-mode.service';
 import { ThemeService } from './shared/services/theme.service';
+import { VersionCheckService } from './core/services/version-check.service';
+import { UpdatePromptComponent } from './core/components/update-prompt.component';
 
 @Component({
     selector: 'app-root',
@@ -17,6 +19,7 @@ import { ThemeService } from './shared/services/theme.service';
         RouterLink,
         LucideAngularModule,
         TranslocoDirective,
+        UpdatePromptComponent,
     ],
     templateUrl: './app.component.html',
 })
@@ -25,6 +28,9 @@ export class AppComponent implements OnInit {
     private directoryService = inject(DirectoryService);
     private scrollingModeService = inject(ScrollingModeService);
     private themeService = inject(ThemeService);
+    private versionCheckService = inject(VersionCheckService);
+
+    updateStatus = this.versionCheckService.updateStatus;
 
     menuItems = MAIN_MENU_ITEMS;
     currentYear = new Date().getFullYear();

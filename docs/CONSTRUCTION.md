@@ -2,12 +2,12 @@
 
 <!--
 Sync Impact Report:
-- Version: 1.2.0 → 1.3.0 (minor update)
-- Modified: Principle V - Documentation-Driven Development (removed PROGRESS.md references)
-- Modified: Updated all documentation paths from `docs-ai/` to `docs/`
-- Modified: Governance section - removed PROGRESS.md technical debt tracking reference
-- Added: Reference to CONSTRUCTION.md for Signal state management guidance
+- Version: 1.3.0 → 1.4.0 (minor update)
+- Modified: Principle I - Desktop-First UI Design (added 4K maximum resolution support)
+- Added: Maximum Resolution guidance (3840 × 2160) with responsive scaling requirements
+- Added: Display scaling strategy for high-DPI displays
 - Templates reviewed: No changes required (templates remain generic)
+- Related files: docs/UI.md updated for consistency
 - Follow-up TODOs: None
 -->
 
@@ -15,17 +15,27 @@ Sync Impact Report:
 
 ### I. Desktop-First UI Design (NON-NEGOTIABLE)
 
-**Minimum Resolution**: 800 × 600 pixels MUST be fully usable without horizontal scrolling or content clipping. Default window size is 800 × 600; recommended is 1280 × 720 or higher.
+**Resolution Range**: The application MUST support resolutions from 800 × 600 (minimum) to 3840 × 2160 (4K, maximum) without layout breakage or usability degradation.
+
+- **Minimum Resolution**: 800 × 600 pixels MUST be fully usable without horizontal scrolling or content clipping. Default window size is 800 × 600.
+- **Recommended Resolution**: 1280 × 720 or higher for optimal experience.
+- **Maximum Resolution**: 3840 × 2160 (4K) pixels MUST display correctly with appropriate content scaling. UI elements should not appear excessively small or sparse.
 
 **High Information Density**: The application is a desktop tool for advanced gamers/modders. Use `text-sm` (14px) and `text-xs` (12px) sizing to present more information efficiently. However, maintain readability - avoid过度压缩导致阅读困难。
+
+**Display Scaling Strategy**:
+- For displays ≤ 1920 × 1080: Standard layout with fixed sidebar (200px)
+- For displays > 1920 × 1080: Consider proportional scaling or max-width constraints to prevent content from stretching too thin
+- Tables: Maintain readable column widths; avoid excessive white space on large screens
+- Font sizes: Remain readable at 4K (avoid absolute px; prefer rem/em or Tailwind responsive classes)
 
 **Fixed Layout Strategy**:
 - Sidebar: Fixed width (200px), with `truncate` to prevent text overflow
 - Work area: Independent scrolling, not affected by sidebar
 - Tables: Use `sticky` positioning for critical columns (left/right fixed) with horizontal scroll for middle columns
-- Modals: Max height constraints (e.g., `max-h-[80vh]`) with internal scrolling
+- Modals: Max height constraints (e.g., `max-h-[80vh]`) with internal scrolling, max width constraints for 4K displays
 
-**Rationale**: Running With Rifles players often use older hardware or windowed mode. The tool must be usable on netbooks, older laptops, and alongside the game running simultaneously.
+**Rationale**: Running With Rifles players often use older hardware or windowed mode. The tool must be usable on netbooks, older laptops, and alongside the game running simultaneously. Conversely, modern gaming setups frequently use 4K displays, and the UI must scale gracefully to prevent unusably small elements or excessive wasted space.
 
 ---
 
@@ -280,4 +290,4 @@ For implementation-specific guidance, see:
 
 ---
 
-**Version**: 1.3.0 | **Ratified**: 2026-01-15 | **Last Amended**: 2026-01-20
+**Version**: 1.4.0 | **Ratified**: 2026-01-15 | **Last Amended**: 2026-02-12
