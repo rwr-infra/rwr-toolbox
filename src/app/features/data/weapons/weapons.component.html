@@ -19,7 +19,7 @@
                 (change)="onTagFilter($any($event.target).value)"
             >
                 <option value="">
-                    {{ 'weapons.filters.allClasses' | transloco }}
+                    {{ 'weapons.filters.allTags' | transloco }}
                 </option>
                 @for (tag of availableTags(); track tag) {
                     <option [value]="tag" [selected]="selectedTag() === tag">
@@ -64,7 +64,7 @@
             </div>
             <ul
                 tabindex="0"
-                class="dropdown-content z-[10] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300"
+                class="dropdown-content z-[30] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300"
             >
                 <li class="menu-title">
                     <span class="text-[10px] uppercase opacity-50">{{
@@ -551,7 +551,9 @@
                                             loadingIcons().has(weapon.key || '')
                                         "
                                     >
-                                        @if (loadingIcons().has(weapon.key || '')) {
+                                        @if (
+                                            loadingIcons().has(weapon.key || '')
+                                        ) {
                                             <i-lucide
                                                 name="loader-2"
                                                 class="absolute h-4 w-4 animate-spin text-base-content/50"

@@ -447,7 +447,7 @@
             "filePath": "文件路径"
         },
         "filters": {
-            "allClasses": "全部类别",
+            "allTags": "全部标签",
             "damage": "伤害",
             "fireRate": "射速",
             "magazineSize": "弹匣容量",
@@ -547,6 +547,8 @@
         },
         "filters": {
             "allTypes": "全部类型",
+            "allStates": "全部状态",
+            "missing": "缺失",
             "carry_item": "携带物品",
             "visual_item": "视觉物品"
         },

@@ -447,7 +447,7 @@
             "filePath": "File Path"
         },
         "filters": {
-            "allClasses": "All Classes",
+            "allTags": "All Tags",
             "damage": "Damage",
             "fireRate": "Fire Rate",
             "magazineSize": "Magazine Size",
@@ -547,6 +547,8 @@
         },
         "filters": {
             "allTypes": "All Types",
+            "allStates": "All States",
+            "missing": "Missing",
             "carry_item": "Carry Item",
             "visual_item": "Visual Item"
         },

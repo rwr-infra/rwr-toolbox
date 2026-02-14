@@ -19,8 +19,10 @@ export interface ItemFilters {
     itemType?: 'carry_item' | 'visual_item';
     encumbrance?: { min?: number; max?: number };
     price?: { min?: number; max?: number };
+    timeToLive?: { min?: number; max?: number };
     canRespawnWith?: boolean;
     inStock?: boolean;
+    draggable?: boolean | 'missing';
 }
 
 /**
@@ -466,6 +468,19 @@ export class ItemService implements OnDestroy {
             if (filters.price.max !== undefined && price > filters.price.max)
                 return false;
         }
+        if (filters.timeToLive) {
+            const ttl = isCarryItem(item) ? item.timeToLive : undefined;
+            if (filters.timeToLive.min !== undefined) {
+                if (ttl === undefined || ttl < filters.timeToLive.min) {
+                    return false;
+                }
+            }
+            if (filters.timeToLive.max !== undefined) {
+                if (ttl === undefined || ttl > filters.timeToLive.max) {
+                    return false;
+                }
+            }
+        }
         if (
             filters.canRespawnWith !== undefined &&
             item.canRespawnWith !== filters.canRespawnWith
@@ -473,6 +488,16 @@ export class ItemService implements OnDestroy {
             return false;
         if (filters.inStock !== undefined && item.inStock !== filters.inStock)
             return false;
+        if (filters.draggable !== undefined) {
+            const draggableValue = isCarryItem(item)
+                ? item.draggable
+                : undefined;
+            if (filters.draggable === 'missing') {
+                if (draggableValue !== undefined) return false;
+            } else if (draggableValue !== filters.draggable) {
+                return false;
+            }
+        }
         return true;
     }
 

@@ -67,7 +67,7 @@
             </div>
             <ul
                 tabindex="0"
-                class="dropdown-content z-[10] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300"
+                class="dropdown-content z-[30] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300"
             >
                 <li class="menu-title">
                     <span class="text-[10px] uppercase opacity-50">{{
@@ -218,6 +218,80 @@
                             "
                         />
                     </div>
+                </div>
+
+                <div class="form-control">
+                    <label class="label py-1">
+                        <span
+                            class="label-text text-[10px] uppercase opacity-50"
+                            >{{ 'items.columns.timeToLive' | transloco }}</span
+                        >
+                    </label>
+                    <div class="join w-full">
+                        <input
+                            type="number"
+                            class="input input-bordered input-xs join-item w-full"
+                            placeholder="Min"
+                            [value]="filters().timeToLive?.min ?? ''"
+                            (input)="
+                                onRangeFilter(
+                                    'timeToLive',
+                                    'min',
+                                    $any($event.target).value
+                                )
+                            "
+                        />
+                        <input
+                            type="number"
+                            class="input input-bordered input-xs join-item w-full"
+                            placeholder="Max"
+                            [value]="filters().timeToLive?.max ?? ''"
+                            (input)="
+                                onRangeFilter(
+                                    'timeToLive',
+                                    'max',
+                                    $any($event.target).value
+                                )
+                            "
+                        />
+                    </div>
+                </div>
+
+                <div class="form-control">
+                    <label class="label py-1">
+                        <span
+                            class="label-text text-[10px] uppercase opacity-50"
+                            >{{ 'items.columns.draggable' | transloco }}</span
+                        >
+                    </label>
+                    <select
+                        class="select select-bordered select-xs"
+                        [value]="
+                            filters().draggable === true
+                                ? 'true'
+                                : filters().draggable === false
+                                  ? 'false'
+                                  : filters().draggable === 'missing'
+                                    ? 'missing'
+                                    : ''
+                        "
+                        (change)="
+                            onDraggableFilterChange($any($event.target).value)
+                        "
+                    >
+                        <option value="">
+                            {{ 'items.filters.allStates' | transloco }}
+                        </option>
+                        <option value="true">
+                            {{ 'common.yes' | transloco }}
+                        </option>
+                        <option value="false">
+                            {{ 'common.no' | transloco }}
+                        </option>
+                        <option value="missing">
+                            {{ 'items.filters.missing' | transloco }}
+                        </option>
+                    </select>
                 </div>
             </div>
 
@@ -428,7 +502,9 @@
                                             loadingIcons().has(item.key || '')
                                         "
                                     >
-                                        @if (loadingIcons().has(item.key || '')) {
+                                        @if (
+                                            loadingIcons().has(item.key || '')
+                                        ) {
                                             <i-lucide
                                                 name="loader-2"
                                                 class="absolute h-4 w-4 animate-spin text-base-content/50"

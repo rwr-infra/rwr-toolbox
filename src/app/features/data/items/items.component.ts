@@ -462,7 +462,7 @@ export class ItemsComponent implements AfterViewInit {
 
     /** Handle range filter input change */
     onRangeFilter(
-        field: 'encumbrance' | 'price',
+        field: 'encumbrance' | 'price' | 'timeToLive',
         type: 'min' | 'max',
         value: string,
     ): void {
@@ -492,14 +492,30 @@ export class ItemsComponent implements AfterViewInit {
 
     /** Handle exact filter checkbox change */
     onExactFilter(
-        field: 'canRespawnWith' | 'inStock',
-        value: boolean | undefined,
+        field: 'canRespawnWith' | 'inStock' | 'draggable',
+        value: boolean | 'missing' | undefined,
     ): void {
         this.filters.update((f) => ({
             ...f,
             [field]: value,
         }));
         this.itemService.setFilters(this.filters());
+    }
+
+    onDraggableFilterChange(value: string): void {
+        let draggableFilter: boolean | 'missing' | undefined;
+
+        if (value === 'true') {
+            draggableFilter = true;
+        } else if (value === 'false') {
+            draggableFilter = false;
+        } else if (value === 'missing') {
+            draggableFilter = 'missing';
+        } else {
+            draggableFilter = undefined;
+        }
+
+        this.onExactFilter('draggable', draggableFilter);
     }
 
     /** Clear all filters */

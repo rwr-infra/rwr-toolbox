@@ -3,16 +3,18 @@
 //! Scans RWR game directory for item XML files (.carry_item, .visual_item, etc.),
 //! parses them, and returns structured item data to the frontend.
 
-use crate::ScanEvent;
 use crate::utils::resolve_packages_dirs;
+use crate::ScanEvent;
 use quick_xml::de::from_str;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use tauri::ipc::Channel;
 use walkdir::WalkDir;
 
 const BATCH_SIZE: usize = 50;
+const MAX_TEMPLATE_DEPTH: usize = 10;
 
 /// Unified item structure (all item types)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -137,6 +139,8 @@ pub struct ItemScanResult {
 struct RawCarryItem {
     #[serde(rename = "@key", default)]
     key: Option<String>,
+    #[serde(rename = "@file", default)]
+    template_file: Option<String>,
     #[serde(rename = "@name", default)]
     name: Option<String>,
     #[serde(rename = "@slot", default)]
@@ -224,6 +228,8 @@ struct RawVisualItem {
     #[serde(rename = "@key", default)]
     #[allow(dead_code)]
     key: Option<String>,
+    #[serde(rename = "@file", default)]
+    template_file: Option<String>,
     #[serde(rename = "model", default)]
     models: Vec<RawVisualModel>,
     #[serde(rename = "effect", default)]
@@ -466,6 +472,296 @@ pub async fn scan_items_collect(
     })
 }
 
+#[derive(Debug, Clone)]
+struct CarryTemplateSelector {
+    key: Option<String>,
+    index: usize,
+}
+
+fn resolve_item_template_path(base_dir: &Path, template_file: &str) -> PathBuf {
+    let candidate = base_dir.join(template_file);
+    if candidate.exists() {
+        return candidate;
+    }
+
+    if let Some(packages_dir) = base_dir.ancestors().nth(2) {
+        let vanilla_candidate = packages_dir.join("vanilla/items").join(template_file);
+        if vanilla_candidate.exists() {
+            return vanilla_candidate;
+        }
+    }
+
+    candidate
+}
+
+fn resolve_carry_item_template(
+    base_dir: &Path,
+    template_file: &str,
+    selector: &CarryTemplateSelector,
+    visited: &mut HashSet<PathBuf>,
+) -> Result<RawCarryItem, String> {
+    let template_path = resolve_item_template_path(base_dir, template_file);
+
+    if !visited.insert(template_path.clone()) {
+        return Err(format!(
+            "Circular carry_item template reference detected: {}",
+            template_file
+        ));
+    }
+
+    if visited.len() > MAX_TEMPLATE_DEPTH {
+        return Err(format!(
+            "carry_item template depth exceeded limit (>{})",
+            MAX_TEMPLATE_DEPTH
+        ));
+    }
+
+    let content = std::fs::read_to_string(&template_path).map_err(|e| {
+        format!(
+            "Failed to read carry_item template '{}': {e}",
+            template_path.display()
+        )
+    })?;
+    let root: RawCarryItemsRoot =
+        from_str(&content).map_err(|e| format!("carry_item template XML parse error: {e}"))?;
+    let mut template_items = root.items;
+
+    let mut current = if let Some(key) = selector.key.as_ref() {
+        template_items
+            .iter()
+            .position(|item| item.key.as_ref() == Some(key))
+            .and_then(|idx| {
+                if idx < template_items.len() {
+                    Some(template_items.remove(idx))
+                } else {
+                    None
+                }
+            })
+            .or_else(|| template_items.into_iter().nth(selector.index))
+            .ok_or_else(|| {
+                format!(
+                    "Cannot select carry_item from template '{}': key='{}', index={}",
+                    template_path.display(),
+                    key,
+                    selector.index
+                )
+            })?
+    } else if template_items.len() == 1 {
+        template_items.into_iter().next().ok_or_else(|| {
+            format!(
+                "Template '{}' does not contain carry_item entries",
+                template_path.display()
+            )
+        })?
+    } else if selector.index < template_items.len() {
+        template_items
+            .into_iter()
+            .nth(selector.index)
+            .ok_or_else(|| {
+                format!(
+                    "Cannot select carry_item index {} from template '{}'",
+                    selector.index,
+                    template_path.display()
+                )
+            })?
+    } else {
+        return Err(format!(
+            "Ambiguous carry_item template '{}': {} entries but index {} is out of range",
+            template_path.display(),
+            template_items.len(),
+            selector.index
+        ));
+    };
+
+    if let Some(parent_file) = current.template_file.clone() {
+        let template_parent = template_path.parent().ok_or_else(|| {
+            format!(
+                "Cannot resolve parent directory for carry_item template '{}'",
+                template_path.display()
+            )
+        })?;
+        let next_selector = CarryTemplateSelector {
+            key: current.key.clone().or_else(|| selector.key.clone()),
+            index: selector.index,
+        };
+        let parent =
+            resolve_carry_item_template(template_parent, &parent_file, &next_selector, visited)?;
+        current = merge_carry_item_attributes(parent, current);
+    }
+
+    visited.remove(&template_path);
+    Ok(current)
+}
+
+fn resolve_visual_item_template(
+    base_dir: &Path,
+    template_file: &str,
+    visited: &mut HashSet<PathBuf>,
+) -> Result<RawVisualItem, String> {
+    let template_path = resolve_item_template_path(base_dir, template_file);
+
+    if !visited.insert(template_path.clone()) {
+        return Err(format!(
+            "Circular visual_item template reference detected: {}",
+            template_file
+        ));
+    }
+
+    if visited.len() > MAX_TEMPLATE_DEPTH {
+        return Err(format!(
+            "visual_item template depth exceeded limit (>{})",
+            MAX_TEMPLATE_DEPTH
+        ));
+    }
+
+    let content = std::fs::read_to_string(&template_path).map_err(|e| {
+        format!(
+            "Failed to read visual_item template '{}': {e}",
+            template_path.display()
+        )
+    })?;
+    let mut current: RawVisualItem =
+        from_str(&content).map_err(|e| format!("visual_item template XML parse error: {e}"))?;
+
+    if let Some(parent_file) = current.template_file.clone() {
+        let template_parent = template_path.parent().ok_or_else(|| {
+            format!(
+                "Cannot resolve parent directory for visual_item template '{}'",
+                template_path.display()
+            )
+        })?;
+        let parent = resolve_visual_item_template(template_parent, &parent_file, visited)?;
+        current = merge_visual_item_attributes(parent, current);
+    }
+
+    visited.remove(&template_path);
+    Ok(current)
+}
+
+fn merge_carry_item_attributes(parent: RawCarryItem, mut child: RawCarryItem) -> RawCarryItem {
+    if child.key.is_none() {
+        child.key = parent.key;
+    }
+    if child.name.is_none() {
+        child.name = parent.name;
+    }
+    if child.slot.is_none() {
+        child.slot = parent.slot;
+    }
+    if child.template_file.is_none() {
+        child.template_file = parent.template_file;
+    }
+    if child.transform_on_consume.is_none() {
+        child.transform_on_consume = parent.transform_on_consume;
+    }
+    if child.time_to_live.is_none() {
+        child.time_to_live = parent.time_to_live;
+    }
+    if child.draggable.is_none() {
+        child.draggable = parent.draggable;
+    }
+
+    child.hud_icon = merge_hud_icon(parent.hud_icon, child.hud_icon);
+    child.inventory = merge_inventory(parent.inventory, child.inventory);
+    child.commonness = merge_commonness(parent.commonness, child.commonness);
+    child.model = merge_model(parent.model, child.model);
+
+    if child.capacities.is_empty() {
+        child.capacities = parent.capacities;
+    }
+    if child.modifiers.is_empty() {
+        child.modifiers = parent.modifiers;
+    }
+
+    child
+}
+
+fn merge_visual_item_attributes(parent: RawVisualItem, mut child: RawVisualItem) -> RawVisualItem {
+    if child.key.is_none() {
+        child.key = parent.key;
+    }
+    if child.template_file.is_none() {
+        child.template_file = parent.template_file;
+    }
+    if child.models.is_empty() {
+        child.models = parent.models;
+    }
+    if child.effect.is_none() {
+        child.effect = parent.effect;
+    }
+    child
+}
+
+fn merge_hud_icon(parent: Option<RawHudIcon>, child: Option<RawHudIcon>) -> Option<RawHudIcon> {
+    match (parent, child) {
+        (Some(parent), Some(mut child)) => {
+            if child.filename.is_none() {
+                child.filename = parent.filename;
+            }
+            Some(child)
+        }
+        (Some(parent), None) => Some(parent),
+        (_, Some(child)) => Some(child),
+        (None, None) => None,
+    }
+}
+
+fn merge_inventory(
+    parent: Option<RawInventory>,
+    child: Option<RawInventory>,
+) -> Option<RawInventory> {
+    match (parent, child) {
+        (Some(parent), Some(mut child)) => {
+            if child.encumbrance.is_none() {
+                child.encumbrance = parent.encumbrance;
+            }
+            if child.price.is_none() {
+                child.price = parent.price;
+            }
+            Some(child)
+        }
+        (Some(parent), None) => Some(parent),
+        (_, Some(child)) => Some(child),
+        (None, None) => None,
+    }
+}
+
+fn merge_commonness(
+    parent: Option<RawCommonness>,
+    child: Option<RawCommonness>,
+) -> Option<RawCommonness> {
+    match (parent, child) {
+        (Some(parent), Some(mut child)) => {
+            if child.value.is_none() {
+                child.value = parent.value;
+            }
+            if child.in_stock.is_none() {
+                child.in_stock = parent.in_stock;
+            }
+            if child.can_respawn_with.is_none() {
+                child.can_respawn_with = parent.can_respawn_with;
+            }
+            Some(child)
+        }
+        (Some(parent), None) => Some(parent),
+        (_, Some(child)) => Some(child),
+        (None, None) => None,
+    }
+}
+
+fn merge_model(parent: Option<RawModel>, child: Option<RawModel>) -> Option<RawModel> {
+    match (parent, child) {
+        (Some(parent), Some(mut child)) => {
+            if child.mesh_filename.is_none() {
+                child.mesh_filename = parent.mesh_filename;
+            }
+            Some(child)
+        }
+        (Some(parent), None) => Some(parent),
+        (_, Some(child)) => Some(child),
+        (None, None) => None,
+    }
+}
 
 /// Parse a carry_item XML file (may contain multiple carry_item elements)
 fn parse_carry_item(
@@ -505,9 +801,29 @@ fn parse_carry_item(
         .trim_start_matches('/')
         .to_string();
 
-    // Parse ALL carry_item elements from the file
     let mut items = Vec::new();
-    for (index, raw) in raw_root.items.iter().enumerate() {
+    let item_parent = path
+        .parent()
+        .ok_or_else(|| "Cannot get parent directory of carry_item file".to_string())?;
+
+    for (index, raw_item) in raw_root.items.into_iter().enumerate() {
+        let mut raw = raw_item;
+
+        if let Some(template_file) = raw.template_file.clone() {
+            let selector = CarryTemplateSelector {
+                key: raw.key.clone(),
+                index,
+            };
+            if let Ok(parent) = resolve_carry_item_template(
+                item_parent,
+                &template_file,
+                &selector,
+                &mut HashSet::new(),
+            ) {
+                raw = merge_carry_item_attributes(parent, raw);
+            }
+        }
+
         let modifiers = raw
             .modifiers
             .iter()
@@ -520,11 +836,9 @@ fn parse_carry_item(
             })
             .collect();
 
-        // Ensure unique key: use raw.key if present, otherwise generate unique key from filename + index
         let item_key = if raw.key.is_some() {
             raw.key.clone()
         } else {
-            // Generate unique key: "filename_index" format to avoid duplicates in multi-item files
             Some(format!("{}_{}", file_name, index))
         };
 
@@ -601,7 +915,19 @@ fn parse_visual_item(
     let content =
         std::fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))?;
 
-    let raw: RawVisualItem = from_str(&content).map_err(|e| format!("XML parse error: {}", e))?;
+    let mut raw: RawVisualItem =
+        from_str(&content).map_err(|e| format!("XML parse error: {}", e))?;
+
+    if let Some(template_file) = raw.template_file.clone() {
+        let item_parent = path
+            .parent()
+            .ok_or_else(|| "Cannot get parent directory of visual_item file".to_string())?;
+        if let Ok(parent) =
+            resolve_visual_item_template(item_parent, &template_file, &mut HashSet::new())
+        {
+            raw = merge_visual_item_attributes(parent, raw);
+        }
+    }
 
     let file_name = path
         .file_stem()
