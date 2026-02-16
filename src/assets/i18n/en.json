@@ -403,6 +403,7 @@
         "hotkeys_file_missing_title": "hotkeys.xml not found",
         "hotkeys_file_missing_desc": "No hotkeys.xml file was found in the game directory. Create a default file now?",
         "create_default_hotkeys": "Create default hotkeys",
+        "default_profile_title": "Default Game Hotkeys",
         "read_parse_failed": "Failed to parse hotkeys.xml",
         "read_failed": "Failed to read hotkeys",
         "share_success": "Copied to Clipboard!",

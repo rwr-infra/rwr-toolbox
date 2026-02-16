@@ -139,6 +139,13 @@ export class HotkeyService {
         return this.writeToGame([...this.defaultHotkeysConfig]);
     }
 
+    createDefaultHotkeysAndActivateProfile(title: string): Observable<void> {
+        return this.createDefaultHotkeys().pipe(
+            switchMap(() => this.readFromGame()),
+            switchMap((config) => this.upsertAndActivateProfile(title, config)),
+        );
+    }
+
     /**
      * Write hotkey configuration to game directory
      */
@@ -386,6 +393,47 @@ export class HotkeyService {
                 return throwError(() => error);
             }),
         );
+    }
+
+    private upsertAndActivateProfile(
+        title: string,
+        config: IHotkeyConfigItem[],
+    ): Observable<void> {
+        const now = Date.now();
+        const current = this.profilesState();
+        const existing = current.profiles.find(
+            (profile) => profile.title === title,
+        );
+
+        const profiles = existing
+            ? current.profiles.map((profile) =>
+                  profile.id === existing.id
+                      ? {
+                            ...profile,
+                            config,
+                            updatedAt: now,
+                        }
+                      : profile,
+              )
+            : [
+                  ...current.profiles,
+                  {
+                      id: this.generateId(),
+                      title,
+                      config,
+                      createdAt: now,
+                      updatedAt: now,
+                  },
+              ];
+
+        const activeProfileId = existing
+            ? existing.id
+            : profiles[profiles.length - 1].id;
+
+        return this.saveProfiles({
+            profiles,
+            activeProfileId,
+        });
     }
 
     /**

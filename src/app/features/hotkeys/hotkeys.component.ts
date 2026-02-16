@@ -77,14 +77,19 @@ export class HotkeysComponent implements OnInit {
     }
 
     onCreateDefaultHotkeys(): void {
-        this.hotkeyService.createDefaultHotkeys().subscribe({
-            next: () => {
-                this.showCreateDefaultHotkeysModal = false;
-                this.onReadFromGame();
-            },
-            error: (err) =>
-                console.error('Failed to create default hotkeys:', err),
-        });
+        const defaultProfileTitle = this.transloco.translate(
+            'hotkeys.default_profile_title',
+        );
+
+        this.hotkeyService
+            .createDefaultHotkeysAndActivateProfile(defaultProfileTitle)
+            .subscribe({
+                next: () => {
+                    this.showCreateDefaultHotkeysModal = false;
+                },
+                error: (err) =>
+                    console.error('Failed to create default hotkeys:', err),
+            });
     }
 
     /**

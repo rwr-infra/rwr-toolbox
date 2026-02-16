@@ -403,6 +403,7 @@
         "hotkeys_file_missing_title": "未找到 hotkeys.xml",
         "hotkeys_file_missing_desc": "在游戏目录中未找到 hotkeys.xml。是否现在创建默认文件？",
         "create_default_hotkeys": "创建默认热键",
+        "default_profile_title": "游戏默认热键",
         "read_parse_failed": "解析 hotkeys.xml 失败",
         "read_failed": "读取热键失败",
         "share_success": "已复制到剪贴板！",
