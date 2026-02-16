@@ -31,6 +31,7 @@ export class AppComponent implements OnInit {
     private versionCheckService = inject(VersionCheckService);
 
     updateStatus = this.versionCheckService.updateStatus;
+    readonly theme = this.themeService.theme;
 
     menuItems = MAIN_MENU_ITEMS;
     currentYear = new Date().getFullYear();
@@ -65,6 +66,17 @@ export class AppComponent implements OnInit {
         this.showStatusPanel.set(!this.showStatusPanel());
     }
 
+    async onToggleTheme(): Promise<void> {
+        const current = this.theme().themeType;
+        const nextTheme: 'auto' | 'light' | 'dark' =
+            current === 'auto'
+                ? 'light'
+                : current === 'light'
+                  ? 'dark'
+                  : 'auto';
+        await this.themeService.setTheme(nextTheme);
+    }
+
     /**
      * T058: Add directory using file dialog (Global shortcut Ctrl+D)
      */
@@ -89,17 +101,6 @@ export class AppComponent implements OnInit {
 
     @HostListener('window:keydown', ['$event'])
     handleKeyboard(event: KeyboardEvent): void {
-        // Ctrl+K: Quick search
-        if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-            event.preventDefault();
-            const searchInput = document.querySelector(
-                'input[placeholder="Ctrl+K"]',
-            ) as HTMLInputElement;
-            if (searchInput) {
-                searchInput.focus();
-            }
-        }
-
         // Ctrl+S: Toggle status panel
         if ((event.ctrlKey || event.metaKey) && event.key === 's') {
             event.preventDefault();

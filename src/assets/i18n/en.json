@@ -64,7 +64,6 @@
         "footer": "Created with ❤️ for the RWR Community"
     },
     "common": {
-        "quick_search": "Quick Search:",
         "status_panel": "Status Panel",
         "system_status": "System Status",
         "api_connection": "API Connection",
@@ -96,7 +95,6 @@
         "title": "Keyboard Shortcuts",
         "navigation": "Navigation",
         "global": "Global",
-        "quick_search": "Quick Search",
         "toggle_status": "Toggle Status Panel",
         "close_modals": "Close Modals / Panels"
     },
@@ -396,6 +394,16 @@
         "import_from_clipboard": "Import from Clipboard",
         "import_success": "Import Successful!",
         "import_success_desc": "The profile has been added to your collection.",
+        "import_invalid_format": "Invalid format",
+        "clipboard_empty": "Clipboard is empty",
+        "import_failed": "Failed to import",
+        "hotkeys_file_missing": "hotkeys.xml is missing",
+        "hotkeys_file_missing_title": "Create default hotkeys.xml?",
+        "hotkeys_file_missing_desc": "No hotkeys.xml file was found. Create a default file and auto-import it as a profile?",
+        "create_default_hotkeys": "Create and auto-import",
+        "default_profile_title": "Current Game Hotkeys (Auto Imported)",
+        "read_parse_failed": "Failed to parse hotkeys.xml",
+        "read_failed": "Failed to read hotkeys",
         "share_success": "Copied to Clipboard!",
         "share_success_desc": "Profile copied to clipboard. You can now share it with others.",
         "open_in_editor": "Open in Editor",
@@ -406,7 +414,7 @@
         "remark": "Remark",
         "content": "Content",
         "remark_placeholder": "Function name (e.g., Jump, Fire)",
-        "content_placeholder": "Key combination (e.g., Space, Ctrl+C)"
+        "content_placeholder": "/skill"
     },
     "weapons": {
         "title": "Weapons",

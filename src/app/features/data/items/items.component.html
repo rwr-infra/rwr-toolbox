@@ -376,8 +376,8 @@
     <div class="sticky top-0 z-20 border-b border-base-300 bg-base-100">
         <div class="table-header-clip overflow-hidden">
             <table
-                class="table table-xs w-max table-fixed table-header-table"
-                [style.width.px]="tableWidthPx()"
+                class="table table-xs table-fixed table-header-table"
+                [style.width.px]="renderedTableWidthPx()"
                 [style.minWidth.px]="tableWidthPx()"
                 [style.transform]="headerTransform()"
             >
@@ -447,8 +447,8 @@
         [maxBufferPx]="rowHeight * 30"
     >
         <table
-            class="table table-xs table-zebra w-max table-fixed"
-            [style.width.px]="tableWidthPx()"
+            class="table table-xs table-zebra table-fixed"
+            [style.width.px]="renderedTableWidthPx()"
             [style.minWidth.px]="tableWidthPx()"
         >
             <colgroup>

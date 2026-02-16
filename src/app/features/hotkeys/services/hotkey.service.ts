@@ -27,6 +27,18 @@ import {
 })
 export class HotkeyService {
     private settingsService = inject(SettingsService);
+    private readonly defaultHotkeysConfig: IHotkeyConfigItem[] = [
+        { label: 'Hotkey 1', value: 'enter here text for Hotkey 1' },
+        { label: 'Hotkey 2', value: 'enter here text for Hotkey 2' },
+        { label: 'Hotkey 3', value: 'enter here text for Hotkey 3' },
+        { label: 'Hotkey 4', value: 'enter here text for Hotkey 4' },
+        { label: 'Hotkey 5', value: 'enter here text for Hotkey 5' },
+        { label: 'Hotkey 6', value: 'enter here text for Hotkey 6' },
+        { label: 'Hotkey 7', value: 'enter here text for Hotkey 7' },
+        { label: 'Hotkey 8', value: 'enter here text for Hotkey 8' },
+        { label: 'Hotkey 9', value: 'enter here text for Hotkey 9' },
+        { label: 'Hotkey 10', value: 'enter here text for Hotkey 10' },
+    ];
 
     // State management with signals (Principle IX: Signal管状态)
     private loadingState = signal<boolean>(false);
@@ -51,6 +63,22 @@ export class HotkeyService {
             config.profiles.find((p) => p.id === config.activeProfileId) || null
         );
     });
+
+    private resolveGamePath(): string | null {
+        const gameInstallDirectory =
+            this.settingsService.getGameInstallDirectory()?.trim() ?? '';
+        if (gameInstallDirectory) {
+            return gameInstallDirectory;
+        }
+
+        const directories = this.settingsService.getScanDirectories();
+        const firstValid = directories.find((d) => d.status === 'valid');
+        return firstValid?.path ?? null;
+    }
+
+    getConfiguredGamePath(): string | null {
+        return this.resolveGamePath();
+    }
 
     /**
      * Initialize: load profiles
@@ -77,13 +105,12 @@ export class HotkeyService {
      * Read hotkey configuration from game directory
      */
     readFromGame(): Observable<IHotkeyConfigItem[]> {
-        // Get first valid scan directory instead of gamePath
-        const directories = this.settingsService.getScanDirectories();
-        const firstValid = directories.find((d) => d.status === 'valid');
-        const gamePath = firstValid?.path;
+        const gamePath = this.resolveGamePath();
 
         if (!gamePath) {
-            return throwError(() => 'No valid game directory configured');
+            const errorKey = 'hotkeys.no_game_path_desc';
+            this.errorState.set(errorKey);
+            return throwError(() => errorKey);
         }
 
         this.loadingState.set(true);
@@ -98,8 +125,9 @@ export class HotkeyService {
                 this.currentConfigState.set(config);
             }),
             catchError((error) => {
-                this.errorState.set(`Failed to read hotkeys: ${error}`);
-                return throwError(() => error);
+                const errorKey = this.mapReadErrorToKey(error);
+                this.errorState.set(errorKey);
+                return throwError(() => errorKey);
             }),
             finalize(() => {
                 this.loadingState.set(false);
@@ -107,17 +135,39 @@ export class HotkeyService {
         );
     }
 
+    createDefaultHotkeys(): Observable<void> {
+        return this.writeToGame([...this.defaultHotkeysConfig]);
+    }
+
+    createDefaultHotkeysAndActivateProfile(title: string): Observable<void> {
+        return this.createDefaultHotkeys().pipe(
+            switchMap(() => this.readFromGame()),
+            switchMap((config) => this.upsertAndActivateProfile(title, config)),
+        );
+    }
+
+    syncReadConfigToProfilesWhenEmpty(
+        title: string,
+        config: IHotkeyConfigItem[],
+    ): Observable<void> {
+        const current = this.profilesState();
+        if (current.profiles.length > 0) {
+            return from(Promise.resolve());
+        }
+
+        return this.upsertAndActivateProfile(title, config);
+    }
+
     /**
      * Write hotkey configuration to game directory
      */
     writeToGame(config: IHotkeyConfigItem[]): Observable<void> {
-        // Get first valid scan directory instead of gamePath
-        const directories = this.settingsService.getScanDirectories();
-        const firstValid = directories.find((d) => d.status === 'valid');
-        const gamePath = firstValid?.path;
+        const gamePath = this.resolveGamePath();
 
         if (!gamePath) {
-            return throwError(() => 'No valid game directory configured');
+            const errorKey = 'hotkeys.no_game_path_desc';
+            this.errorState.set(errorKey);
+            return throwError(() => errorKey);
         }
 
         this.loadingState.set(true);
@@ -298,16 +348,21 @@ export class HotkeyService {
      * Open hotkeys.xml in external editor
      */
     async openInEditor(): Promise<void> {
-        // Get first valid scan directory instead of gamePath
-        const directories = this.settingsService.getScanDirectories();
-        const firstValid = directories.find((d) => d.status === 'valid');
-        const gamePath = firstValid?.path;
+        const gamePath = this.resolveGamePath();
 
         if (!gamePath) {
-            throw new Error('No valid game directory configured');
+            const errorKey = 'hotkeys.no_game_path_desc';
+            this.errorState.set(errorKey);
+            throw new Error(errorKey);
         }
 
-        await invoke('open_hotkeys_in_editor', { gamePath });
+        try {
+            this.errorState.set(null);
+            await invoke('open_hotkeys_in_editor', { gamePath });
+        } catch (error) {
+            this.errorState.set(`Failed to open editor: ${error}`);
+            throw error;
+        }
     }
 
     /**
@@ -352,6 +407,47 @@ export class HotkeyService {
         );
     }
 
+    private upsertAndActivateProfile(
+        title: string,
+        config: IHotkeyConfigItem[],
+    ): Observable<void> {
+        const now = Date.now();
+        const current = this.profilesState();
+        const existing = current.profiles.find(
+            (profile) => profile.title === title,
+        );
+
+        const profiles = existing
+            ? current.profiles.map((profile) =>
+                  profile.id === existing.id
+                      ? {
+                            ...profile,
+                            config,
+                            updatedAt: now,
+                        }
+                      : profile,
+              )
+            : [
+                  ...current.profiles,
+                  {
+                      id: this.generateId(),
+                      title,
+                      config,
+                      createdAt: now,
+                      updatedAt: now,
+                  },
+              ];
+
+        const activeProfileId = existing
+            ? existing.id
+            : profiles[profiles.length - 1].id;
+
+        return this.saveProfiles({
+            profiles,
+            activeProfileId,
+        });
+    }
+
     /**
      * Generate unique ID
      */
@@ -364,6 +460,29 @@ export class HotkeyService {
      */
     clearError(): void {
         this.errorState.set(null);
+    }
+
+    private mapReadErrorToKey(error: unknown): string {
+        const message =
+            typeof error === 'string'
+                ? error
+                : error instanceof Error
+                  ? error.message
+                  : String(error);
+
+        if (message.startsWith('hotkeys.')) {
+            return message;
+        }
+
+        if (message.includes('hotkeys.xml not found')) {
+            return 'hotkeys.hotkeys_file_missing';
+        }
+
+        if (message.includes('Failed to parse XML')) {
+            return 'hotkeys.read_parse_failed';
+        }
+
+        return 'hotkeys.read_failed';
     }
 
     /**

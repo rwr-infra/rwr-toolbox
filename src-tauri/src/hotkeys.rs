@@ -1,22 +1,26 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Raw XML hotkey item
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HotkeyRawItem {
-    #[serde(rename = "index")]
+    #[serde(rename = "@index")]
     pub index: String,
-    #[serde(rename = "text")]
+    #[serde(rename = "@text")]
     pub key_combination: String,
-    #[serde(rename = "$text")]
-    pub label: String,
+    #[serde(rename = "@label", default, skip_serializing_if = "Option::is_none")]
+    pub label_attr: Option<String>,
+    #[serde(rename = "$text", default, skip_serializing_if = "Option::is_none")]
+    pub label_text: Option<String>,
 }
 
 /// Raw XML configuration root node
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename = "hotkeys")]
 pub struct HotkeyRawConfig {
+    #[serde(rename = "hotkey", default)]
     pub hotkeys: Vec<HotkeyRawItem>,
 }
 
@@ -47,11 +51,8 @@ pub struct HotkeyProfilesConfig {
 /// Read game hotkeys.xml
 #[tauri::command]
 pub fn read_hotkeys(game_path: String) -> Result<String, String> {
-    let hotkeys_path = Path::new(&game_path).join("hotkeys.xml");
-
-    if !hotkeys_path.exists() {
-        return Err("hotkeys.xml not found".to_string());
-    }
+    let hotkeys_path = resolve_existing_hotkeys_path(&game_path)
+        .ok_or_else(|| build_hotkeys_not_found_error(&game_path))?;
 
     let content = fs::read_to_string(&hotkeys_path)
         .map_err(|e| format!("Failed to read hotkeys.xml: {}", e))?;
@@ -71,7 +72,7 @@ pub fn parse_hotkeys(xml_content: String) -> Result<String, String> {
         .hotkeys
         .into_iter()
         .map(|item| HotkeyConfigItem {
-            label: item.label,
+            label: item.label_attr.or(item.label_text).unwrap_or_default(),
             value: item.key_combination,
         })
         .collect();
@@ -82,27 +83,38 @@ pub fn parse_hotkeys(xml_content: String) -> Result<String, String> {
 /// Generate hotkeys.xml content
 #[tauri::command]
 pub fn generate_hotkeys(config: Vec<HotkeyConfigItem>) -> Result<String, String> {
-    use quick_xml::se::to_string;
+    let mut xml = String::from("<hotkeys>\n");
 
-    let raw_config: HotkeyRawConfig = HotkeyRawConfig {
-        hotkeys: config
-            .into_iter()
-            .enumerate()
-            .map(|(idx, item)| HotkeyRawItem {
-                index: idx.to_string(),
-                key_combination: item.value,
-                label: item.label,
-            })
-            .collect(),
-    };
+    for (idx, item) in config.into_iter().enumerate() {
+        let escaped = quick_xml::escape::escape(&item.value);
+        let label = item.label.trim().to_string();
+        if label.is_empty() {
+            xml.push_str(&format!(
+                "       <hotkey index=\"{}\" text=\"{}\" />\n",
+                idx, escaped
+            ));
+        } else {
+            let escaped_label = quick_xml::escape::escape(&label);
+            xml.push_str(&format!(
+                "       <hotkey index=\"{}\" text=\"{}\" label=\"{}\" />\n",
+                idx, escaped, escaped_label
+            ));
+        }
+    }
 
-    to_string(&raw_config).map_err(|e| format!("Failed to generate XML: {}", e))
+    xml.push_str("</hotkeys>");
+    Ok(xml)
 }
 
 /// Write hotkeys to game directory
 #[tauri::command]
 pub fn write_hotkeys(game_path: String, xml_content: String) -> Result<(), String> {
-    let hotkeys_path = Path::new(&game_path).join("hotkeys.xml");
+    let hotkeys_path = resolve_writable_hotkeys_path(&game_path);
+
+    if let Some(parent) = hotkeys_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to prepare hotkeys directory: {}", e))?;
+    }
 
     fs::write(&hotkeys_path, xml_content)
         .map_err(|e| format!("Failed to write hotkeys.xml: {}", e))?;
@@ -179,11 +191,8 @@ fn get_profiles_path() -> Result<std::path::PathBuf, String> {
 /// Open hotkeys.xml in external editor
 #[tauri::command]
 pub fn open_hotkeys_in_editor(game_path: String) -> Result<(), String> {
-    let hotkeys_path = Path::new(&game_path).join("hotkeys.xml");
-
-    if !hotkeys_path.exists() {
-        return Err("hotkeys.xml not found".to_string());
-    }
+    let hotkeys_path = resolve_existing_hotkeys_path(&game_path)
+        .ok_or_else(|| build_hotkeys_not_found_error(&game_path))?;
 
     // Open with default editor based on platform
     #[cfg(target_os = "macos")]
@@ -213,4 +222,65 @@ pub fn open_hotkeys_in_editor(game_path: String) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+fn resolve_existing_hotkeys_path(game_path: &str) -> Option<PathBuf> {
+    let official_path = get_official_hotkeys_path();
+    if let Some(path) = &official_path {
+        if path.exists() {
+            return Some(path.clone());
+        }
+    }
+
+    let game_dir_path = Path::new(game_path).join("hotkeys.xml");
+    if game_dir_path.exists() {
+        return Some(game_dir_path);
+    }
+
+    None
+}
+
+fn resolve_writable_hotkeys_path(game_path: &str) -> PathBuf {
+    if let Some(path) = get_official_hotkeys_path() {
+        return path;
+    }
+
+    Path::new(game_path).join("hotkeys.xml")
+}
+
+fn build_hotkeys_not_found_error(game_path: &str) -> String {
+    if let Some(official_path) = get_official_hotkeys_path() {
+        return format!(
+            "hotkeys.xml not found (checked: {}, {})",
+            official_path.display(),
+            Path::new(game_path).join("hotkeys.xml").display()
+        );
+    }
+
+    "hotkeys.xml not found".to_string()
+}
+
+#[cfg(target_os = "windows")]
+fn get_official_hotkeys_path() -> Option<PathBuf> {
+    dirs::data_dir().map(|dir| dir.join("Running with rifles").join("hotkeys.xml"))
+}
+
+#[cfg(target_os = "macos")]
+fn get_official_hotkeys_path() -> Option<PathBuf> {
+    dirs::home_dir().map(|dir| {
+        dir.join("Library")
+            .join("Application Support")
+            .join("RunningWithRifles")
+            .join("hotkeys.xml")
+    })
+}
+
+#[cfg(target_os = "linux")]
+fn get_official_hotkeys_path() -> Option<PathBuf> {
+    dirs::home_dir().map(|dir| dir.join(".running_with_rifle").join("hotkeys.xml"))
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+fn get_official_hotkeys_path() -> Option<PathBuf> {
+    None
 }

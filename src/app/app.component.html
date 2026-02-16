@@ -102,23 +102,8 @@
     <main class="flex-1 flex flex-col overflow-hidden min-w-0">
         <!-- Top Bar -->
         <header
-            class="h-12 border-b border-base-300 bg-base-100 flex items-center justify-between px-4 shrink-0"
+            class="h-12 border-b border-base-300 bg-base-100 flex items-center justify-end px-4 shrink-0"
         >
-            <div class="flex items-center gap-3">
-                <span class="text-xs text-base-content/60">{{
-                    t('common.quick_search')
-                }}</span>
-                <div class="join">
-                    <input
-                        type="text"
-                        placeholder="Ctrl+K"
-                        class="input input-bordered input-sm join-item w-40 text-sm"
-                    />
-                    <button class="btn btn-neutral btn-sm join-item">
-                        <i-lucide name="search" class="h-4 w-4"></i-lucide>
-                    </button>
-                </div>
-            </div>
             <div class="flex items-center gap-1">
                 <button
                     class="btn btn-square btn-ghost btn-sm"
@@ -129,7 +114,16 @@
                 </button>
                 <button
                     class="btn btn-square btn-ghost btn-sm"
-                    [title]="t('settings.theme')"
+                    [title]="
+                        t('settings.theme') +
+                        ': ' +
+                        (theme().themeType === 'auto'
+                            ? t('settings.themeAuto')
+                            : theme().themeType === 'light'
+                              ? t('settings.themeLight')
+                              : t('settings.themeDark'))
+                    "
+                    (click)="onToggleTheme()"
                 >
                     <i-lucide name="palette" class="h-4 w-4"></i-lucide>
                 </button>
@@ -354,21 +348,6 @@
                         </h4>
                         <table class="table table-xs">
                             <tbody>
-                                <tr>
-                                    <td class="w-1/4 p-1">
-                                        <div class="flex gap-0.5">
-                                            <kbd class="kbd kbd-xs text-[9px]"
-                                                >Ctrl</kbd
-                                            >
-                                            <kbd class="kbd kbd-xs text-[9px]"
-                                                >K</kbd
-                                            >
-                                        </div>
-                                    </td>
-                                    <td class="p-1 text-[11px]">
-                                        {{ t('shortcuts.quick_search') }}
-                                    </td>
-                                </tr>
                                 <tr>
                                     <td class="w-1/4 p-1">
                                         <div class="flex gap-0.5">

@@ -64,7 +64,6 @@
         "footer": "为 RWR 社区精心打造 ❤️"
     },
     "common": {
-        "quick_search": "快速搜索：",
         "status_panel": "状态面板",
         "system_status": "系统状态",
         "api_connection": "API 连接",
@@ -96,7 +95,6 @@
         "title": "键盘快捷键",
         "navigation": "导航",
         "global": "全局",
-        "quick_search": "快速搜索",
         "toggle_status": "切换状态面板",
         "close_modals": "关闭模态框 / 面板"
     },
@@ -396,6 +394,16 @@
         "import_from_clipboard": "从剪贴板导入",
         "import_success": "导入成功！",
         "import_success_desc": "配置方案已添加到您的收藏。",
+        "import_invalid_format": "格式无效",
+        "clipboard_empty": "剪贴板为空",
+        "import_failed": "导入失败",
+        "hotkeys_file_missing": "hotkeys.xml 缺失",
+        "hotkeys_file_missing_title": "创建默认 hotkeys.xml？",
+        "hotkeys_file_missing_desc": "未找到 hotkeys.xml。是否创建默认文件并自动导入为配置方案？",
+        "create_default_hotkeys": "创建并自动导入",
+        "default_profile_title": "游戏当前热键（自动导入）",
+        "read_parse_failed": "解析 hotkeys.xml 失败",
+        "read_failed": "读取热键失败",
         "share_success": "已复制到剪贴板！",
         "share_success_desc": "配置方案已复制到剪贴板，您可以分享给其他用户。",
         "open_in_editor": "外部编辑器",
@@ -406,7 +414,7 @@
         "remark": "备注",
         "content": "内容",
         "remark_placeholder": "功能名称(如: 跳跃、开火)",
-        "content_placeholder": "按键组合(如: 空格、Ctrl+C)"
+        "content_placeholder": "/skill"
     },
     "weapons": {
         "title": "武器",
