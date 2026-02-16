@@ -52,6 +52,22 @@ export class HotkeyService {
         );
     });
 
+    private resolveGamePath(): string | null {
+        const gameInstallDirectory =
+            this.settingsService.getGameInstallDirectory()?.trim() ?? '';
+        if (gameInstallDirectory) {
+            return gameInstallDirectory;
+        }
+
+        const directories = this.settingsService.getScanDirectories();
+        const firstValid = directories.find((d) => d.status === 'valid');
+        return firstValid?.path ?? null;
+    }
+
+    getConfiguredGamePath(): string | null {
+        return this.resolveGamePath();
+    }
+
     /**
      * Initialize: load profiles
      */
@@ -77,13 +93,12 @@ export class HotkeyService {
      * Read hotkey configuration from game directory
      */
     readFromGame(): Observable<IHotkeyConfigItem[]> {
-        // Get first valid scan directory instead of gamePath
-        const directories = this.settingsService.getScanDirectories();
-        const firstValid = directories.find((d) => d.status === 'valid');
-        const gamePath = firstValid?.path;
+        const gamePath = this.resolveGamePath();
 
         if (!gamePath) {
-            return throwError(() => 'No valid game directory configured');
+            const errorKey = 'hotkeys.no_game_path_desc';
+            this.errorState.set(errorKey);
+            return throwError(() => errorKey);
         }
 
         this.loadingState.set(true);
@@ -111,13 +126,12 @@ export class HotkeyService {
      * Write hotkey configuration to game directory
      */
     writeToGame(config: IHotkeyConfigItem[]): Observable<void> {
-        // Get first valid scan directory instead of gamePath
-        const directories = this.settingsService.getScanDirectories();
-        const firstValid = directories.find((d) => d.status === 'valid');
-        const gamePath = firstValid?.path;
+        const gamePath = this.resolveGamePath();
 
         if (!gamePath) {
-            return throwError(() => 'No valid game directory configured');
+            const errorKey = 'hotkeys.no_game_path_desc';
+            this.errorState.set(errorKey);
+            return throwError(() => errorKey);
         }
 
         this.loadingState.set(true);
@@ -298,16 +312,21 @@ export class HotkeyService {
      * Open hotkeys.xml in external editor
      */
     async openInEditor(): Promise<void> {
-        // Get first valid scan directory instead of gamePath
-        const directories = this.settingsService.getScanDirectories();
-        const firstValid = directories.find((d) => d.status === 'valid');
-        const gamePath = firstValid?.path;
+        const gamePath = this.resolveGamePath();
 
         if (!gamePath) {
-            throw new Error('No valid game directory configured');
+            const errorKey = 'hotkeys.no_game_path_desc';
+            this.errorState.set(errorKey);
+            throw new Error(errorKey);
         }
 
-        await invoke('open_hotkeys_in_editor', { gamePath });
+        try {
+            this.errorState.set(null);
+            await invoke('open_hotkeys_in_editor', { gamePath });
+        } catch (error) {
+            this.errorState.set(`Failed to open editor: ${error}`);
+            throw error;
+        }
     }
 
     /**

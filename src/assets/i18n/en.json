@@ -396,6 +396,9 @@
         "import_from_clipboard": "Import from Clipboard",
         "import_success": "Import Successful!",
         "import_success_desc": "The profile has been added to your collection.",
+        "import_invalid_format": "Invalid format",
+        "clipboard_empty": "Clipboard is empty",
+        "import_failed": "Failed to import",
         "share_success": "Copied to Clipboard!",
         "share_success_desc": "Profile copied to clipboard. You can now share it with others.",
         "open_in_editor": "Open in Editor",
@@ -406,7 +409,7 @@
         "remark": "Remark",
         "content": "Content",
         "remark_placeholder": "Function name (e.g., Jump, Fire)",
-        "content_placeholder": "Key combination (e.g., Space, Ctrl+C)"
+        "content_placeholder": "/skill"
     },
     "weapons": {
         "title": "Weapons",

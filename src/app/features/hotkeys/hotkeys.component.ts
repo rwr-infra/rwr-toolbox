@@ -2,7 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { HotkeyService } from './services/hotkey.service';
 import { IHotkeyConfigItem } from '../../shared/models/hotkeys.models';
 
@@ -18,6 +18,7 @@ import { IHotkeyConfigItem } from '../../shared/models/hotkeys.models';
 })
 export class HotkeysComponent implements OnInit {
     private hotkeyService = inject(HotkeyService);
+    private transloco = inject(TranslocoService);
 
     // Use signals directly from service (refactored to Signal pattern)
     readonly loading = this.hotkeyService.loadingSig;
@@ -223,10 +224,7 @@ export class HotkeysComponent implements OnInit {
      * Get game path (first valid scan directory)
      */
     get gamePath(): string | undefined {
-        const directories =
-            this.hotkeyService['settingsService'].getScanDirectories();
-        const firstValid = directories.find((d) => d.status === 'valid');
-        return firstValid?.path;
+        return this.hotkeyService.getConfiguredGamePath() ?? undefined;
     }
 
     /**
@@ -262,7 +260,7 @@ export class HotkeysComponent implements OnInit {
         try {
             const isValid = await this.hotkeyService.validateClipboard();
             if (!isValid) {
-                this.clipboardImportError = 'Invalid format';
+                this.clipboardImportError = 'hotkeys.import_invalid_format';
                 this.showImportFromClipboardModal = true;
                 return;
             }
@@ -273,9 +271,38 @@ export class HotkeysComponent implements OnInit {
 
             setTimeout(() => (this.showImportFromClipboardModal = false), 2000);
         } catch (err) {
-            this.clipboardImportError =
-                typeof err === 'string' ? err : 'Failed to import';
+            this.clipboardImportError = this.mapClipboardErrorToKey(err);
             this.showImportFromClipboardModal = true;
+        }
+    }
+
+    getDisplayText(message: string | null): string {
+        if (!message) {
+            return '';
+        }
+
+        const looksLikeI18nKey = /^[A-Za-z0-9_.-]+$/.test(message);
+        return looksLikeI18nKey ? this.transloco.translate(message) : message;
+    }
+
+    private mapClipboardErrorToKey(error: unknown): string {
+        const rawMessage =
+            typeof error === 'string'
+                ? error
+                : error instanceof Error
+                  ? error.message
+                  : '';
+
+        switch (rawMessage) {
+            case 'Invalid format':
+            case 'Invalid share format':
+                return 'hotkeys.import_invalid_format';
+            case 'Clipboard is empty':
+                return 'hotkeys.clipboard_empty';
+            default:
+                return rawMessage.startsWith('hotkeys.')
+                    ? rawMessage
+                    : 'hotkeys.import_failed';
         }
     }
 
