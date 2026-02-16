@@ -457,266 +457,227 @@
                 }
             </colgroup>
             <tbody>
-                @if (itemCount() === 0) {
-                    <tr>
+                <tr
+                    *cdkVirtualFor="
+                        let item of paginatedItems();
+                        trackBy: trackByItemId
+                    "
+                    class="cursor-pointer hover:bg-base-200 transition-colors group"
+                    [class.bg-base-300]="selectedItem()?.key === item.key"
+                    [class.border-l-2]="selectedItem()?.key === item.key"
+                    [class.border-l-primary]="selectedItem()?.key === item.key"
+                    (click)="selectItem(item)"
+                >
+                    @for (col of visibleColumnsForDisplay(); track col.key) {
                         <td
-                            [colSpan]="visibleColumnsForDisplay().length"
-                            class="text-center py-20"
+                            class="py-2 px-4"
+                            [class.text-right]="col.alignment === 'right'"
+                            [class.text-left]="col.alignment === 'left'"
                         >
-                            <div class="flex flex-col items-center opacity-20">
-                                <i-lucide
-                                    name="inbox"
-                                    class="h-12 w-12 mb-2"
-                                ></i-lucide>
-                                <p>{{ 'items.noItems' | transloco }}</p>
-                            </div>
-                        </td>
-                    </tr>
-                } @else {
-                    <tr
-                        *cdkVirtualFor="
-                            let item of paginatedItems();
-                            trackBy: trackByItemId
-                        "
-                        class="cursor-pointer hover:bg-base-200 transition-colors group"
-                        [class.bg-base-300]="selectedItem()?.key === item.key"
-                        [class.border-l-2]="selectedItem()?.key === item.key"
-                        [class.border-l-primary]="
-                            selectedItem()?.key === item.key
-                        "
-                        (click)="selectItem(item)"
-                    >
-                        @for (
-                            col of visibleColumnsForDisplay();
-                            track col.key
-                        ) {
-                            <td
-                                class="py-2 px-4"
-                                [class.text-right]="col.alignment === 'right'"
-                                [class.text-left]="col.alignment === 'left'"
-                            >
-                                @if (col.key === 'image') {
-                                    <div
-                                        class="w-10 h-10 bg-base-200/50 rounded flex items-center justify-center p-1 relative"
-                                        [class.skeleton]="
-                                            loadingIcons().has(item.key || '')
-                                        "
-                                    >
-                                        @if (
-                                            loadingIcons().has(item.key || '')
-                                        ) {
-                                            <i-lucide
-                                                name="loader-2"
-                                                class="absolute h-4 w-4 animate-spin text-base-content/50"
-                                            ></i-lucide>
-                                        }
-                                        @if (getItemIconUrl(item)) {
-                                            <img
-                                                [src]="getItemIconUrl(item)"
-                                                [alt]="item.name"
-                                                class="max-w-full max-h-full object-contain"
-                                                loading="lazy"
-                                                (error)="onItemImageError()"
-                                            />
-                                        } @else if (
-                                            !loadingIcons().has(item.key || '')
-                                        ) {
-                                            <i-lucide
-                                                name="image-off"
-                                                class="w-5 h-5 opacity-20"
-                                            />
-                                        }
-                                    </div>
-                                } @else if (col.field === 'filePath') {
-                                    <div
-                                        class="flex items-center gap-1 group/path"
-                                    >
-                                        <span
-                                            class="text-[10px] font-mono whitespace-normal break-all flex-1 opacity-60"
-                                            [title]="item.filePath"
-                                        >
-                                            {{ item.filePath }}
-                                        </span>
-                                        <div
-                                            class="flex opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <button
-                                                class="btn btn-ghost btn-xs btn-square h-6 w-6"
-                                                [title]="
-                                                    'items.actions.openInEditor'
-                                                        | transloco
-                                                "
-                                                (click)="
-                                                    $event.stopPropagation();
-                                                    onOpenInEditor(item)
-                                                "
-                                            >
-                                                <i-lucide
-                                                    name="square-pen"
-                                                    class="h-3 w-3"
-                                                ></i-lucide>
-                                            </button>
-                                            <button
-                                                class="btn btn-ghost btn-xs btn-square h-6 w-6"
-                                                [title]="
-                                                    'items.actions.copyPath'
-                                                        | transloco
-                                                "
-                                                (click)="
-                                                    $event.stopPropagation();
-                                                    onCopyPath(item)
-                                                "
-                                            >
-                                                <i-lucide
-                                                    name="copy"
-                                                    class="h-3 w-3"
-                                                ></i-lucide>
-                                            </button>
-                                        </div>
-                                    </div>
-                                } @else if (col.field === 'name') {
+                            @if (col.key === 'image') {
+                                <div
+                                    class="w-10 h-10 bg-base-200/50 rounded flex items-center justify-center p-1 relative"
+                                    [class.skeleton]="
+                                        loadingIcons().has(item.key || '')
+                                    "
+                                >
+                                    @if (loadingIcons().has(item.key || '')) {
+                                        <i-lucide
+                                            name="loader-2"
+                                            class="absolute h-4 w-4 animate-spin text-base-content/50"
+                                        ></i-lucide>
+                                    }
+                                    @if (getItemIconUrl(item)) {
+                                        <img
+                                            [src]="getItemIconUrl(item)"
+                                            [alt]="item.name"
+                                            class="max-w-full max-h-full object-contain"
+                                            loading="lazy"
+                                            (error)="onItemImageError()"
+                                        />
+                                    } @else if (
+                                        !loadingIcons().has(item.key || '')
+                                    ) {
+                                        <i-lucide
+                                            name="image-off"
+                                            class="w-5 h-5 opacity-20"
+                                        />
+                                    }
+                                </div>
+                            } @else if (col.field === 'filePath') {
+                                <div class="flex items-center gap-1 group/path">
                                     <span
-                                        class="font-medium text-sm"
-                                        [innerHTML]="highlight(item.name)"
-                                    ></span>
-                                } @else if (col.field === 'itemType') {
-                                    <span
-                                        class="badge badge-ghost badge-sm font-mono text-[10px] opacity-70"
-                                        [innerHTML]="
-                                            highlight(
-                                                'items.filters.' + item.itemType
+                                        class="text-[10px] font-mono whitespace-normal break-all flex-1 opacity-60"
+                                        [title]="item.filePath"
+                                    >
+                                        {{ item.filePath }}
+                                    </span>
+                                    <div
+                                        class="flex opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <button
+                                            class="btn btn-ghost btn-xs btn-square h-6 w-6"
+                                            [title]="
+                                                'items.actions.openInEditor'
                                                     | transloco
-                                            )
-                                        "
-                                    ></span>
-                                } @else if (col.field === 'key') {
+                                            "
+                                            (click)="
+                                                $event.stopPropagation();
+                                                onOpenInEditor(item)
+                                            "
+                                        >
+                                            <i-lucide
+                                                name="square-pen"
+                                                class="h-3 w-3"
+                                            ></i-lucide>
+                                        </button>
+                                        <button
+                                            class="btn btn-ghost btn-xs btn-square h-6 w-6"
+                                            [title]="
+                                                'items.actions.copyPath'
+                                                    | transloco
+                                            "
+                                            (click)="
+                                                $event.stopPropagation();
+                                                onCopyPath(item)
+                                            "
+                                        >
+                                            <i-lucide
+                                                name="copy"
+                                                class="h-3 w-3"
+                                            ></i-lucide>
+                                        </button>
+                                    </div>
+                                </div>
+                            } @else if (col.field === 'name') {
+                                <span
+                                    class="font-medium text-sm"
+                                    [innerHTML]="highlight(item.name)"
+                                ></span>
+                            } @else if (col.field === 'itemType') {
+                                <span
+                                    class="badge badge-ghost badge-sm font-mono text-[10px] opacity-70"
+                                    [innerHTML]="
+                                        highlight(
+                                            'items.filters.' + item.itemType
+                                                | transloco
+                                        )
+                                    "
+                                ></span>
+                            } @else if (col.field === 'key') {
+                                <span
+                                    class="text-xs truncate block"
+                                    [title]="item.key"
+                                    [innerHTML]="highlight(item.key)"
+                                ></span>
+                            } @else if (col.field === 'capacity.value') {
+                                <span class="text-xs">{{
+                                    getExtendedValue(item, 'capacity.value')
+                                }}</span>
+                            } @else if (col.field === 'capacity.source') {
+                                <span class="text-xs">{{
+                                    getExtendedValue(item, 'capacity.source')
+                                }}</span>
+                            } @else if (col.field === 'commonness.value') {
+                                <span class="text-xs">{{
+                                    getExtendedValue(item, 'commonness.value')
+                                }}</span>
+                            } @else if (col.field === 'commonness.inStock') {
+                                @if (
+                                    getBooleanBadge(
+                                        item,
+                                        'commonness.inStock'
+                                    ) === 'true'
+                                ) {
                                     <span
-                                        class="text-xs truncate block"
-                                        [title]="item.key"
-                                        [innerHTML]="highlight(item.key)"
-                                    ></span>
-                                } @else if (col.field === 'capacity.value') {
-                                    <span class="text-xs">{{
-                                        getExtendedValue(item, 'capacity.value')
-                                    }}</span>
-                                } @else if (col.field === 'capacity.source') {
-                                    <span class="text-xs">{{
-                                        getExtendedValue(
-                                            item,
-                                            'capacity.source'
-                                        )
-                                    }}</span>
-                                } @else if (col.field === 'commonness.value') {
-                                    <span class="text-xs">{{
-                                        getExtendedValue(
-                                            item,
-                                            'commonness.value'
-                                        )
-                                    }}</span>
+                                        class="badge badge-success badge-xs"
+                                        >{{ 'common.yes' | transloco }}</span
+                                    >
                                 } @else if (
-                                    col.field === 'commonness.inStock'
+                                    getBooleanBadge(
+                                        item,
+                                        'commonness.inStock'
+                                    ) === 'false'
                                 ) {
-                                    @if (
-                                        getBooleanBadge(
-                                            item,
-                                            'commonness.inStock'
-                                        ) === 'true'
-                                    ) {
-                                        <span
-                                            class="badge badge-success badge-xs"
-                                            >{{
-                                                'common.yes' | transloco
-                                            }}</span
-                                        >
-                                    } @else if (
-                                        getBooleanBadge(
-                                            item,
-                                            'commonness.inStock'
-                                        ) === 'false'
-                                    ) {
-                                        <span
-                                            class="badge badge-error badge-xs"
-                                            >{{ 'common.no' | transloco }}</span
-                                        >
-                                    } @else {
-                                        <span class="opacity-20">-</span>
-                                    }
-                                } @else if (
-                                    col.field === 'commonness.canRespawnWith'
-                                ) {
-                                    @if (
-                                        getBooleanBadge(
-                                            item,
-                                            'commonness.canRespawnWith'
-                                        ) === 'true'
-                                    ) {
-                                        <span
-                                            class="badge badge-success badge-xs"
-                                            >{{
-                                                'common.yes' | transloco
-                                            }}</span
-                                        >
-                                    } @else if (
-                                        getBooleanBadge(
-                                            item,
-                                            'commonness.canRespawnWith'
-                                        ) === 'false'
-                                    ) {
-                                        <span
-                                            class="badge badge-error badge-xs"
-                                            >{{ 'common.no' | transloco }}</span
-                                        >
-                                    } @else {
-                                        <span class="opacity-20">-</span>
-                                    }
-                                } @else if (
-                                    col.field === 'transformOnConsume'
-                                ) {
-                                    <span class="text-xs">{{
-                                        getExtendedValue(
-                                            item,
-                                            'transformOnConsume'
-                                        )
+                                    <span class="badge badge-error badge-xs">{{
+                                        'common.no' | transloco
                                     }}</span>
-                                } @else if (col.field === 'timeToLive') {
-                                    <span class="text-xs">{{
-                                        getExtendedValue(item, 'timeToLive')
-                                    }}</span>
-                                } @else if (col.field === 'draggable') {
-                                    @if (
-                                        getBooleanBadge(item, 'draggable') ===
-                                        'true'
-                                    ) {
-                                        <span
-                                            class="badge badge-success badge-xs"
-                                            >{{
-                                                'common.yes' | transloco
-                                            }}</span
-                                        >
-                                    } @else if (
-                                        getBooleanBadge(item, 'draggable') ===
-                                        'false'
-                                    ) {
-                                        <span
-                                            class="badge badge-ghost badge-xs"
-                                            >{{ 'common.no' | transloco }}</span
-                                        >
-                                    } @else {
-                                        <span class="opacity-20">-</span>
-                                    }
                                 } @else {
-                                    <span class="text-xs">{{
-                                        getColumnValue(item, col.key)
-                                    }}</span>
+                                    <span class="opacity-20">-</span>
                                 }
-                            </td>
-                        }
-                    </tr>
-                }
+                            } @else if (
+                                col.field === 'commonness.canRespawnWith'
+                            ) {
+                                @if (
+                                    getBooleanBadge(
+                                        item,
+                                        'commonness.canRespawnWith'
+                                    ) === 'true'
+                                ) {
+                                    <span
+                                        class="badge badge-success badge-xs"
+                                        >{{ 'common.yes' | transloco }}</span
+                                    >
+                                } @else if (
+                                    getBooleanBadge(
+                                        item,
+                                        'commonness.canRespawnWith'
+                                    ) === 'false'
+                                ) {
+                                    <span class="badge badge-error badge-xs">{{
+                                        'common.no' | transloco
+                                    }}</span>
+                                } @else {
+                                    <span class="opacity-20">-</span>
+                                }
+                            } @else if (col.field === 'transformOnConsume') {
+                                <span class="text-xs">{{
+                                    getExtendedValue(item, 'transformOnConsume')
+                                }}</span>
+                            } @else if (col.field === 'timeToLive') {
+                                <span class="text-xs">{{
+                                    getExtendedValue(item, 'timeToLive')
+                                }}</span>
+                            } @else if (col.field === 'draggable') {
+                                @if (
+                                    getBooleanBadge(item, 'draggable') ===
+                                    'true'
+                                ) {
+                                    <span
+                                        class="badge badge-success badge-xs"
+                                        >{{ 'common.yes' | transloco }}</span
+                                    >
+                                } @else if (
+                                    getBooleanBadge(item, 'draggable') ===
+                                    'false'
+                                ) {
+                                    <span class="badge badge-ghost badge-xs">{{
+                                        'common.no' | transloco
+                                    }}</span>
+                                } @else {
+                                    <span class="opacity-20">-</span>
+                                }
+                            } @else {
+                                <span class="text-xs">{{
+                                    getColumnValue(item, col.key)
+                                }}</span>
+                            }
+                        </td>
+                    }
+                </tr>
             </tbody>
         </table>
     </cdk-virtual-scroll-viewport>
 </div>
+
+@if (itemCount() === 0) {
+    <div class="text-center py-20">
+        <div class="flex flex-col items-center opacity-20">
+            <i-lucide name="inbox" class="h-12 w-12 mb-2"></i-lucide>
+            <p>{{ 'items.noItems' | transloco }}</p>
+        </div>
+    </div>
+}
 
 <!-- Pagination Controls -->
 @if (itemCount() > 0) {

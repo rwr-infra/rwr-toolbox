@@ -11,8 +11,8 @@
                 type="text"
                 [placeholder]="'weapons.search' | transloco"
                 class="input input-bordered input-sm join-item flex-1"
-                [(ngModel)]="searchTerm"
-                (ngModelChange)="onSearch($event)"
+                [value]="searchTerm()"
+                (input)="onSearch($any($event.target).value)"
             />
             <select
                 class="select select-bordered select-sm join-item w-40"
@@ -502,156 +502,137 @@
                 }
             </colgroup>
             <tbody>
-                @if (weaponCount() === 0) {
-                    <tr>
+                <tr
+                    *cdkVirtualFor="
+                        let weapon of paginatedWeapons();
+                        trackBy: trackByWeaponId
+                    "
+                    class="cursor-pointer hover:bg-base-200 transition-colors group"
+                    [class.bg-base-300]="selectedWeapon()?.key === weapon.key"
+                    [class.border-l-2]="selectedWeapon()?.key === weapon.key"
+                    [class.border-l-primary]="
+                        selectedWeapon()?.key === weapon.key
+                    "
+                    (click)="selectWeapon(weapon)"
+                >
+                    @for (col of visibleColumnsForDisplay(); track col.key) {
                         <td
-                            [colSpan]="visibleColumnsForDisplay().length"
-                            class="text-center py-20"
+                            class="py-2 px-4"
+                            [class.text-right]="col.alignment === 'right'"
+                            [class.text-left]="col.alignment === 'left'"
                         >
-                            <div class="flex flex-col items-center opacity-20">
-                                <i-lucide
-                                    name="inbox"
-                                    class="h-12 w-12 mb-2"
-                                ></i-lucide>
-                                <p>{{ 'weapons.noWeapons' | transloco }}</p>
-                            </div>
-                        </td>
-                    </tr>
-                } @else {
-                    <tr
-                        *cdkVirtualFor="
-                            let weapon of paginatedWeapons();
-                            trackBy: trackByWeaponId
-                        "
-                        class="cursor-pointer hover:bg-base-200 transition-colors group"
-                        [class.bg-base-300]="
-                            selectedWeapon()?.key === weapon.key
-                        "
-                        [class.border-l-2]="
-                            selectedWeapon()?.key === weapon.key
-                        "
-                        [class.border-l-primary]="
-                            selectedWeapon()?.key === weapon.key
-                        "
-                        (click)="selectWeapon(weapon)"
-                    >
-                        @for (
-                            col of visibleColumnsForDisplay();
-                            track col.key
-                        ) {
-                            <td
-                                class="py-2 px-4"
-                                [class.text-right]="col.alignment === 'right'"
-                                [class.text-left]="col.alignment === 'left'"
-                            >
-                                @if (col.key === 'image') {
-                                    <div
-                                        class="w-10 h-10 bg-base-200/50 rounded flex items-center justify-center p-1 relative"
-                                        [class.skeleton]="
-                                            loadingIcons().has(weapon.key || '')
-                                        "
+                            @if (col.key === 'image') {
+                                <div
+                                    class="w-10 h-10 bg-base-200/50 rounded flex items-center justify-center p-1 relative"
+                                    [class.skeleton]="
+                                        loadingIcons().has(weapon.key || '')
+                                    "
+                                >
+                                    @if (loadingIcons().has(weapon.key || '')) {
+                                        <i-lucide
+                                            name="loader-2"
+                                            class="absolute h-4 w-4 animate-spin text-base-content/50"
+                                        ></i-lucide>
+                                    }
+                                    @if (getWeaponIconUrl(weapon)) {
+                                        <img
+                                            [src]="getWeaponIconUrl(weapon)"
+                                            [alt]="weapon.name"
+                                            class="max-w-full max-h-full object-contain"
+                                            loading="lazy"
+                                            (error)="onWeaponImageError()"
+                                        />
+                                    } @else if (
+                                        !loadingIcons().has(weapon.key || '')
+                                    ) {
+                                        <i-lucide
+                                            name="image-off"
+                                            class="w-5 h-5 opacity-20"
+                                        />
+                                    }
+                                </div>
+                            } @else if (col.field === 'filePath') {
+                                <div class="relative min-w-0">
+                                    <span
+                                        class="block w-full pr-14 text-[10px] font-mono truncate opacity-60"
+                                        [title]="weapon.filePath"
                                     >
-                                        @if (
-                                            loadingIcons().has(weapon.key || '')
-                                        ) {
+                                        {{ weapon.filePath }}
+                                    </span>
+                                    <div
+                                        class="absolute inset-y-0 right-0 flex items-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity"
+                                    >
+                                        <button
+                                            class="btn btn-ghost btn-xs btn-square h-6 w-6"
+                                            [title]="
+                                                'weapons.actions.openInEditor'
+                                                    | transloco
+                                            "
+                                            (click)="
+                                                $event.stopPropagation();
+                                                onOpenInEditor(weapon)
+                                            "
+                                        >
                                             <i-lucide
-                                                name="loader-2"
-                                                class="absolute h-4 w-4 animate-spin text-base-content/50"
+                                                name="square-pen"
+                                                class="h-3 w-3"
                                             ></i-lucide>
-                                        }
-                                        @if (getWeaponIconUrl(weapon)) {
-                                            <img
-                                                [src]="getWeaponIconUrl(weapon)"
-                                                [alt]="weapon.name"
-                                                class="max-w-full max-h-full object-contain"
-                                                loading="lazy"
-                                                (error)="onWeaponImageError()"
-                                            />
-                                        } @else if (
-                                            !loadingIcons().has(
-                                                weapon.key || ''
-                                            )
-                                        ) {
+                                        </button>
+                                        <button
+                                            class="btn btn-ghost btn-xs btn-square h-6 w-6"
+                                            [title]="
+                                                'weapons.actions.copyPath'
+                                                    | transloco
+                                            "
+                                            (click)="
+                                                $event.stopPropagation();
+                                                onCopyPath(weapon)
+                                            "
+                                        >
                                             <i-lucide
-                                                name="image-off"
-                                                class="w-5 h-5 opacity-20"
-                                            />
-                                        }
+                                                name="copy"
+                                                class="h-3 w-3"
+                                            ></i-lucide>
+                                        </button>
                                     </div>
-                                } @else if (col.field === 'filePath') {
-                                    <div class="relative min-w-0">
-                                        <span
-                                            class="block w-full pr-14 text-[10px] font-mono truncate opacity-60"
-                                            [title]="weapon.filePath"
-                                        >
-                                            {{ weapon.filePath }}
-                                        </span>
-                                        <div
-                                            class="absolute inset-y-0 right-0 flex items-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity"
-                                        >
-                                            <button
-                                                class="btn btn-ghost btn-xs btn-square h-6 w-6"
-                                                [title]="
-                                                    'weapons.actions.openInEditor'
-                                                        | transloco
-                                                "
-                                                (click)="
-                                                    $event.stopPropagation();
-                                                    onOpenInEditor(weapon)
-                                                "
-                                            >
-                                                <i-lucide
-                                                    name="square-pen"
-                                                    class="h-3 w-3"
-                                                ></i-lucide>
-                                            </button>
-                                            <button
-                                                class="btn btn-ghost btn-xs btn-square h-6 w-6"
-                                                [title]="
-                                                    'weapons.actions.copyPath'
-                                                        | transloco
-                                                "
-                                                (click)="
-                                                    $event.stopPropagation();
-                                                    onCopyPath(weapon)
-                                                "
-                                            >
-                                                <i-lucide
-                                                    name="copy"
-                                                    class="h-3 w-3"
-                                                ></i-lucide>
-                                            </button>
-                                        </div>
-                                    </div>
-                                } @else if (col.field === 'name') {
-                                    <span
-                                        class="font-medium text-sm"
-                                        [innerHTML]="highlight(weapon.name)"
-                                    ></span>
-                                } @else if (col.field === 'tag') {
-                                    <span
-                                        class="badge badge-ghost badge-sm font-mono text-[10px] opacity-70"
-                                        [innerHTML]="highlight(weapon.tag)"
-                                    ></span>
-                                } @else if (col.field === 'key') {
-                                    <span
-                                        class="text-xs truncate block"
-                                        [title]="weapon.key"
-                                        [innerHTML]="highlight(weapon.key)"
-                                    ></span>
-                                } @else {
-                                    <span class="text-xs">{{
-                                        weapon[col.field]
-                                    }}</span>
-                                }
-                            </td>
-                        }
-                    </tr>
-                }
+                                </div>
+                            } @else if (col.field === 'name') {
+                                <span
+                                    class="font-medium text-sm"
+                                    [innerHTML]="highlight(weapon.name)"
+                                ></span>
+                            } @else if (col.field === 'tag') {
+                                <span
+                                    class="badge badge-ghost badge-sm font-mono text-[10px] opacity-70"
+                                    [innerHTML]="highlight(weapon.tag)"
+                                ></span>
+                            } @else if (col.field === 'key') {
+                                <span
+                                    class="text-xs truncate block"
+                                    [title]="weapon.key"
+                                    [innerHTML]="highlight(weapon.key)"
+                                ></span>
+                            } @else {
+                                <span class="text-xs">{{
+                                    weapon[col.field]
+                                }}</span>
+                            }
+                        </td>
+                    }
+                </tr>
             </tbody>
         </table>
     </cdk-virtual-scroll-viewport>
 </div>
+
+@if (weaponCount() === 0) {
+    <div class="text-center py-20">
+        <div class="flex flex-col items-center opacity-20">
+            <i-lucide name="inbox" class="h-12 w-12 mb-2"></i-lucide>
+            <p>{{ 'weapons.noWeapons' | transloco }}</p>
+        </div>
+    </div>
+}
 
 <!-- Pagination Controls -->
 @if (weaponCount() > 0) {

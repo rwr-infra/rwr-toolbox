@@ -97,6 +97,7 @@ export class WeaponsComponent implements AfterViewInit {
     private readonly horizontalScrollLeft = signal<number>(0);
     private readonly viewportWidthPx = signal<number>(0);
     private pendingHorizontalRaf = 0;
+    private pendingViewportCheckRaf = 0;
     private latestHorizontalScrollLeft = 0;
     private viewportResizeObserver?: ResizeObserver;
 
@@ -269,6 +270,11 @@ export class WeaponsComponent implements AfterViewInit {
                 this.pendingHorizontalRaf = 0;
             }
 
+            if (this.pendingViewportCheckRaf) {
+                cancelAnimationFrame(this.pendingViewportCheckRaf);
+                this.pendingViewportCheckRaf = 0;
+            }
+
             this.viewportResizeObserver?.disconnect();
             this.viewportResizeObserver = undefined;
         });
@@ -319,6 +325,12 @@ export class WeaponsComponent implements AfterViewInit {
                 this.loadWeapons();
             }
         });
+
+        effect(() => {
+            this.paginatedWeapons().length;
+            this.loading();
+            this.scheduleViewportRefresh();
+        });
     }
 
     ngAfterViewInit(): void {
@@ -367,6 +379,17 @@ export class WeaponsComponent implements AfterViewInit {
         if (nextWidth > 0 && nextWidth !== this.viewportWidthPx()) {
             this.viewportWidthPx.set(nextWidth);
         }
+    }
+
+    private scheduleViewportRefresh(): void {
+        if (this.pendingViewportCheckRaf) {
+            cancelAnimationFrame(this.pendingViewportCheckRaf);
+        }
+
+        this.pendingViewportCheckRaf = requestAnimationFrame(() => {
+            this.pendingViewportCheckRaf = 0;
+            this.weaponsViewport?.checkViewportSize();
+        });
     }
 
     private async loadVisibleWeaponIcons(
@@ -430,13 +453,17 @@ export class WeaponsComponent implements AfterViewInit {
         await this.weaponService.batchScanWeapons(roots);
 
         this.scrollViewportToTop();
+        this.scheduleViewportRefresh();
     }
 
     /** Handle search input */
     onSearch(term: string): void {
+        this.searchTerm.set(term || '');
         this.weaponService.setSearchTerm(term || '');
         // T066: Reset pagination to page 1 on search
         this.pagination.update((p) => ({ ...p, currentPage: 1 }));
+        this.scrollViewportToTop();
+        this.scheduleViewportRefresh();
     }
 
     /** Handle tag filter change */
@@ -522,6 +549,8 @@ export class WeaponsComponent implements AfterViewInit {
         this.selectedTag.set(undefined);
         this.advancedFilters.set({});
         this.weaponService.clearFilters();
+        this.scrollViewportToTop();
+        this.scheduleViewportRefresh();
     }
 
     /** Toggle column visibility */
@@ -580,6 +609,7 @@ export class WeaponsComponent implements AfterViewInit {
 
         await this.weaponService.batchScanWeapons(roots);
         this.scrollViewportToTop();
+        this.scheduleViewportRefresh();
     }
 
     /** Handle page size dropdown change */

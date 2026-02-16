@@ -102,6 +102,7 @@ export class ItemsComponent implements AfterViewInit {
     private readonly horizontalScrollLeft = signal<number>(0);
     private readonly viewportWidthPx = signal<number>(0);
     private pendingHorizontalRaf = 0;
+    private pendingViewportCheckRaf = 0;
     private latestHorizontalScrollLeft = 0;
     private viewportResizeObserver?: ResizeObserver;
 
@@ -281,6 +282,11 @@ export class ItemsComponent implements AfterViewInit {
                 this.pendingHorizontalRaf = 0;
             }
 
+            if (this.pendingViewportCheckRaf) {
+                cancelAnimationFrame(this.pendingViewportCheckRaf);
+                this.pendingViewportCheckRaf = 0;
+            }
+
             this.viewportResizeObserver?.disconnect();
             this.viewportResizeObserver = undefined;
         });
@@ -331,6 +337,12 @@ export class ItemsComponent implements AfterViewInit {
                 this.loadItems();
             }
         });
+
+        effect(() => {
+            this.paginatedItems().length;
+            this.loading();
+            this.scheduleViewportRefresh();
+        });
     }
 
     ngAfterViewInit(): void {
@@ -380,6 +392,17 @@ export class ItemsComponent implements AfterViewInit {
         if (nextWidth > 0 && nextWidth !== this.viewportWidthPx()) {
             this.viewportWidthPx.set(nextWidth);
         }
+    }
+
+    private scheduleViewportRefresh(): void {
+        if (this.pendingViewportCheckRaf) {
+            cancelAnimationFrame(this.pendingViewportCheckRaf);
+        }
+
+        this.pendingViewportCheckRaf = requestAnimationFrame(() => {
+            this.pendingViewportCheckRaf = 0;
+            this.itemsViewport?.checkViewportSize();
+        });
     }
 
     private async loadVisibleItemIcons(
@@ -448,6 +471,8 @@ export class ItemsComponent implements AfterViewInit {
         this.itemService.setSearchTerm(term);
         // T077: Reset pagination to page 1 on search
         this.pagination.update((p) => ({ ...p, currentPage: 1 }));
+        this.scrollViewportToTop();
+        this.scheduleViewportRefresh();
     }
 
     /** Handle itemType filter change */
@@ -551,6 +576,8 @@ export class ItemsComponent implements AfterViewInit {
         this.selectedItemType.set(undefined);
         this.filters.set({});
         this.itemService.clearFilters();
+        this.scrollViewportToTop();
+        this.scheduleViewportRefresh();
     }
 
     /** Toggle column visibility */
@@ -628,6 +655,8 @@ export class ItemsComponent implements AfterViewInit {
         }
 
         await this.itemService.batchScanItems(roots);
+        this.scrollViewportToTop();
+        this.scheduleViewportRefresh();
     }
 
     /** Handle page size dropdown change */
