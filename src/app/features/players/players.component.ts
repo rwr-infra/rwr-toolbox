@@ -59,6 +59,7 @@ export class PlayersComponent implements OnInit {
     // Local component state with signals
     selectedDatabase = signal<PlayerDatabase>('invasion');
     filter = signal<PlayerFilter>({});
+    searchInput = signal<string>('');
     sortField = signal<PlayerSortField>('score');
     pageSize = signal<number>(20);
 
@@ -124,12 +125,11 @@ export class PlayersComponent implements OnInit {
             }
         });
 
-        console.log('Touch sorted', sorted);
-
         return sorted;
     });
 
     ngOnInit() {
+        this.searchInput.set(this.filter().search ?? '');
         this.loadData();
     }
 
@@ -169,7 +169,7 @@ export class PlayersComponent implements OnInit {
      */
     onSearchKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
-            this.loadData(1);
+            this.applySearch();
         }
     }
 
@@ -177,14 +177,28 @@ export class PlayersComponent implements OnInit {
      * Handle search button click
      */
     onSearchClick() {
-        this.loadData(1);
+        this.applySearch();
     }
 
     /**
      * Clear search
      */
     clearSearch() {
+        this.searchInput.set('');
         this.filter.update((f) => ({ ...f, search: undefined }));
+        this.loadData(1);
+    }
+
+    onSearchInput(event: Event): void {
+        this.searchInput.set((event.target as HTMLInputElement).value);
+    }
+
+    private applySearch(): void {
+        const search = this.searchInput().trim();
+        this.filter.update((f) => ({
+            ...f,
+            search: search || undefined,
+        }));
         this.loadData(1);
     }
 
