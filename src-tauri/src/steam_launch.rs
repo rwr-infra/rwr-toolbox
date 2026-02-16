@@ -10,6 +10,27 @@ const ERR_STEAM_UNAVAILABLE: &str = "steam_unavailable";
 const ERR_GAME_UNAVAILABLE: &str = "game_unavailable";
 const ERR_LAUNCH_FAILED: &str = "launch_failed";
 
+fn encode_launch_args(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+
+    for b in input.bytes() {
+        let keep_raw = b.is_ascii_alphanumeric()
+            || matches!(
+                b,
+                b'-' | b'.' | b'_' | b'~' | b'=' | b':' | b'+' | b'/' | b','
+            );
+
+        if keep_raw {
+            out.push(char::from(b));
+        } else {
+            out.push('%');
+            out.push_str(&format!("{:02X}", b));
+        }
+    }
+
+    out
+}
+
 fn candidate_steam_roots() -> Vec<PathBuf> {
     let mut roots: Vec<PathBuf> = Vec::new();
 
@@ -136,8 +157,11 @@ pub async fn steam_launch_rwr(app: tauri::AppHandle, args_text: String) -> Resul
     let url = if launch_args.is_empty() {
         format!("steam://run/{}/", RWR_APP_ID)
     } else {
-        // Steam convention: steam://run/<appid>//<args>
-        format!("steam://run/{}/{}{}", RWR_APP_ID, "//", launch_args)
+        format!(
+            "steam://run/{appid}//{args}",
+            appid = RWR_APP_ID,
+            args = encode_launch_args(launch_args)
+        )
     };
 
     app.opener().open_url(url, None::<String>).map_err(|e| {
