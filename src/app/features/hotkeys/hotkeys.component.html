@@ -289,8 +289,8 @@
                 </h3>
                 <div class="py-4 space-y-4">
                     <!-- Title Input -->
-                    <div class="form-control">
-                        <label class="label">
+                    <div class="form-control space-y-2">
+                        <label class="label py-0">
                             <span class="label-text">{{
                                 t('hotkeys.profile_title')
                             }}</span>
@@ -419,7 +419,43 @@
                     </button>
                 </div>
             </div>
-            <div class="modal-backdrop" (click)="closeModal()"></div>
+            <div class="modal-backdrop"></div>
+        </div>
+    }
+
+    @if (showCreateDefaultHotkeysModal) {
+        <div class="modal modal-open">
+            <div class="modal-box">
+                <h3 class="font-bold text-lg">
+                    {{ t('hotkeys.hotkeys_file_missing_title') }}
+                </h3>
+                <p class="py-4 text-sm">
+                    {{ t('hotkeys.hotkeys_file_missing_desc') }}
+                </p>
+                <div class="modal-action">
+                    <button
+                        class="btn btn-ghost"
+                        [disabled]="loading()"
+                        (click)="showCreateDefaultHotkeysModal = false"
+                    >
+                        {{ t('hotkeys.cancel') }}
+                    </button>
+                    <button
+                        class="btn btn-primary"
+                        [disabled]="loading()"
+                        (click)="onCreateDefaultHotkeys()"
+                    >
+                        @if (loading()) {
+                            <span class="loading loading-spinner"></span>
+                        }
+                        {{ t('hotkeys.create_default_hotkeys') }}
+                    </button>
+                </div>
+            </div>
+            <div
+                class="modal-backdrop"
+                (click)="showCreateDefaultHotkeysModal = false"
+            ></div>
         </div>
     }
 
@@ -475,7 +511,7 @@
                         @if (clipboardImportError) {
                             <div class="alert alert-error">
                                 <span class="text-xs">{{
-                                    clipboardImportError
+                                    getDisplayText(clipboardImportError)
                                 }}</span>
                             </div>
                         }
@@ -485,7 +521,7 @@
                             class="btn btn-ghost"
                             (click)="closeClipboardModal()"
                         >
-                            {{ t('hotkeys.close') }}
+                            {{ t('common.close') }}
                         </button>
                     </div>
                 }
@@ -533,7 +569,7 @@
     @if (error()) {
         <div class="alert alert-error mt-4">
             <i-lucide name="alert-circle" class="h-4 w-4"></i-lucide>
-            <span class="text-xs">{{ error() }}</span>
+            <span class="text-xs">{{ getDisplayText(error()) }}</span>
         </div>
     }
 </div>

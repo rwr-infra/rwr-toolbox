@@ -421,8 +421,8 @@
     <div class="sticky top-0 z-20 border-b border-base-300 bg-base-100">
         <div class="table-header-clip overflow-hidden">
             <table
-                class="table table-xs w-max table-fixed table-header-table"
-                [style.width.px]="tableWidthPx()"
+                class="table table-xs table-fixed table-header-table"
+                [style.width.px]="renderedTableWidthPx()"
                 [style.minWidth.px]="tableWidthPx()"
                 [style.transform]="headerTransform()"
             >
@@ -492,8 +492,8 @@
         [maxBufferPx]="rowHeight * 30"
     >
         <table
-            class="table table-xs table-zebra w-max table-fixed"
-            [style.width.px]="tableWidthPx()"
+            class="table table-xs table-zebra table-fixed"
+            [style.width.px]="renderedTableWidthPx()"
             [style.minWidth.px]="tableWidthPx()"
         >
             <colgroup>
@@ -579,17 +579,15 @@
                                         }
                                     </div>
                                 } @else if (col.field === 'filePath') {
-                                    <div
-                                        class="flex items-center gap-1 group/path"
-                                    >
+                                    <div class="relative min-w-0">
                                         <span
-                                            class="text-[10px] font-mono whitespace-normal break-all flex-1 opacity-60"
+                                            class="block w-full pr-14 text-[10px] font-mono truncate opacity-60"
                                             [title]="weapon.filePath"
                                         >
                                             {{ weapon.filePath }}
                                         </span>
                                         <div
-                                            class="flex opacity-0 group-hover:opacity-100 transition-opacity"
+                                            class="absolute inset-y-0 right-0 flex items-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity"
                                         >
                                             <button
                                                 class="btn btn-ghost btn-xs btn-square h-6 w-6"

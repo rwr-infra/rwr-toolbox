@@ -100,8 +100,10 @@ export class ItemsComponent implements AfterViewInit {
 
     // RAF-throttled horizontal scroll state for header transform.
     private readonly horizontalScrollLeft = signal<number>(0);
+    private readonly viewportWidthPx = signal<number>(0);
     private pendingHorizontalRaf = 0;
     private latestHorizontalScrollLeft = 0;
+    private viewportResizeObserver?: ResizeObserver;
 
     readonly headerTransform = computed(
         () => `translate3d(${-this.horizontalScrollLeft()}px, 0, 0)`,
@@ -178,6 +180,10 @@ export class ItemsComponent implements AfterViewInit {
             return sum + widthPx;
         }, 0);
     });
+
+    readonly renderedTableWidthPx = computed(() =>
+        Math.max(this.tableWidthPx(), this.viewportWidthPx()),
+    );
 
     getColumnWidthPx(columnKey: string): number | null {
         return this.columnWidthPxByKey[columnKey] ?? null;
@@ -274,6 +280,9 @@ export class ItemsComponent implements AfterViewInit {
                 cancelAnimationFrame(this.pendingHorizontalRaf);
                 this.pendingHorizontalRaf = 0;
             }
+
+            this.viewportResizeObserver?.disconnect();
+            this.viewportResizeObserver = undefined;
         });
 
         // Load page size from localStorage
@@ -327,6 +336,7 @@ export class ItemsComponent implements AfterViewInit {
     ngAfterViewInit(): void {
         const viewport = this.itemsViewport;
         if (!viewport) return;
+        const viewportEl = viewport.elementRef.nativeElement as HTMLElement;
 
         viewport.renderedRangeStream
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -334,8 +344,18 @@ export class ItemsComponent implements AfterViewInit {
                 void this.loadVisibleItemIcons(range.start, range.end);
             });
 
+        if (typeof ResizeObserver !== 'undefined') {
+            this.viewportResizeObserver = new ResizeObserver(() => {
+                this.syncViewportWidth(viewportEl);
+            });
+            this.viewportResizeObserver.observe(viewportEl);
+        }
+
         // Ensure the viewport calculates its initial range.
-        queueMicrotask(() => viewport.checkViewportSize());
+        queueMicrotask(() => {
+            viewport.checkViewportSize();
+            this.syncViewportWidth(viewportEl);
+        });
     }
 
     onViewportScroll(): void {
@@ -353,6 +373,13 @@ export class ItemsComponent implements AfterViewInit {
             this.pendingHorizontalRaf = 0;
             this.horizontalScrollLeft.set(this.latestHorizontalScrollLeft);
         });
+    }
+
+    private syncViewportWidth(viewportEl: HTMLElement): void {
+        const nextWidth = Math.floor(viewportEl.clientWidth);
+        if (nextWidth > 0 && nextWidth !== this.viewportWidthPx()) {
+            this.viewportWidthPx.set(nextWidth);
+        }
     }
 
     private async loadVisibleItemIcons(
