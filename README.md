@@ -5,6 +5,8 @@
 
 A high-performance desktop utility designed for **Running With Rifles** players and modders. Built with safety and speed in mind, RWR Toolbox provides a comprehensive suite of tools to manage game data, servers, and configurations.
 
+![rwr-toolbox-intro](/assets/intro_en.png)
+
 ## Disclaimer
 
 **RWR Toolbox** is a community-driven project and is **not** affiliated with, authorized, maintained, sponsored, or endorsed by **Osumia Games**.
