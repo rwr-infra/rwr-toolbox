@@ -68,8 +68,8 @@
         *transloco="let t"
     >
         <div class="card-body">
-            <div class="flex justify-between items-start gap-4">
-                <div class="min-w-0">
+            <div class="flex flex-wrap justify-between items-start gap-4">
+                <div class="min-w-0 flex-1">
                     <h2 class="card-title text-sm uppercase opacity-50">
                         {{ t('settings.steamLaunch.title') }}
                     </h2>
@@ -78,7 +78,7 @@
                     </p>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <button
                         class="btn btn-outline btn-sm"
                         (click)="onCopySteamArgsText()"
@@ -217,8 +217,8 @@
     <div class="card bg-base-100 shadow-sm border border-base-300/50">
         <div class="card-body">
             <!-- Game install directory -->
-            <div class="flex justify-between items-start gap-4">
-                <div class="min-w-0">
+            <div class="flex flex-wrap justify-between items-start gap-4">
+                <div class="min-w-0 flex-1">
                     <h2 class="card-title text-sm uppercase opacity-50">
                         {{ t('settings.gamePath') }}
                     </h2>
@@ -227,7 +227,7 @@
                     </p>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <button
                         class="btn btn-primary btn-sm"
                         (click)="onSelectGameInstallDirectory()"
