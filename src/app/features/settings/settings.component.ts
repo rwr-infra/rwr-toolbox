@@ -70,6 +70,10 @@ export class SettingsComponent implements OnInit {
     readonly steamLaunchIsLaunchingSig = this.steamLaunchService.isLaunching;
     readonly steamLaunchErrorKeySig = this.steamLaunchService.errorKey;
 
+    /** Mod archive settings */
+    readonly modArchiveEnabledSig = this.settingsService.modArchiveEnabledSig;
+    readonly modArchiveDirectorySig = this.settingsService.modArchiveDirectorySig;
+
     /** T034: Directory management - readonly directories signal reference */
     readonly directoriesSig = this.directoryService.directoriesSig;
     readonly validatingSig = this.directoryService.validatingSig;
@@ -300,5 +304,31 @@ export class SettingsComponent implements OnInit {
     formatTimestamp(timestamp: number): string {
         if (timestamp === 0) return '';
         return this.datePipe.transform(timestamp, 'short') || '';
+    }
+
+    async onToggleModArchive(event: Event): Promise<void> {
+        const target = event.target as HTMLInputElement;
+        await this.settingsService.setModArchiveEnabled(Boolean(target?.checked));
+    }
+
+    async onSelectModArchiveDirectory(): Promise<void> {
+        try {
+            const selected = await open({
+                directory: true,
+                multiple: false,
+                title: this.translocoService.translate(
+                    'settings.modArchive.selectDirectoryTitle',
+                ),
+            });
+            if (selected && typeof selected === 'string') {
+                await this.settingsService.setModArchiveDirectory(selected);
+            }
+        } catch (e) {
+            console.error('Failed to select mod archive directory:', e);
+        }
+    }
+
+    async onClearModArchiveDirectory(): Promise<void> {
+        await this.settingsService.setModArchiveDirectory(null);
     }
 }

@@ -1,0 +1,176 @@
+<div class="container mx-auto p-2 sm:p-4" *transloco="let t">
+    <!-- Onboarding: not enabled -->
+    @if (!archiveEnabled()) {
+        <div class="card bg-base-200 shadow-sm">
+            <div class="card-body p-4 text-center">
+                <i-lucide name="archive" class="h-10 w-10 mx-auto opacity-30 mb-3"></i-lucide>
+                <h2 class="card-title text-base justify-center mb-2">
+                    {{ t('mods.assets.onboardingTitle') }}
+                </h2>
+                <p class="text-xs opacity-70 mb-4 max-w-md mx-auto">
+                    {{ t('mods.assets.onboardingDesc') }}
+                </p>
+                <button class="btn btn-primary btn-sm" routerLink="/settings">
+                    <i-lucide name="settings" class="h-4 w-4"></i-lucide>
+                    {{ t('mods.assets.openSettings') }}
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Enabled but no directory -->
+    @if (archiveEnabled() && !archiveDirectory()) {
+        <div class="card bg-base-200 shadow-sm">
+            <div class="card-body p-4 text-center">
+                <i-lucide name="folder-open" class="h-10 w-10 mx-auto opacity-30 mb-3"></i-lucide>
+                <h2 class="card-title text-base justify-center mb-2">
+                    {{ t('mods.assets.noDirectoryTitle') }}
+                </h2>
+                <p class="text-xs opacity-70 mb-4 max-w-md mx-auto">
+                    {{ t('mods.assets.noDirectoryDesc') }}
+                </p>
+                <button class="btn btn-primary btn-sm" routerLink="/settings">
+                    <i-lucide name="settings" class="h-4 w-4"></i-lucide>
+                    {{ t('mods.assets.openSettings') }}
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Enabled and has directory -->
+    @if (archiveEnabled() && archiveDirectory()) {
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="text-sm font-bold opacity-70">
+                {{ t('mods.assets.title') }}
+            </h2>
+            <button class="btn btn-ghost btn-xs" (click)="refreshList()" [disabled]="loading()">
+                @if (loading()) {
+                    <span class="loading loading-spinner loading-xs"></span>
+                } @else {
+                    <i-lucide name="refresh-cw" class="h-3.5 w-3.5"></i-lucide>
+                }
+                {{ t('mods.assets.refresh') }}
+            </button>
+        </div>
+
+        @if (!hasEntries && !loading()) {
+            <div class="text-center py-10 bg-base-200/50 rounded-lg border-2 border-dashed border-base-300">
+                <i-lucide name="package" class="h-10 w-10 mx-auto opacity-20 mb-2"></i-lucide>
+                <p class="text-sm opacity-50">{{ t('mods.assets.empty') }}</p>
+                <p class="text-xs opacity-40 mt-1">{{ t('mods.assets.emptyDesc') }}</p>
+            </div>
+        }
+
+        @if (hasEntries) {
+            <div class="space-y-2 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+                @for (entry of archiveEntries(); track entry.id) {
+                    <div class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-transparent hover:border-base-300 hover:bg-base-200 transition-all duration-150">
+                        <div class="flex-1 min-w-0 cursor-pointer" (click)="openDetail(entry)">
+                            <div class="flex items-center gap-2">
+                                <i-lucide name="package" class="h-4 w-4 opacity-50 shrink-0"></i-lucide>
+                                <p class="text-sm font-medium truncate" [title]="entry.fileName">
+                                    {{ entry.title || entry.fileName }}
+                                </p>
+                                @if (entry.version) {
+                                    <span class="badge badge-xs badge-neutral">v{{ entry.version }}</span>
+                                }
+                            </div>
+                            <div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[11px] opacity-60">
+                                @if (entry.gameVersion) {
+                                    <span>{{ t('mods.install.game_version') }}: {{ entry.gameVersion }}</span>
+                                }
+                                @if (entry.authors && entry.authors.length > 0) {
+                                    <span class="truncate max-w-[200px]">
+                                        {{ t('mods.install.authors') }}: {{ entry.authors.join(', ') }}
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="flex gap-1 ml-3 items-center shrink-0">
+                            <button class="btn btn-ghost btn-xs btn-square" (click)="onReinstall(entry)" [disabled]="loading()" title="{{ t('mods.assets.reinstall') }}">
+                                <i-lucide name="download" class="h-3.5 w-3.5"></i-lucide>
+                            </button>
+                            <button class="btn btn-ghost btn-xs btn-square text-error/60 hover:text-error hover:bg-error/10" (click)="onDelete(entry)" [disabled]="loading()" title="{{ t('mods.assets.delete') }}">
+                                <i-lucide name="trash-2" class="h-3.5 w-3.5"></i-lucide>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @if (error()) {
+        <div class="alert alert-error mt-4 py-2 px-3 text-sm">
+            <i-lucide name="alert-circle" class="h-4 w-4 shrink-0"></i-lucide>
+            <span>{{ error() }}</span>
+        </div>
+    }
+
+    <!-- Detail Modal -->
+    @if (showDetail && detailEntry) {
+        <div class="modal modal-open">
+            <div class="modal-box max-w-2xl">
+                <h3 class="font-bold text-lg">{{ detailEntry.title || detailEntry.fileName }}</h3>
+                <div class="divider"></div>
+                @if (detailInfo) {
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="font-bold">{{ t('mods.install.field_title') }}:</span>
+                            <span>{{ detailInfo.title }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-bold">{{ t('mods.install.description') }}:</span>
+                            <span class="text-right">{{ detailInfo.description }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-bold">{{ t('mods.install.version') }}:</span>
+                            <span>{{ detailInfo.version }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-bold">{{ t('mods.install.game_version') }}:</span>
+                            <span>{{ detailInfo.game_version }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-bold">{{ t('mods.install.authors') }}:</span>
+                            <span>{{ detailInfo.authors.join(', ') }}</span>
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="text-xs opacity-60 mb-2">{{ t('mods.install.file_list') }} ({{ detailInfo.file_log_info.length }})</div>
+                    <div class="h-48 overflow-y-auto bg-base-300 rounded p-2">
+                        <ul class="space-y-1">
+                            @for (file of detailInfo.file_log_info; track file) {
+                                <li class="text-xs font-mono">{{ file }}</li>
+                            }
+                        </ul>
+                    </div>
+                } @else {
+                    <div class="flex justify-center py-6">
+                        <span class="loading loading-spinner loading-md"></span>
+                    </div>
+                }
+                <div class="modal-action">
+                    <button class="btn btn-sm" (click)="closeDetail()">{{ t('mods.install.close') }}</button>
+                </div>
+            </div>
+            <div class="modal-backdrop" (click)="closeDetail()"></div>
+        </div>
+    }
+
+    <!-- Delete Confirm Modal -->
+    @if (showDeleteConfirm && deleteTarget) {
+        <div class="modal modal-open">
+            <div class="modal-box">
+                <h3 class="font-bold text-lg">{{ t('mods.assets.confirmDeleteTitle') }}</h3>
+                <p class="py-4 text-sm">{{ t('mods.assets.confirmDeleteDesc', { name: deleteTarget.title || deleteTarget.fileName }) }}</p>
+                <div class="modal-action">
+                    <button class="btn btn-sm" (click)="closeDeleteModal()">{{ t('common.no') }}</button>
+                    <button class="btn btn-sm btn-error" (click)="confirmDelete()">{{ t('common.yes') }}</button>
+                </div>
+            </div>
+            <div class="modal-backdrop" (click)="closeDeleteModal()"></div>
+        </div>
+    }
+</div>

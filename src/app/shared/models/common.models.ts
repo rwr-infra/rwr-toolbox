@@ -1,6 +1,6 @@
 import type { PlayerColumnVisibility } from './player.models';
 import type { ServerColumnVisibility } from './server.models';
-import type { ModInstallHistory } from './mod.models';
+import type { ModInstallHistory, ModArchiveEntry } from './mod.models';
 import type { ScanDirectory } from './directory.models';
 
 // Re-export ScanDirectory for convenience
@@ -75,6 +75,12 @@ export interface AppSettings {
     scanDirectories: ScanDirectory[];
     /** T004: Selected scan directory ID for persistent library selection */
     selectedDirectoryId: string | null;
+    /** Enable mod archive (save installed mod zips to a directory) */
+    modArchiveEnabled: boolean;
+    /** Directory path for mod archive */
+    modArchiveDirectory: string | null;
+    /** Cached mod archive entries with metadata */
+    modArchiveEntries: ModArchiveEntry[];
 }
 
 /**

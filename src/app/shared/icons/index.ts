@@ -75,6 +75,7 @@ import {
     Copy,
     LayoutList,
     LayoutGrid,
+    Archive,
     // Feature 012: Loading spinner icon for image placeholders
     Loader2,
 } from 'lucide-angular';
@@ -159,6 +160,7 @@ export const APP_ICONS = {
     Copy,
     LayoutList,
     LayoutGrid,
+    Archive,
     // Feature 012: Loading spinner
     Loader2,
 };

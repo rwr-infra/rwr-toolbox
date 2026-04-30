@@ -1,36 +1,34 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, from, of, throwError } from 'rxjs';
-import { catchError, tap, finalize, switchMap, map } from 'rxjs/operators';
+import { Observable, from, of, throwError, forkJoin } from 'rxjs';
+import { catchError, finalize, switchMap, map } from 'rxjs/operators';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
     ModReadInfo,
     ModInstallOptions,
+    ModArchiveEntry,
 } from '../../../shared/models/mod.models';
 import { SettingsService } from '../../../core/services/settings.service';
 
-/**
- * Service for managing RWRMI mods
- */
+export interface SelectModResult {
+    path: string;
+    info: ModReadInfo;
+}
+
 @Injectable({
     providedIn: 'root',
 })
 export class ModService {
     private settingsService = inject(SettingsService);
 
-    // State management with signals (Principle IX: Signal管状态)
     private loadingState = signal<boolean>(false);
     private errorState = signal<string | null>(null);
+    private pendingReinstallPathState = signal<string | null>(null);
 
-    /** Readonly signal streams */
     readonly loadingSig = this.loadingState.asReadonly();
     readonly errorSig = this.errorState.asReadonly();
+    readonly pendingReinstallPathSig = this.pendingReinstallPathState.asReadonly();
 
-    /**
-     * Read mod info from a zip file
-     * @param filePath Path to the mod zip file
-     * @returns Observable of ModReadInfo
-     */
     readModInfo(filePath: string): Observable<ModReadInfo> {
         this.loadingState.set(true);
         this.errorState.set(null);
@@ -47,11 +45,7 @@ export class ModService {
         );
     }
 
-    /**
-     * Select a mod file and read its info
-     * @returns Observable of ModReadInfo
-     */
-    selectAndReadModFile(): Observable<ModReadInfo> {
+    selectAndReadModFile(): Observable<SelectModResult> {
         this.loadingState.set(true);
         this.errorState.set(null);
 
@@ -69,7 +63,10 @@ export class ModService {
                 if (!filePath) {
                     return throwError(() => 'No file selected');
                 }
-                return this.readModInfo(filePath as string);
+                const path = filePath as string;
+                return this.readModInfo(path).pipe(
+                    map((info) => ({ path, info })),
+                );
             }),
             catchError((error) => {
                 this.errorState.set(`Failed to select file: ${error}`);
@@ -81,24 +78,55 @@ export class ModService {
         );
     }
 
-    /**
-     * Install a mod to the target directory
-     * @param filePath Path to the mod zip file
-     * @param targetPath Target directory (game root)
-     * @param options Install options
-     * @returns Observable of void
-     */
     installMod(
         filePath: string,
         targetPath: string,
         options: ModInstallOptions,
+        skipArchive = false,
     ): Observable<void> {
         this.loadingState.set(true);
         this.errorState.set(null);
 
-        // If backup is enabled, create backup first
+        const doInstall = (): Observable<void> => {
+            return from(
+                invoke('install_mod', {
+                    path: filePath,
+                    targetPath,
+                    selectedFiles:
+                        options.selectedFiles.length > 0
+                            ? options.selectedFiles
+                            : null,
+                }),
+            ).pipe(map(() => undefined));
+        };
+
+        const doArchive = (): Observable<void> => {
+            if (skipArchive) {
+                return of(undefined);
+            }
+            const settings = this.settingsService.settings();
+            if (!settings.modArchiveEnabled || !settings.modArchiveDirectory) {
+                return of(undefined);
+            }
+            return from(
+                invoke<string>('archive_mod', {
+                    path: filePath,
+                    archiveDir: settings.modArchiveDirectory,
+                }),
+            ).pipe(
+                switchMap(() => this.refreshArchiveEntries()),
+                map(() => undefined),
+                catchError((err) => {
+                    console.error('Failed to archive mod:', err);
+                    return of(undefined);
+                }),
+            );
+        };
+
+        let pipeline: Observable<void>;
+
         if (options.backup) {
-            return from(this.readModInfo(filePath)).pipe(
+            pipeline = from(this.readModInfo(filePath)).pipe(
                 switchMap((modInfo) => {
                     return this.makeBackup(
                         filePath,
@@ -106,32 +134,14 @@ export class ModService {
                         targetPath,
                     );
                 }),
-                switchMap(() => {
-                    return from(
-                        invoke('install_mod', {
-                            path: filePath,
-                            targetPath,
-                        }),
-                    ).pipe(map(() => undefined));
-                }),
-                catchError((error) => {
-                    this.errorState.set(`Failed to install mod: ${error}`);
-                    return throwError(() => error);
-                }),
-                finalize(() => {
-                    this.loadingState.set(false);
-                }),
+                switchMap(() => doInstall()),
             );
+        } else {
+            pipeline = doInstall();
         }
 
-        // Install without backup
-        return from(
-            invoke('install_mod', {
-                path: filePath,
-                targetPath,
-            }),
-        ).pipe(
-            map(() => undefined),
+        return pipeline.pipe(
+            switchMap(() => doArchive()),
             catchError((error) => {
                 this.errorState.set(`Failed to install mod: ${error}`);
                 return throwError(() => error);
@@ -142,13 +152,94 @@ export class ModService {
         );
     }
 
-    /**
-     * Create backup of original files
-     * @param modPath Path to the mod zip file
-     * @param fileList List of files to backup
-     * @param targetPath Target directory
-     * @returns Observable of backup path
-     */
+    archiveMod(filePath: string): Observable<string> {
+        const settings = this.settingsService.settings();
+        if (!settings.modArchiveEnabled || !settings.modArchiveDirectory) {
+            return throwError(() => 'Mod archive is not configured');
+        }
+        return from(
+            invoke<string>('archive_mod', {
+                path: filePath,
+                archiveDir: settings.modArchiveDirectory,
+            }),
+        ).pipe(
+            switchMap((archivedPath) =>
+                this.refreshArchiveEntries().pipe(map(() => archivedPath)),
+            ),
+            catchError((error) => {
+                this.errorState.set(`Failed to archive mod: ${error}`);
+                return throwError(() => error);
+            }),
+        );
+    }
+
+    refreshArchiveEntries(): Observable<void> {
+        const settings = this.settingsService.settings();
+        const archiveDir = settings.modArchiveDirectory;
+        if (!archiveDir) {
+            return of(undefined);
+        }
+        return from(
+            invoke<string[]>('list_mod_archives', { archiveDir }),
+        ).pipe(
+            switchMap((paths) => {
+                if (paths.length === 0) {
+                    return of([]);
+                }
+                const reads = paths.map((p) =>
+                    from(invoke<string>('read_info', { path: p })).pipe(
+                        map((json) => {
+                            const info = JSON.parse(json) as ModReadInfo;
+                            const entry: ModArchiveEntry = {
+                                id: p,
+                                filePath: p,
+                                fileName: p.split(/[\\/]/).pop() || p,
+                                archivedAt: 0,
+                                title: info.title,
+                                description: info.description,
+                                version: info.version,
+                                gameVersion: info.game_version,
+                                authors: info.authors,
+                            };
+                            return entry;
+                        }),
+                        catchError(() => {
+                            const entry: ModArchiveEntry = {
+                                id: p,
+                                filePath: p,
+                                fileName: p.split(/[\\/]/).pop() || p,
+                                archivedAt: 0,
+                            };
+                            return of(entry);
+                        }),
+                    ),
+                );
+                return forkJoin(reads).pipe(
+                    map((entries) => entries.filter((e): e is ModArchiveEntry => !!e)),
+                );
+            }),
+            switchMap((entries) => {
+                return this.settingsService
+                    .setModArchiveEntries(entries)
+                    .then(() => undefined);
+            }),
+            catchError((error) => {
+                console.error('Failed to refresh archive entries:', error);
+                return of(undefined);
+            }),
+        );
+    }
+
+    deleteModArchive(filePath: string): Observable<void> {
+        return from(invoke('delete_mod_archive', { path: filePath })).pipe(
+            switchMap(() => this.refreshArchiveEntries()),
+            catchError((error) => {
+                this.errorState.set(`Failed to delete archive: ${error}`);
+                return throwError(() => error);
+            }),
+        );
+    }
+
     makeBackup(
         modPath: string,
         fileList: string[],
@@ -168,11 +259,6 @@ export class ModService {
         );
     }
 
-    /**
-     * Recover from backup
-     * @param targetPath Target directory to recover
-     * @returns Observable of void
-     */
     recoverBackup(targetPath: string): Observable<void> {
         this.loadingState.set(true);
         this.errorState.set(null);
@@ -189,11 +275,6 @@ export class ModService {
         );
     }
 
-    /**
-     * Bundle a mod folder into a zip file
-     * @param folderPath Path to the mod folder
-     * @returns Observable of output file name
-     */
     bundleMod(folderPath: string): Observable<string> {
         this.loadingState.set(true);
         this.errorState.set(null);
@@ -209,10 +290,6 @@ export class ModService {
         );
     }
 
-    /**
-     * Select a folder and bundle it
-     * @returns Observable of output file name
-     */
     selectAndBundleFolder(): Observable<string> {
         this.loadingState.set(true);
         this.errorState.set(null);
@@ -238,11 +315,6 @@ export class ModService {
         );
     }
 
-    /**
-     * Generate default mod config files
-     * @param folderPath Path to the mod folder
-     * @returns Observable of folder path
-     */
     generateModConfig(folderPath: string): Observable<string> {
         this.loadingState.set(true);
         this.errorState.set(null);
@@ -260,10 +332,6 @@ export class ModService {
         );
     }
 
-    /**
-     * Select a folder and generate default config
-     * @returns Observable of folder path
-     */
     selectAndGenerateConfig(): Observable<string> {
         this.loadingState.set(true);
         this.errorState.set(null);
@@ -289,28 +357,21 @@ export class ModService {
         );
     }
 
-    /**
-     * Get the configured game installation directory.
-     * @returns Game path or undefined
-     */
     getGamePath(): string | undefined {
         return this.settingsService.getGameInstallDirectory() ?? undefined;
     }
 
-    /**
-     * Get the RWRMI target path from settings (defaults to first valid scan directory)
-     * @returns Target path or undefined
-     */
     getTargetPath(): string | undefined {
         const settings = this.settingsService.settings();
         const gamePath = this.getGamePath();
         return settings.rwrmiTargetPath || gamePath;
     }
 
-    /**
-     * Clear error state
-     */
     clearError(): void {
         this.errorState.set(null);
+    }
+
+    setPendingReinstallPath(path: string | null): void {
+        this.pendingReinstallPathState.set(path);
     }
 }

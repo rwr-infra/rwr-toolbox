@@ -3,8 +3,8 @@
 //! Scans RWR game directory for weapon XML files, parses them with template inheritance resolution,
 //! and returns structured weapon data to the frontend.
 
-use crate::ScanEvent;
 use crate::utils::resolve_packages_dirs;
+use crate::ScanEvent;
 use quick_xml::de::from_str;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -374,13 +374,22 @@ pub async fn scan_weapons(
     {
         let ok_count = all_results.iter().filter(|r| r.is_ok()).count();
         let err_count = all_results.len() - ok_count;
-        eprintln!("[scan_weapons] parsed_ok={} parsed_err={}", ok_count, err_count);
+        eprintln!(
+            "[scan_weapons] parsed_ok={} parsed_err={}",
+            ok_count, err_count
+        );
     }
 
     // Send in batches
     for (i, chunk) in all_results.chunks(BATCH_SIZE).enumerate() {
-        let weapons: Vec<Weapon> = chunk.iter().filter_map(|r| r.as_ref().ok().cloned()).collect();
-        let errors: Vec<ScanError> = chunk.iter().filter_map(|r| r.as_ref().err().cloned()).collect();
+        let weapons: Vec<Weapon> = chunk
+            .iter()
+            .filter_map(|r| r.as_ref().ok().cloned())
+            .collect();
+        let errors: Vec<ScanError> = chunk
+            .iter()
+            .filter_map(|r| r.as_ref().err().cloned())
+            .collect();
 
         if !weapons.is_empty() {
             send_event(ScanEvent::Chunk(weapons))?;
@@ -477,7 +486,6 @@ pub async fn scan_weapons_collect(
         scan_time: started.elapsed().as_millis() as u64,
     })
 }
-
 
 /// Discover all .weapon files in packages directory
 fn discover_weapons(input_path: &Path) -> Vec<PathBuf> {

@@ -7,8 +7,8 @@ import { ModService } from '../services/mod.service';
 import {
     ModReadInfo,
     ModInstallOptions,
+    ModFileEntry,
 } from '../../../shared/models/mod.models';
-import { SettingsService } from '../../../core/services/settings.service';
 import { MarkdownPipe } from '../../../shared/pipes/markdown.pipe';
 
 @Component({
@@ -24,46 +24,117 @@ import { MarkdownPipe } from '../../../shared/pipes/markdown.pipe';
 })
 export class InstallComponent implements OnInit {
     private modService = inject(ModService);
-    private settingsService = inject(SettingsService);
 
-    // Use signals directly from service (refactored to Signal pattern)
     readonly loading = this.modService.loadingSig;
     readonly error = this.modService.errorSig;
 
-    // Component state
     activeStep = 0;
     selectedFilePath: string | null = null;
     modInfo: ModReadInfo | null = null;
 
-    // Stepper steps
     readonly steps = [0, 1, 2] as const;
 
-    // Install options
     installOptions: ModInstallOptions = {
         backup: true,
         overwrite: false,
+        selectedFiles: [],
     };
 
-    // UI state for step 2
     showFileList = false;
     showReadme = false;
     showChangelog = false;
 
     ngOnInit(): void {
-        // Check if game path is configured
+        const pendingPath = this.modService.pendingReinstallPathSig();
+        if (pendingPath) {
+            this.modService.setPendingReinstallPath(null);
+            this.modService.readModInfo(pendingPath).subscribe({
+                next: (info) => {
+                    this.modInfo = info;
+                    this.selectedFilePath = pendingPath;
+                    this.initFileSelection();
+                    this.activeStep = 1;
+                },
+                error: (err) => {
+                    console.error('Failed to read pending reinstall mod:', err);
+                },
+            });
+            return;
+        }
+
         if (!this.modService.getGamePath()) {
             // Could redirect to settings or show a warning
         }
     }
 
     /**
-     * Step 1: Select mod file
+     * Initialize file selection after reading mod info.
+     * Default: select all non-txt files.
      */
+    initFileSelection(): void {
+        if (!this.modInfo) return;
+        this.installOptions.selectedFiles = this.modInfo.file_entries
+            .filter((entry) => !entry.path.toLowerCase().endsWith('.txt'))
+            .map((entry) => entry.path);
+    }
+
+    /** Toggle selection of a single file */
+    toggleFileSelection(path: string): void {
+        const idx = this.installOptions.selectedFiles.indexOf(path);
+        if (idx >= 0) {
+            this.installOptions.selectedFiles.splice(idx, 1);
+        } else {
+            this.installOptions.selectedFiles.push(path);
+        }
+    }
+
+    /** Check if a file is selected */
+    isFileSelected(path: string): boolean {
+        return this.installOptions.selectedFiles.includes(path);
+    }
+
+    /** Select all files */
+    selectAllFiles(): void {
+        if (!this.modInfo) return;
+        this.installOptions.selectedFiles = this.modInfo.file_entries.map(
+            (entry) => entry.path,
+        );
+    }
+
+    /** Invert selection */
+    invertSelection(): void {
+        if (!this.modInfo) return;
+        const allPaths = new Set(this.modInfo.file_entries.map((e) => e.path));
+        const selected = new Set(this.installOptions.selectedFiles);
+        this.installOptions.selectedFiles = this.modInfo.file_entries
+            .filter((e) => !selected.has(e.path))
+            .map((e) => e.path);
+    }
+
+    /** Calculate total size of selected files */
+    get selectedSize(): number {
+        if (!this.modInfo) return 0;
+        const selected = new Set(this.installOptions.selectedFiles);
+        return this.modInfo.file_entries
+            .filter((e) => selected.has(e.path))
+            .reduce((sum, e) => sum + e.size, 0);
+    }
+
+    /** Format bytes to human-readable string */
+    formatBytes(bytes: number): string {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
     onSelectFile(): void {
         this.modService.selectAndReadModFile().subscribe({
-            next: (info) => {
-                this.modInfo = info;
-                this.selectedFilePath = info as any; // File path is returned with info
+            next: (result) => {
+                this.modInfo = result.info;
+                this.selectedFilePath = result.path;
+                this.initFileSelection();
                 this.activeStep = 1;
             },
             error: (err) => {
@@ -72,9 +143,6 @@ export class InstallComponent implements OnInit {
         });
     }
 
-    /**
-     * Step 3: Install mod
-     */
     onInstall(): void {
         if (!this.selectedFilePath) {
             return;
@@ -83,6 +151,11 @@ export class InstallComponent implements OnInit {
         const targetPath = this.modService.getTargetPath();
         if (!targetPath) {
             alert('Game path not configured. Please set it in Settings first.');
+            return;
+        }
+
+        if (this.installOptions.selectedFiles.length === 0) {
+            alert('Please select at least one file to install.');
             return;
         }
 
@@ -99,9 +172,6 @@ export class InstallComponent implements OnInit {
             });
     }
 
-    /**
-     * Step 3: Create backup only
-     */
     onBackup(): void {
         if (!this.selectedFilePath || !this.modInfo) {
             return;
@@ -116,7 +186,9 @@ export class InstallComponent implements OnInit {
         this.modService
             .makeBackup(
                 this.selectedFilePath,
-                this.modInfo.file_path_list,
+                this.installOptions.selectedFiles.length > 0
+                    ? this.installOptions.selectedFiles
+                    : this.modInfo.file_path_list,
                 targetPath,
             )
             .subscribe({
@@ -129,9 +201,6 @@ export class InstallComponent implements OnInit {
             });
     }
 
-    /**
-     * Step 3: Recover from backup
-     */
     onRecover(): void {
         const targetPath = this.modService.getTargetPath();
         if (!targetPath) {
@@ -155,40 +224,33 @@ export class InstallComponent implements OnInit {
         });
     }
 
-    /**
-     * Navigation: Next step
-     */
     onNext(): void {
         if (this.activeStep < this.steps.length - 1) {
             this.activeStep++;
         }
     }
 
-    /**
-     * Navigation: Previous step
-     */
     onPrev(): void {
         if (this.activeStep > 0) {
             this.activeStep--;
         }
     }
 
-    /**
-     * Navigation: Reset to step 0
-     */
     reset(): void {
         this.activeStep = 0;
         this.selectedFilePath = null;
         this.modInfo = null;
+        this.installOptions = {
+            backup: true,
+            overwrite: false,
+            selectedFiles: [],
+        };
         this.showFileList = false;
         this.showReadme = false;
         this.showChangelog = false;
         this.modService.clearError();
     }
 
-    /**
-     * Toggle file list modal
-     */
     toggleFileList(): void {
         this.showFileList = !this.showFileList;
         if (this.showFileList) {
@@ -197,9 +259,6 @@ export class InstallComponent implements OnInit {
         }
     }
 
-    /**
-     * Toggle readme modal
-     */
     toggleReadme(): void {
         this.showReadme = !this.showReadme;
         if (this.showReadme) {
@@ -208,9 +267,6 @@ export class InstallComponent implements OnInit {
         }
     }
 
-    /**
-     * Toggle changelog modal
-     */
     toggleChangelog(): void {
         this.showChangelog = !this.showChangelog;
         if (this.showChangelog) {
@@ -219,25 +275,16 @@ export class InstallComponent implements OnInit {
         }
     }
 
-    /**
-     * Close all modals
-     */
     closeModals(): void {
         this.showFileList = false;
         this.showReadme = false;
         this.showChangelog = false;
     }
 
-    /**
-     * Get game path for display
-     */
     get gamePath(): string | undefined {
         return this.modService.getGamePath();
     }
 
-    /**
-     * Check if game path is configured
-     */
     get isGamePathConfigured(): boolean {
         return !!this.modService.getGamePath();
     }

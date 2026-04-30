@@ -16,6 +16,14 @@
         >
             {{ t('menu.bundle') }}
         </a>
+        <a
+            class="tab"
+            routerLink="/mods/assets"
+            routerLinkActive="tab-active"
+            [routerLinkActiveOptions]="{ exact: true }"
+        >
+            {{ t('menu.assets') }}
+        </a>
     </div>
 
     <router-outlet></router-outlet>

@@ -21,8 +21,6 @@
         "extract_desc": "提取 game 资源",
         "workshop": "创意工坊",
         "workshop_desc": "查看创意工坊内容",
-        "mods": "本地模组",
-        "mods_desc": "管理本地游戏模组（替换游戏文件）",
         "install": "安装",
         "install_desc": "安装本地模组到游戏目录",
         "bundle": "打包",
@@ -32,7 +30,9 @@
         "settings": "设置",
         "settings_desc": "应用程序设置和首选项",
         "about": "关于",
-        "about_desc": "关于 RWR 工具箱"
+        "about_desc": "关于 RWR 工具箱",
+        "assets": "资源包",
+        "assets_desc": "已归档的模组压缩包"
     },
     "dashboard": {
         "gameDirMissingTitle": "未配置游戏安装目录",
@@ -186,6 +186,16 @@
                 "gameUnavailable": "游戏不可用（未安装）",
                 "launchFailed": "启动游戏失败"
             }
+        },
+        "modArchive": {
+            "title": "模组归档",
+            "description": "自动保存已安装模组的压缩包副本",
+            "enable": "启用归档",
+            "directory": "归档目录",
+            "directoryHint": "用于存储归档模组压缩包的目录",
+            "selectDirectory": "选择",
+            "clearDirectory": "清除",
+            "selectDirectoryTitle": "选择模组归档目录"
         }
     },
     "servers": {
@@ -331,7 +341,12 @@
             "backup_section": "备份与恢复",
             "backup": "备份",
             "recover": "恢复备份",
-            "backup_note": "仅保留一份备份。二次备份会覆盖第一次备份。"
+            "backup_note": "仅保留一份备份。二次备份会覆盖第一次备份。",
+            "selectedFiles": "已选文件",
+            "files": "个文件",
+            "estimatedSize": "预计大小",
+            "selectAll": "全选",
+            "invertSelection": "反选"
         },
         "bundle": {
             "title": "打包本地模组",
@@ -357,6 +372,23 @@
             "step3": "包含 README.md 作为说明文档",
             "step4": "包含 CHANGELOG.md 记录版本历史",
             "step5": "将 media/ 文件夹解压到游戏目录"
+        },
+        "assets": {
+            "onboardingTitle": "模组归档未启用",
+            "onboardingDesc": "在设置中启用模组归档功能，每次安装模组时都会保留一份副本。您可以在此页面随时重新安装或删除它们。",
+            "openSettings": "前往设置",
+            "noDirectoryTitle": "未设置归档目录",
+            "noDirectoryDesc": "请选择一个目录用于存储归档的模组压缩包。",
+            "title": "已归档模组",
+            "refresh": "刷新",
+            "empty": "暂无归档模组",
+            "emptyDesc": "启用归档后安装模组，即可在此查看。",
+            "reinstall": "重新安装",
+            "delete": "删除",
+            "confirmDeleteTitle": "确认删除",
+            "confirmDeleteDesc": "确定要删除 \"{{ name }}\" 吗？此操作无法撤销。",
+            "confirmReinstallTitle": "确认重新安装",
+            "confirmReinstallDesc": "确定要重新安装 \"{{ name }}\" 吗？这将覆盖游戏目录中的现有文件。"
         }
     },
     "hotkeys": {

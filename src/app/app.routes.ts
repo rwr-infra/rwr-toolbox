@@ -140,6 +140,18 @@ export const routes: Routes = [
                     description: 'Package mods for distribution',
                 },
             },
+            {
+                path: 'assets',
+                loadComponent: () =>
+                    import('./features/mods/assets/assets.component').then(
+                        (m) => m.AssetsComponent,
+                    ),
+                data: {
+                    title: 'Mod Assets',
+                    icon: 'archive',
+                    description: 'Archived mod packages',
+                },
+            },
         ],
         data: {
             title: 'Mods',
