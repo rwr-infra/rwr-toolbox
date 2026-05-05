@@ -279,37 +279,40 @@
     <!-- Create/Edit Profile Modal -->
     @if (showCreateModal) {
         <div class="modal modal-open">
-            <div class="modal-box max-w-4xl">
-                <h3 class="font-bold text-lg">
-                    @if (editingProfileId) {
-                        {{ t('hotkeys.edit_profile') }}
-                    } @else {
-                        {{ t('hotkeys.create_profile') }}
-                    }
-                </h3>
-                <div class="py-4 space-y-4">
+            <div class="modal-box max-w-4xl p-0 overflow-hidden flex flex-col max-h-[85vh]">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-base-200 shrink-0">
+                    <h3 class="font-bold text-lg">
+                        @if (editingProfileId) {
+                            {{ t('hotkeys.edit_profile') }}
+                        } @else {
+                            {{ t('hotkeys.create_profile') }}
+                        }
+                    </h3>
+                </div>
+
+                <!-- Body -->
+                <div class="px-6 py-4 space-y-4 overflow-y-auto">
                     <!-- Title Input -->
-                    <div class="form-control space-y-2">
+                    <div class="form-control flex gap-2">
                         <label class="label py-0">
-                            <span class="label-text">{{
+                            <span class="label-text text-xs font-medium opacity-70">{{
                                 t('hotkeys.profile_title')
                             }}</span>
                         </label>
                         <input
                             type="text"
-                            class="input input-bordered"
+                            class="input input-bordered input-sm"
                             [(ngModel)]="newProfileTitle"
-                            [placeholder]="
-                                t('hotkeys.profile_title_placeholder')
-                            "
+                            [placeholder]="t('hotkeys.profile_title_placeholder')"
                         />
                     </div>
 
                     <!-- Hotkeys List -->
                     <div class="form-control">
                         <div class="flex justify-between items-center mb-2">
-                            <label class="label">
-                                <span class="label-text">{{
+                            <label class="label py-1">
+                                <span class="label-text text-xs font-medium opacity-70">{{
                                     t('hotkeys.hotkeys_list')
                                 }}</span>
                             </label>
@@ -326,72 +329,51 @@
                         </div>
 
                         @if (newProfileConfig.length > 0) {
-                            <div
-                                class="overflow-y-auto"
-                                style="max-height: 300px"
-                            >
-                                <table class="table table-sm table-zebra">
-                                    <thead>
-                                        <tr>
-                                            <th>{{ t('hotkeys.remark') }}</th>
-                                            <th>{{ t('hotkeys.content') }}</th>
-                                            <th class="w-16">
-                                                {{ t('hotkeys.actions') }}
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @for (
-                                            item of newProfileConfig;
-                                            track $index
-                                        ) {
-                                            <tr>
-                                                <td>
-                                                    <input
-                                                        type="text"
-                                                        class="input input-bordered input-xs w-full"
-                                                        [(ngModel)]="item.label"
-                                                        placeholder="{{
-                                                            t(
-                                                                'hotkeys.remark_placeholder'
-                                                            )
-                                                        }}"
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <input
-                                                        type="text"
-                                                        class="input input-bordered input-xs w-full"
-                                                        [(ngModel)]="item.value"
-                                                        placeholder="{{
-                                                            t(
-                                                                'hotkeys.content_placeholder'
-                                                            )
-                                                        }}"
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <button
-                                                        class="btn btn-xs btn-error"
-                                                        (click)="
-                                                            onRemoveHotkey(
-                                                                $index
-                                                            )
-                                                        "
-                                                    >
-                                                        <i-lucide
-                                                            name="trash-2"
-                                                            class="h-3 w-3"
-                                                        ></i-lucide>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
+                            <div class="border border-base-300 rounded-lg overflow-hidden">
+                                <!-- List Header -->
+                                <div class="grid grid-cols-[2rem_1fr_1fr_2.5rem] gap-2 px-3 py-2 text-xs font-medium opacity-50 bg-base-200/60 border-b border-base-300">
+                                    <span class="text-center">#</span>
+                                    <span>{{ t('hotkeys.remark') }}</span>
+                                    <span>{{ t('hotkeys.content') }}</span>
+                                    <span></span>
+                                </div>
+                                <!-- List Items -->
+                                <div class="divide-y divide-base-200">
+                                    @for (
+                                        item of newProfileConfig;
+                                        track $index
+                                    ) {
+                                        <div class="group grid grid-cols-[2rem_1fr_1fr_2.5rem] gap-2 items-center px-3 py-2 hover:bg-base-200/40 transition-colors">
+                                            <span class="text-center text-xs font-mono opacity-40">{{ $index + 1 }}</span>
+                                            <input
+                                                type="text"
+                                                class="input input-ghost input-xs w-full focus:input-bordered"
+                                                [(ngModel)]="item.label"
+                                                [placeholder]="t('hotkeys.remark_placeholder')"
+                                            />
+                                            <input
+                                                type="text"
+                                                class="input input-ghost input-xs w-full focus:input-bordered"
+                                                [(ngModel)]="item.value"
+                                                [placeholder]="t('hotkeys.content_placeholder')"
+                                            />
+                                            <button
+                                                class="btn btn-xs btn-ghost btn-square opacity-0 group-hover:opacity-100 text-error/70 hover:text-error hover:bg-error/10 transition-all"
+                                                (click)="onRemoveHotkey($index)"
+                                                [title]="t('hotkeys.delete')"
+                                            >
+                                                <i-lucide
+                                                    name="trash-2"
+                                                    class="h-3.5 w-3.5"
+                                                ></i-lucide>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         } @else {
-                            <div class="text-center py-4 opacity-70">
+                            <div class="text-center py-8 opacity-60 bg-base-200/30 rounded-lg border border-base-200 border-dashed">
+                                <i-lucide name="keyboard" class="h-8 w-8 mx-auto mb-2 opacity-30"></i-lucide>
                                 <p class="text-sm">
                                     {{ t('hotkeys.no_hotkeys_yet') }}
                                 </p>
@@ -399,12 +381,14 @@
                         }
                     </div>
                 </div>
-                <div class="modal-action">
-                    <button class="btn btn-ghost" (click)="closeModal()">
+
+                <!-- Footer -->
+                <div class="px-6 py-4 border-t border-base-200 flex justify-end gap-2 shrink-0 bg-base-100">
+                    <button class="btn btn-ghost btn-sm" (click)="closeModal()">
                         {{ t('hotkeys.cancel') }}
                     </button>
                     <button
-                        class="btn btn-primary"
+                        class="btn btn-primary btn-sm"
                         (click)="onCreateProfile()"
                         [disabled]="
                             !newProfileTitle.trim() ||

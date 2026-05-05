@@ -22,6 +22,13 @@ pub struct ModInstallerConfig {
     pub game_version: String,
 }
 
+/// File entry with path and size for selective installation
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FileEntry {
+    pub path: String,
+    pub size: u64,
+}
+
 /// Output config (sent to webview)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct OutputConfig {
@@ -32,6 +39,7 @@ pub struct OutputConfig {
     pub game_version: String,
     pub file_log_info: Vec<String>,
     pub file_path_list: Vec<String>,
+    pub file_entries: Vec<FileEntry>,
     pub readme_content: String,
     pub changelog_content: String,
 }
@@ -137,6 +145,7 @@ fn read_zip(path: &str) -> AnyhowResult<String> {
     let mut installer_config_str = String::new();
     let mut file_log_info: Vec<String> = Vec::new();
     let mut file_path_list: Vec<String> = Vec::new();
+    let mut file_entries: Vec<FileEntry> = Vec::new();
 
     let mut readme_content = String::new();
     let mut changelog_content = String::new();
@@ -182,8 +191,12 @@ fn read_zip(path: &str) -> AnyhowResult<String> {
             }
             _ => {
                 let info_str = format!("{}({} bytes)", outpath_name, file.size());
-                file_path_list.push(outpath_name);
+                file_path_list.push(outpath_name.clone());
                 file_log_info.push(info_str);
+                file_entries.push(FileEntry {
+                    path: outpath_name,
+                    size: file.size(),
+                });
             }
         }
     }
@@ -198,6 +211,7 @@ fn read_zip(path: &str) -> AnyhowResult<String> {
         game_version: installer_config.game_version,
         file_log_info,
         file_path_list,
+        file_entries,
         readme_content,
         changelog_content,
     };
@@ -207,61 +221,53 @@ fn read_zip(path: &str) -> AnyhowResult<String> {
     Ok(output_string)
 }
 
-/// Extract zip file to target path
-fn extract_zip(path: &str, target_path: &str) -> AnyhowResult<()> {
+/// Extract zip file to target path.
+/// If `selected_files` is provided, only extracts files whose path is in the list.
+fn extract_zip(
+    path: &str,
+    target_path: &str,
+    selected_files: Option<Vec<String>>,
+) -> AnyhowResult<()> {
     let file = File::open(path)?;
-
     let mut archive = zip::ZipArchive::new(file)?;
+
+    let selected_set: Option<std::collections::HashSet<String>> =
+        selected_files.map(|v| v.into_iter().collect());
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
-        let outpath = match file.enclosed_name() {
-            Some(path) => path.to_owned(),
-            None => continue,
-        };
+        let file_name = file.name().to_owned();
 
-        let target_path_buf = Path::new(target_path);
-        let outpath = target_path_buf.join(outpath);
-
-        if (*file.name()).ends_with('/') {
-            println!("File {} extracted to \"{}\"", i, outpath.display());
-            fs::create_dir_all(&outpath)?;
-        } else {
-            let full_file_path_str = file.name();
-            let full_file_path = Path::new(full_file_path_str);
-            if let Some(file_name) = full_file_path.file_name() {
-                match file_name.to_str().unwrap() {
-                    README_FILE => {
-                        continue;
-                    }
-                    CONFIG_FILE => {
-                        continue;
-                    }
-                    CHANGELOG_FILE => {
-                        continue;
-                    }
-                    _ => {
-                        println!("Extract: {:?}", file_name);
-                    }
-                }
-            }
-
-            println!("File name: {}", file.name());
-            println!(
-                "File {} extracted to \"{}\" ({} bytes)",
-                i,
-                outpath.display(),
-                file.size()
-            );
-
-            if let Some(p) = outpath.parent() {
-                if !p.exists() {
-                    fs::create_dir_all(p)?;
-                }
-            }
-            let mut outfile = fs::File::create(&outpath)?;
-            io::copy(&mut file, &mut outfile)?;
+        // Skip directory entries in zip - we'll create them as needed for files.
+        if file_name.ends_with('/') {
+            continue;
         }
+
+        // Check if file is selected (when filtering is enabled).
+        if let Some(ref set) = selected_set {
+            if !set.contains(&file_name) {
+                continue;
+            }
+        }
+
+        // Skip metadata files.
+        let file_path = Path::new(&file_name);
+        if let Some(name) = file_path.file_name().and_then(|n| n.to_str()) {
+            if name == README_FILE || name == CONFIG_FILE || name == CHANGELOG_FILE {
+                continue;
+            }
+        }
+
+        let outpath = Path::new(target_path).join(&file_name);
+
+        if let Some(p) = outpath.parent() {
+            if !p.exists() {
+                fs::create_dir_all(p)?;
+            }
+        }
+
+        let mut outfile = fs::File::create(&outpath)?;
+        io::copy(&mut file, &mut outfile)?;
 
         #[cfg(unix)]
         {
@@ -439,7 +445,7 @@ pub fn make_backup(
 pub fn recover_backup(path: String) -> Result<(), String> {
     let backup_path = get_backup_path().unwrap();
     let backup_path = String::from(backup_path.to_str().unwrap());
-    let res = extract_zip(&backup_path, &path);
+    let res = extract_zip(&backup_path, &path, None);
     match res {
         Ok(_) => Ok(()),
         Err(e) => Err(e.to_string()),
@@ -448,10 +454,131 @@ pub fn recover_backup(path: String) -> Result<(), String> {
 
 /// Tauri command: Install mod
 #[tauri::command]
-pub fn install_mod(path: String, target_path: String) -> Result<(), String> {
-    let res = extract_zip(&path, &target_path);
+pub fn install_mod(
+    path: String,
+    target_path: String,
+    selected_files: Option<Vec<String>>,
+) -> Result<(), String> {
+    let res = extract_zip(&path, &target_path, selected_files);
     match res {
         Ok(_) => Ok(()),
         Err(e) => Err(e.to_string()),
     }
+}
+
+/// Compute MD5 hash of a file (streaming, low memory usage).
+fn compute_file_md5(path: &std::path::Path) -> Result<String, String> {
+    use std::io::Read;
+
+    let file = std::fs::File::open(path).map_err(|e| e.to_string())?;
+    let mut reader = std::io::BufReader::with_capacity(64 * 1024, file);
+    let mut hasher = md5::Context::new();
+    let mut buffer = [0u8; 64 * 1024];
+
+    loop {
+        let count = reader.read(&mut buffer).map_err(|e| e.to_string())?;
+        if count == 0 {
+            break;
+        }
+        hasher.consume(&buffer[..count]);
+    }
+
+    Ok(format!("{:x}", hasher.compute()))
+}
+
+/// Archive a mod zip file to the specified archive directory.
+/// Returns the path of the archived file.
+/// If a file with the same name and identical content already exists, skips copying.
+/// If a file with the same name but different content exists, renames with a timestamp.
+#[tauri::command]
+pub fn archive_mod(path: String, archive_dir: String) -> Result<String, String> {
+    let src = std::path::Path::new(&path);
+    if !src.exists() || !src.is_file() {
+        return Err("Source file does not exist".to_string());
+    }
+
+    let file_name = src
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or("Invalid source file name")?;
+
+    let archive_path = std::path::Path::new(&archive_dir);
+    if !archive_path.exists() {
+        std::fs::create_dir_all(archive_path).map_err(|e| e.to_string())?;
+    }
+
+    let dest = archive_path.join(file_name);
+
+    // If the exact file name already exists, compare MD5 to decide whether to skip or rename.
+    if dest.exists() {
+        let src_md5 = compute_file_md5(src)?;
+        let dest_md5 = compute_file_md5(&dest)?;
+
+        if src_md5 == dest_md5 {
+            // Identical content: skip copying and return the existing path.
+            return Ok(dest.to_string_lossy().to_string());
+        }
+
+        // Same name but different content: rename with timestamp to preserve both versions.
+        let stem = std::path::Path::new(file_name)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("mod");
+        let ext = std::path::Path::new(file_name)
+            .extension()
+            .and_then(|s| s.to_str())
+            .unwrap_or("zip");
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let renamed_dest = archive_path.join(format!("{}_{}.{}", stem, timestamp, ext));
+        std::fs::copy(src, &renamed_dest).map_err(|e| e.to_string())?;
+        return Ok(renamed_dest.to_string_lossy().to_string());
+    }
+
+    // No collision: copy directly.
+    std::fs::copy(src, &dest).map_err(|e| e.to_string())?;
+    Ok(dest.to_string_lossy().to_string())
+}
+
+/// List all mod zip files in the archive directory.
+/// Returns a list of absolute file paths.
+#[tauri::command]
+pub fn list_mod_archives(archive_dir: String) -> Result<Vec<String>, String> {
+    let path = std::path::Path::new(&archive_dir);
+    if !path.exists() || !path.is_dir() {
+        return Ok(vec![]);
+    }
+
+    let mut results = Vec::new();
+    match std::fs::read_dir(path) {
+        Ok(entries) => {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let p = entry.path();
+                if p.is_file() {
+                    if let Some(ext) = p.extension() {
+                        if ext.eq_ignore_ascii_case("zip") {
+                            results.push(p.to_string_lossy().to_string());
+                        }
+                    }
+                }
+            }
+        }
+        Err(e) => return Err(e.to_string()),
+    }
+
+    // Sort by file name for stable ordering
+    results.sort();
+    Ok(results)
+}
+
+/// Delete a mod archive file by path.
+#[tauri::command]
+pub fn delete_mod_archive(path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    if p.exists() && p.is_file() {
+        std::fs::remove_file(p).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }

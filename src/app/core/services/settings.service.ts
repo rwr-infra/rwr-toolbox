@@ -42,6 +42,9 @@ const DEFAULT_SETTINGS: AppSettings = {
     modInstallHistory: [],
     scanDirectories: [],
     selectedDirectoryId: null,
+    modArchiveEnabled: false,
+    modArchiveDirectory: null,
+    modArchiveEntries: [],
 };
 
 /**
@@ -178,6 +181,16 @@ export class SettingsService {
             if (!stored.steamLaunchCustomTokens) {
                 stored.steamLaunchCustomTokens =
                     DEFAULT_SETTINGS.steamLaunchCustomTokens;
+            }
+            // Keep mod archive settings backward compatible if missing.
+            if (typeof stored.modArchiveEnabled !== 'boolean') {
+                stored.modArchiveEnabled = DEFAULT_SETTINGS.modArchiveEnabled;
+            }
+            if (!stored.modArchiveDirectory && stored.modArchiveDirectory !== null) {
+                stored.modArchiveDirectory = DEFAULT_SETTINGS.modArchiveDirectory;
+            }
+            if (!stored.modArchiveEntries) {
+                stored.modArchiveEntries = DEFAULT_SETTINGS.modArchiveEntries;
             }
 
             this.settingsState.set({ ...DEFAULT_SETTINGS, ...stored });
@@ -469,6 +482,33 @@ export class SettingsService {
 
     async setGameInstallDirectory(path: string | null): Promise<void> {
         await this.updateSettings({ gameInstallDirectory: path });
+    }
+
+    /** Mod archive enabled signal */
+    readonly modArchiveEnabledSig = computed(
+        () => this.settingsState().modArchiveEnabled,
+    );
+
+    /** Mod archive directory signal */
+    readonly modArchiveDirectorySig = computed(
+        () => this.settingsState().modArchiveDirectory,
+    );
+
+    /** Mod archive entries signal */
+    readonly modArchiveEntriesSig = computed(
+        () => this.settingsState().modArchiveEntries,
+    );
+
+    async setModArchiveEnabled(enabled: boolean): Promise<void> {
+        await this.updateSettings({ modArchiveEnabled: enabled });
+    }
+
+    async setModArchiveDirectory(path: string | null): Promise<void> {
+        await this.updateSettings({ modArchiveDirectory: path });
+    }
+
+    async setModArchiveEntries(entries: import('../../shared/models/mod.models').ModArchiveEntry[]): Promise<void> {
+        await this.updateSettings({ modArchiveEntries: entries });
     }
 
     async validateGameInstallDirectory(

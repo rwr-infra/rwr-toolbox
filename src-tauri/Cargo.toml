@@ -1,6 +1,6 @@
 [package]
 name = "rwr-toolbox"
-version = "0.1.2"
+version = "0.2.0"
 description = "A Tauri App"
 authors = ["Kreedzt"]
 edition = "2021"
@@ -36,3 +36,4 @@ base64 = "0.22"
 tauri-plugin-clipboard-manager = "2"
 rayon = "1.11.0"
 semver = "1"
+md5 = "0.7"

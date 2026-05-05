@@ -21,8 +21,6 @@
         "extract_desc": "Extract game resources",
         "workshop": "Workshop",
         "workshop_desc": "View workshop content",
-        "mods": "Local Mods",
-        "mods_desc": "Manage local mods (replace game files)",
         "install": "Install",
         "install_desc": "Install local mods to game directory",
         "bundle": "Bundle",
@@ -32,7 +30,9 @@
         "settings": "Settings",
         "settings_desc": "Application settings and preferences",
         "about": "About",
-        "about_desc": "About RWR Toolbox"
+        "about_desc": "About RWR Toolbox",
+        "assets": "Assets",
+        "assets_desc": "Archived mod packages"
     },
     "dashboard": {
         "gameDirMissingTitle": "Game install directory not configured",
@@ -186,6 +186,16 @@
                 "gameUnavailable": "Game not available (not installed)",
                 "launchFailed": "Failed to launch game"
             }
+        },
+        "modArchive": {
+            "title": "Mod Archive",
+            "description": "Automatically save a copy of installed mod packages",
+            "enable": "Enable archive",
+            "directory": "Archive Directory",
+            "directoryHint": "Directory where archived mod zips will be stored",
+            "selectDirectory": "Select",
+            "clearDirectory": "Clear",
+            "selectDirectoryTitle": "Select Mod Archive Directory"
         }
     },
     "servers": {
@@ -331,7 +341,12 @@
             "backup_section": "Backup & Recovery",
             "backup": "Backup",
             "recover": "Recover Backup",
-            "backup_note": "Only one backup is retained. Second backup will overwrite the first."
+            "backup_note": "Only one backup is retained. Second backup will overwrite the first.",
+            "selectedFiles": "Selected Files",
+            "files": "files",
+            "estimatedSize": "Estimated Size",
+            "selectAll": "Select All",
+            "invertSelection": "Invert"
         },
         "bundle": {
             "title": "Bundle Local Mods",
@@ -357,6 +372,23 @@
             "step3": "Include README.md as documentation",
             "step4": "Include CHANGELOG.md for version history",
             "step5": "Extract media/ folder to game directory"
+        },
+        "assets": {
+            "onboardingTitle": "Mod Archive Not Enabled",
+            "onboardingDesc": "Enable mod archive in Settings to keep a copy of every mod you install. You can re-install or delete them anytime from this page.",
+            "openSettings": "Open Settings",
+            "noDirectoryTitle": "Archive Directory Not Set",
+            "noDirectoryDesc": "Please select a directory to store archived mod packages.",
+            "title": "Archived Mods",
+            "refresh": "Refresh",
+            "empty": "No archived mods yet",
+            "emptyDesc": "Install a mod with archive enabled to see it here.",
+            "reinstall": "Re-install",
+            "delete": "Delete",
+            "confirmDeleteTitle": "Confirm Delete",
+            "confirmDeleteDesc": "Are you sure you want to delete \"{{ name }}\"? This action cannot be undone.",
+            "confirmReinstallTitle": "Confirm Re-install",
+            "confirmReinstallDesc": "Are you sure you want to re-install \"{{ name }}\"? This will overwrite existing files in the game directory."
         }
     },
     "hotkeys": {

@@ -225,25 +225,25 @@ async fn proxy_fetch(url: &str, timeout_ms: Option<u64>) -> Result<String, Strin
     }
 }
 
-/// Get project changelog from root CHANGELOG.md
+/// Get project changelog from bundled CHANGELOG.md
 #[tauri::command]
 async fn get_changelog(app: tauri::AppHandle) -> Result<String, String> {
     use std::fs;
-    // In development, the file is in the project root.
-    // In production, it should be bundled with the application.
-    let resource_path = app
-        .path()
-        .resource_dir()
-        .map_err(|e| format!("Failed to get resource dir: {}", e))?
-        .join("CHANGELOG.md");
+    use tauri::Manager;
 
-    let path = if resource_path.exists() {
-        resource_path
-    } else {
-        // Fallback to current directory (dev mode)
-        std::env::current_dir()
-            .map_err(|e| format!("Failed to get current dir: {}", e))?
-            .join("CHANGELOG.md")
+    // Try resolving via Tauri's Resource base directory (works for both dev & production)
+    let resolved = app
+        .path()
+        .resolve("CHANGELOG.md", tauri::path::BaseDirectory::Resource);
+
+    let path = match resolved {
+        Ok(p) if p.exists() => p,
+        _ => {
+            // Fallback: current working dir (dev mode when cwd is project root)
+            std::env::current_dir()
+                .map_err(|e| format!("Failed to get current dir: {}", e))?
+                .join("CHANGELOG.md")
+        }
     };
 
     if !path.exists() {
@@ -282,6 +282,9 @@ pub fn run() {
             rwrmi::install_mod,
             rwrmi::make_backup,
             rwrmi::recover_backup,
+            rwrmi::archive_mod,
+            rwrmi::list_mod_archives,
+            rwrmi::delete_mod_archive,
             hotkeys::read_hotkeys,
             hotkeys::parse_hotkeys,
             hotkeys::generate_hotkeys,

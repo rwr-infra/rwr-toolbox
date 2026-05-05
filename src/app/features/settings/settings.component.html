@@ -68,8 +68,8 @@
         *transloco="let t"
     >
         <div class="card-body">
-            <div class="flex justify-between items-start gap-4">
-                <div class="min-w-0">
+            <div class="flex flex-wrap justify-between items-start gap-4">
+                <div class="min-w-0 flex-1">
                     <h2 class="card-title text-sm uppercase opacity-50">
                         {{ t('settings.steamLaunch.title') }}
                     </h2>
@@ -78,7 +78,7 @@
                     </p>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <button
                         class="btn btn-outline btn-sm"
                         (click)="onCopySteamArgsText()"
@@ -213,12 +213,84 @@
         </div>
     </div>
 
+    <!-- Mod Archive Settings -->
+    <div class="card bg-base-100 shadow-sm border border-base-300/50 mb-6">
+        <div class="card-body">
+            <div class="flex flex-wrap justify-between items-start gap-4">
+                <div class="min-w-0 flex-1">
+                    <h2 class="card-title text-sm uppercase opacity-50">
+                        {{ t('settings.modArchive.title') }}
+                    </h2>
+                    <p class="text-[11px] opacity-60 mt-1">
+                        {{ t('settings.modArchive.description') }}
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <span class="text-xs">{{ t('settings.modArchive.enable') }}</span>
+                        <input
+                            type="checkbox"
+                            class="toggle toggle-sm"
+                            [checked]="modArchiveEnabledSig()"
+                            (change)="onToggleModArchive($event)"
+                        />
+                    </label>
+                </div>
+            </div>
+
+            @if (modArchiveEnabledSig()) {
+                <div class="mt-4">
+                    <div class="flex flex-wrap justify-between items-start gap-4">
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-sm font-semibold opacity-70">
+                                {{ t('settings.modArchive.directory') }}
+                            </h3>
+                            <p class="text-[11px] opacity-60 mt-1">
+                                {{ t('settings.modArchive.directoryHint') }}
+                            </p>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button
+                                class="btn btn-primary btn-sm"
+                                (click)="onSelectModArchiveDirectory()"
+                            >
+                                <i-lucide name="folder-open" class="h-4 w-4"></i-lucide>
+                                {{ t('settings.modArchive.selectDirectory') }}
+                            </button>
+                            <button
+                                class="btn btn-ghost btn-sm"
+                                (click)="onClearModArchiveDirectory()"
+                                [disabled]="!modArchiveDirectorySig()"
+                            >
+                                <i-lucide name="trash-2" class="h-4 w-4"></i-lucide>
+                                {{ t('settings.modArchive.clearDirectory') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 p-3 bg-base-200/40 rounded-lg border border-base-300/40">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <p
+                                class="text-[11px] font-mono truncate opacity-80 flex-1 min-w-0"
+                                [title]="modArchiveDirectorySig() || ''"
+                            >
+                                {{ modArchiveDirectorySig() || t('common.not_set') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
     <!-- Directory Management (Full Width) -->
     <div class="card bg-base-100 shadow-sm border border-base-300/50">
         <div class="card-body">
             <!-- Game install directory -->
-            <div class="flex justify-between items-start gap-4">
-                <div class="min-w-0">
+            <div class="flex flex-wrap justify-between items-start gap-4">
+                <div class="min-w-0 flex-1">
                     <h2 class="card-title text-sm uppercase opacity-50">
                         {{ t('settings.gamePath') }}
                     </h2>
@@ -227,7 +299,7 @@
                     </p>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <button
                         class="btn btn-primary btn-sm"
                         (click)="onSelectGameInstallDirectory()"
